@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crédit Agricole - Offres d'Emploi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #718096;
+            font-size: 1.1em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filters-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .jobs-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .job-card {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .job-card:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            transform: translateX(5px);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .job-title {
+            font-size: 1.4em;
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .job-company {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .job-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #718096;
+            font-size: 0.9em;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .tag-live {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .tag-expired {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .tag-contract {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .job-description {
+            color: #4a5568;
+            margin-top: 15px;
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .skill-tag {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .no-results-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .page-btn {
+            padding: 10px 15px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 40px;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2em;
+            cursor: pointer;
+            color: #718096;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #2d3748;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .job-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 Crédit Agricole - Offres d'Emploi</h1>
+            <p>Explorez et filtrez les opportunités de carrière</p>
+        </div>
+
+        <div id="loadingSection" class="loader">
+            <div class="spinner"></div>
+            <p style="color: white; margin-top: 20px; font-size: 1.2em;">Chargement des données...</p>
+        </div>
+
+        <div id="errorSection" style="display: none;"></div>
+
+        <div id="statsSection" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalJobs">0</div>
+                    <div class="stat-label">Total Offres</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="liveJobs">0</div>
+                    <div class="stat-label">Actives</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="expiredJobs">0</div>
+                    <div class="stat-label">Expirées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="uniqueLocations">0</div>
+                    <div class="stat-label">Localisations</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="filtersSection" class="filters-section" style="display: none;">
+            <h2 style="margin-bottom: 20px; color: #2d3748;">🔍 Filtres de recherche</h2>
+            
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Recherche par mots-clés</label>
+                    <input type="text" id="searchKeyword" placeholder="Titre, description, compétences...">
+                </div>
+
+                <div class="filter-group">
+                    <label>Localisation</label>
+                    <select id="filterLocation">
+                        <option value="">Toutes les localisations</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Type de contrat</label>
+                    <select id="filterContract">
+                        <option value="">Tous les contrats</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Famille de métier</label>
+                    <select id="filterJobFamily">
+                        <option value="">Toutes les familles</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Statut</label>
+                    <select id="filterStatus">
+                        <option value="">Tous</option>
+                        <option value="Live">Actives</option>
+                        <option value="Expired">Expirées</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Niveau d'expérience</label>
+                    <select id="filterExperience">
+                        <option value="">Tous les niveaux</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="applyFilters()">🔍 Rechercher</button>
+                <button class="btn btn-secondary" onclick="resetFilters()">🔄 Réinitialiser</button>
+                <button class="btn btn-secondary" onclick="exportFiltered()">💾 Exporter (CSV)</button>
+            </div>
+        </div>
+
+        <div id="jobsSection" class="jobs-section" style="display: none;">
+            <h2 style="margin-bottom: 20px; color: #2d3748;">
+                <span id="resultCount">0</span> résultats
+            </h2>
+            <div id="jobsList"></div>
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </div>
+
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let allJobs = [];
+        let filteredJobs = [];
+        let currentPage = 1;
+        const jobsPerPage = 10;
+
+        // Auto-load CSV on page load
+        window.addEventListener('load', function() {
+            loadCSVFile();
+        });
+
+        document.getElementById('searchKeyword').addEventListener('input', debounce(applyFilters, 500));
+
+        // Load CSV file automatically
+        function loadCSVFile() {
+            // Try to fetch the CSV file from the same directory
+            fetch('scraped_jobs.csv')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('CSV file not found');
+                    }
+                    return response.text();
+                })
+                .then(csv => {
+                    parseCSV(csv);
+                })
+                .catch(error => {
+                    showError('Erreur : Le fichier "scraped_jobs.csv" doit être dans le même dossier que index.html');
+                });
+        }
+
+        function showError(message) {
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('errorSection').innerHTML = `
+                <div class="error-message">
+                    <h2>⚠️ Erreur de chargement</h2>
+                    <p style="margin-top: 10px;">${message}</p>
+                    <p style="margin-top: 15px; font-size: 0.9em;">
+                        <strong>Solution :</strong><br>
+                        1. Assurez-vous que "scraped_jobs.csv" est dans le même dossier que "index.html"<br>
+                        2. Lancez le serveur avec : <code style="background: #2d3748; color: white; padding: 2px 6px; border-radius: 3px;">python3 -m http.server 8000</code><br>
+                        3. Ouvrez Safari sur : <code style="background: #2d3748; color: white; padding: 2px 6px; border-radius: 3px;">http://localhost:8000</code>
+                    </p>
+                </div>
+            `;
+        }
+
+        // CSV Parser avec meilleure gestion de l'encodage
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            
+            allJobs = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = parseCSVLine(lines[i]);
+                if (values.length !== headers.length) continue;
+                
+                const job = {};
+                headers.forEach((header, index) => {
+                    job[header] = values[index].replace(/^"|"$/g, '').trim();
+                });
+                
+                if (job.job_url) {
+                    allJobs.push(job);
+                }
+            }
+
+            if (allJobs.length === 0) {
+                showError('Le fichier CSV est vide ou mal formaté');
+                return;
+            }
+
+            initializeDashboard();
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current);
+            return result;
+        }
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('statsSection').style.display = 'block';
+            document.getElementById('filtersSection').style.display = 'block';
+            document.getElementById('jobsSection').style.display = 'block';
+
+            updateStats();
+            populateFilters();
+            filteredJobs = [...allJobs];
+            displayJobs();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const liveJobs = allJobs.filter(j => j.status === 'Live').length;
+            const expiredJobs = allJobs.filter(j => j.status === 'Expired').length;
+            const locations = new Set(allJobs.map(j => j.location).filter(Boolean));
+
+            document.getElementById('totalJobs').textContent = allJobs.length;
+            document.getElementById('liveJobs').textContent = liveJobs;
+            document.getElementById('expiredJobs').textContent = expiredJobs;
+            document.getElementById('uniqueLocations').textContent = locations.size;
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const locations = [...new Set(allJobs.map(j => j.location).filter(Boolean))].sort();
+            const contracts = [...new Set(allJobs.map(j => j.contract_type).filter(Boolean))].sort();
+            const families = [...new Set(allJobs.map(j => j.job_family).filter(Boolean))].sort();
+            const experiences = [...new Set(allJobs.map(j => j.experience_level).filter(Boolean))].sort();
+
+            populateSelect('filterLocation', locations);
+            populateSelect('filterContract', contracts);
+            populateSelect('filterJobFamily', families);
+            populateSelect('filterExperience', experiences);
+        }
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="">Tous</option>';
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+            
+            if (currentValue) select.value = currentValue;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+            const location = document.getElementById('filterLocation').value;
+            const contract = document.getElementById('filterContract').value;
+            const family = document.getElementById('filterJobFamily').value;
+            const status = document.getElementById('filterStatus').value;
+            const experience = document.getElementById('filterExperience').value;
+
+            filteredJobs = allJobs.filter(job => {
+                const matchKeyword = !keyword || 
+                    job.job_title?.toLowerCase().includes(keyword) ||
+                    job.job_description?.toLowerCase().includes(keyword) ||
+                    job.technical_skills?.toLowerCase().includes(keyword) ||
+                    job.behavioral_skills?.toLowerCase().includes(keyword);
+
+                const matchLocation = !location || job.location === location;
+                const matchContract = !contract || job.contract_type === contract;
+                const matchFamily = !family || job.job_family === family;
+                const matchStatus = !status || job.status === status;
+                const matchExperience = !experience || job.experience_level === experience;
+
+                return matchKeyword && matchLocation && matchContract && 
+                       matchFamily && matchStatus && matchExperience;
+            });
+
+            currentPage = 1;
+            displayJobs();
+        }
+
+        // Reset filters
+        function resetFilters() {
+            document.getElementById('searchKeyword').value = '';
+            document.getElementById('filterLocation').value = '';
+            document.getElementById('filterContract').value = '';
+            document.getElementById('filterJobFamily').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterExperience').value = '';
+            
+            filteredJobs = [...allJobs];
+            currentPage = 1;
+            displayJobs();
+        }
+
+        // Display jobs
+        function displayJobs() {
+            document.getElementById('resultCount').textContent = filteredJobs.length;
+            
+            const start = (currentPage - 1) * jobsPerPage;
+            const end = start + jobsPerPage;
+            const pageJobs = filteredJobs.slice(start, end);
+
+            const jobsList = document.getElementById('jobsList');
+            
+            if (pageJobs.length === 0) {
+                jobsList.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">🔍</div>
+                        <h3>Aucun résultat trouvé</h3>
+                        <p>Essayez de modifier vos critères de recherche</p>
+                    </div>
+                `;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            jobsList.innerHTML = pageJobs.map(job => `
+                <div class="job-card" onclick='showJobDetails(${JSON.stringify(job).replace(/'/g, "&apos;")})'>
+                    <div class="job-header">
+                        <div>
+                            <div class="job-title">${job.job_title || 'Sans titre'}</div>
+                            <div class="job-company">${job.company_name || 'Crédit Agricole'}</div>
+                        </div>
+                        <span class="tag ${job.status === 'Live' ? 'tag-live' : 'tag-expired'}">
+                            ${job.status === 'Live' ? '✅ Active' : '❌ Expirée'}
+                        </span>
+                    </div>
+                    
+                    <div class="job-meta">
+                        ${job.location ? `<div class="meta-item">📍 ${job.location}</div>` : ''}
+                        ${job.contract_type ? `<span class="tag tag-contract">${job.contract_type}</span>` : ''}
+                        ${job.job_family ? `<div class="meta-item">💼 ${job.job_family}</div>` : ''}
+                        ${job.experience_level ? `<div class="meta-item">🎓 ${job.experience_level}</div>` : ''}
+                    </div>
+
+                    ${job.job_description ? `<div class="job-description">${job.job_description.substring(0, 200)}...</div>` : ''}
+                    
+                    ${job.technical_skills ? `
+                        <div class="skills-container">
+                            ${job.technical_skills.split(',').slice(0, 5).map(skill => 
+                                `<span class="skill-tag">${skill.trim()}</span>`
+                            ).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            displayPagination();
+        }
+
+        // Pagination
+        function displayPagination() {
+            const totalPages = Math.ceil(filteredJobs.length / jobsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            if (currentPage > 1) {
+                html += `<button class="page-btn" onclick="changePage(${currentPage - 1})">← Précédent</button>`;
+            }
+
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            }
+
+            if (currentPage < totalPages) {
+                html += `<button class="page-btn" onclick="changePage(${currentPage + 1})">Suivant →</button>`;
+            }
+
+            pagination.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayJobs();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show job details in modal
+        function showJobDetails(job) {
+            const modal = document.getElementById('jobModal');
+            const content = document.getElementById('modalContent');
+            
+            content.innerHTML = `
+                <h1 style="color: #2d3748; margin-bottom: 20px;">${job.job_title || 'Sans titre'}</h1>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <span class="tag ${job.status === 'Live' ? 'tag-live' : 'tag-expired'}">
+                        ${job.status === 'Live' ? '✅ Active' : '❌ Expirée'}
+                    </span>
+                    ${job.contract_type ? `<span class="tag tag-contract">${job.contract_type}</span>` : ''}
+                </div>
+
+                ${job.company_name ? `<p><strong>🏢 Entreprise:</strong> ${job.company_name}</p>` : ''}
+                ${job.location ? `<p><strong>📍 Localisation:</strong> ${job.location}</p>` : ''}
+                ${job.job_family ? `<p><strong>💼 Famille de métier:</strong> ${job.job_family}</p>` : ''}
+                ${job.experience_level ? `<p><strong>🎓 Niveau d'expérience:</strong> ${job.experience_level}</p>` : ''}
+                ${job.education_level ? `<p><strong>📚 Niveau d'études:</strong> ${job.education_level}</p>` : ''}
+                ${job.duration ? `<p><strong>⏱️ Durée:</strong> ${job.duration}</p>` : ''}
+                ${job.management_position ? `<p><strong>👥 Poste de management:</strong> ${job.management_position}</p>` : ''}
+
+                ${job.job_description ? `
+                    <div style="margin-top: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">📋 Description</h3>
+                        <p style="line-height: 1.8; color: #4a5568;">${job.job_description}</p>
+                    </div>
+                ` : ''}
+
+                ${job.technical_skills ? `
+                    <div style="margin-top: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">🔧 Compétences techniques</h3>
+                        <div class="skills-container">
+                            ${job.technical_skills.split(',').map(skill => 
+                                `<span class="skill-tag">${skill.trim()}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${job.behavioral_skills ? `
+                    <div style="margin-top: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">💡 Compétences comportementales</h3>
+                        <div class="skills-container">
+                            ${job.behavioral_skills.split(',').map(skill => 
+                                `<span class="skill-tag">${skill.trim()}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${job.tools ? `<p style="margin-top: 20px;"><strong>🛠️ Outils:</strong> ${job.tools}</p>` : ''}
+                ${job.languages ? `<p><strong>🌐 Langues:</strong> ${job.languages}</p>` : ''}
+
+                ${job.company_description ? `
+                    <div style="margin-top: 30px;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">🏦 À propos de l'entreprise</h3>
+                        <p style="line-height: 1.8; color: #4a5568;">${job.company_description}</p>
+                    </div>
+                ` : ''}
+
+                ${job.job_url ? `
+                    <div style="margin-top: 30px;">
+                        <a href="${job.job_url}" target="_blank" class="btn btn-primary" style="display: inline-block; text-decoration: none;">
+                            🔗 Voir l'offre complète
+                        </a>
+                    </div>
+                ` : ''}
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('jobModal').style.display = 'none';
+        }
+
+        // Export filtered results
+        function exportFiltered() {
+            const headers = ['job_id', 'job_title', 'company_name', 'location', 'contract_type', 
+                           'job_family', 'status', 'experience_level', 'job_url'];
+            
+            let csv = headers.join(',') + '\n';
+            
+            filteredJobs.forEach(job => {
+                const row = headers.map(header => {
+                    const value = job[header] || '';
+                    return `"${value.replace(/"/g, '""')}"`;
+                });
+                csv += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `filtered_jobs_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Utility: debounce
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('jobModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
