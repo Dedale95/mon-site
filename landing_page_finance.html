@@ -655,18 +655,18 @@
                 <div class="early-access-badge">✨ Accès Anticipé</div>
                 <h3>Rejoignez les premiers utilisateurs</h3>
                 <p>Soyez parmi les premiers à accéder à la plateforme et bénéficiez d'avantages exclusifs</p>
-                <form id="betaForm">
+                <form id="betaForm" action="https://formspree.io/f/mqekqyer" method="POST">
                     <div class="form-group">
                         <label for="name">Prénom et Nom</label>
-                        <input type="text" id="name" required placeholder="Jean Dupont">
+                        <input type="text" id="name" name="name" required placeholder="Jean Dupont">
                     </div>
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input type="email" id="email" required placeholder="jean.dupont@email.com">
+                        <input type="email" id="email" name="email" required placeholder="jean.dupont@email.com">
                     </div>
                     <div class="form-group">
                         <label for="profile">Votre profil</label>
-                        <select id="profile" required>
+                        <select id="profile" name="profile" required>
                             <option value="">Sélectionnez votre situation</option>
                             <option value="student">Étudiant en finance</option>
                             <option value="graduate">Jeune diplômé (0-2 ans)</option>
@@ -904,7 +904,7 @@
             <h2>Prêt à transformer votre recherche d'emploi ?</h2>
             <p>Rejoignez les centaines d'étudiants et professionnels qui automatisent leurs candidatures</p>
             <a href="#" class="cta-final-btn"
-                onclick="document.getElementById('email').scrollIntoView({behavior: 'smooth'}); return false;">Réserver
+                onclick="document.getElementById('betaForm').parentElement.scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">Réserver
                 mon accès</a>
         </div>
     </section>
@@ -922,39 +922,15 @@
     </footer>
 
     <script>
-        // Form submission
-        document.getElementById('betaForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                profile: document.getElementById('profile').value,
-                timestamp: new Date().toISOString()
-            };
-
-            console.log('Form submitted:', formData);
-
-            // TODO: Envoyer les données à votre backend ou service
-            // Option 1: Envoyer par email via un service
-            // Option 2: Envoyer vers Google Sheets
-            // Option 3: Envoyer vers votre backend
-
-            // Pour l'instant, sauvegarder localement (temporaire)
-            let earlyAccessList = JSON.parse(localStorage.getItem('earlyAccessList') || '[]');
-            earlyAccessList.push(formData);
-            localStorage.setItem('earlyAccessList', JSON.stringify(earlyAccessList));
-
-            // Show success message
-            document.getElementById('successMessage').style.display = 'block';
-
-            // Reset form
-            this.reset();
-
-            // Hide success message after 5 seconds
+        // Form submission - Formspree handles the submission
+        document.getElementById('betaForm').addEventListener('submit', function (e) {
+            // Formspree will handle the submission, just show success message
             setTimeout(() => {
-                document.getElementById('successMessage').style.display = 'none';
-            }, 5000);
+                document.getElementById('successMessage').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('successMessage').style.display = 'none';
+                }, 5000);
+            }, 100);
         });
 
         // FAQ Accordion
@@ -984,10 +960,10 @@
                 if (href === '#betaForm') {
                     e.preventDefault();
                     const target = document.getElementById('betaForm');
-                    if (target) {
-                        target.scrollIntoView({
+                    if (target && target.parentElement) {
+                        target.parentElement.scrollIntoView({
                             behavior: 'smooth',
-                            block: 'center'
+                            block: 'start'
                         });
                     }
                 }

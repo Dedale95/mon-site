@@ -1007,8 +1007,6 @@
         <div class="topbar">
             <div class="topbar-left">
                 <div class="brand">Taleos</div>
-                <div class="topbar-divider"></div>
-                <div class="topbar-sub">Multi‑banques</div>
             </div>
             <div class="topbar-right">
                 <label class="theme-toggle">
@@ -1050,8 +1048,8 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <label>🏙️ Ville</label>
-                        <div id="cityFilter"
+                        <label>🗺️ Région</label>
+                        <div id="regionFilter"
                             style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
                         </div>
                     </div>
@@ -1232,9 +1230,84 @@
             return result;
         }
 
+        // Fonction pour nettoyer les titres (retirer H/F, F/H, etc.)
+        function cleanJobTitle(title) {
+            if (!title) return title;
+            return title
+                .replace(/\s*\(?\s*[HF]\/[FH]\s*\)?/gi, '')
+                .replace(/\s*[HF]\/[FH]/gi, '')
+                .replace(/\s*\(\s*[HF]\s*\/\s*[FH]\s*\)/gi, '')
+                .trim();
+        }
+
+        // Mapping ville → région
+        const cityToRegion = {
+            // France - Île-de-France
+            "Paris": "Île-de-France",
+            "Montrouge": "Île-de-France",
+            "Villejuif": "Île-de-France",
+            "Massy": "Île-de-France",
+            "Guyancourt": "Île-de-France",
+            "La Défense": "Île-de-France",
+            "Saint-Quentin-En-Yvelines": "Île-de-France",
+            "Saint Quentin En Yvelines": "Île-de-France",
+            "Région Parisienne": "Île-de-France",
+
+            // France - Auvergne-Rhône-Alpes
+            "Lyon": "Auvergne-Rhône-Alpes",
+            "Valence": "Auvergne-Rhône-Alpes",
+
+            // France - Occitanie
+            "Toulouse": "Occitanie",
+            "Montpellier": "Occitanie",
+
+            // France - Provence-Alpes-Côte d'Azur
+            "Marseille": "Provence-Alpes-Côte d'Azur",
+
+            // France - Pays de la Loire
+            "Nantes": "Pays de la Loire",
+
+            // France - Hauts-de-France
+            "Roubaix": "Hauts-de-France",
+            "Reims": "Hauts-de-France",
+
+            // Pays-Bas
+            "Amsterdam": "Noord-Holland",
+
+            // Malaisie
+            "Kuala Lumpur": "Wilayah Persekutuan",
+
+            // Corée du Sud
+            "Seoul": "Seoul",
+
+            // Luxembourg
+            "Luxembourg": "Luxembourg",
+
+            // Belgique
+            "Bruxelles": "Bruxelles-Capitale"
+        };
+
+        // Fonction pour obtenir la région d'une ville
+        function getCityRegion(city, country) {
+            // Si la ville est mappée, retourner la région
+            if (cityToRegion[city]) {
+                return cityToRegion[city];
+            }
+
+            // Si c'est en France mais pas mappé
+            if (country === "France") {
+                return "Autres régions françaises";
+            }
+
+            // Pour les autres pays, si on n'a pas la ville mappée, on retourne une valeur par défaut
+            // Mais l'objectif est d'utiliser le mapping. Si ville inconnue, on peut utiliser le nom de la ville
+            // ou "Autre (Pays)".
+            return `Autre (${country})`;
+        }
+
         // Initialiser les filtres avec les valeurs uniques
         function initializeFilters() {
-            const cities = new Set();
+            const regions = new Set();
             const countries = new Set();
             const contracts = new Set();
             const experiences = new Set();
@@ -1245,8 +1318,14 @@
             allJobs.forEach(job => {
                 if (job.location && job.location.includes(' - ')) {
                     const parts = job.location.split(' - ');
-                    cities.add(parts[0]);
-                    countries.add(parts[1]);
+                    const city = parts[0];
+                    const country = parts[1];
+
+                    countries.add(country);
+
+                    // Ajouter la région (pour la France) ou le pays (pour l'étranger)
+                    const region = getCityRegion(city, country);
+                    regions.add(region);
                 }
                 if (job.contract_type) contracts.add(job.contract_type);
                 if (job.experience_level) experiences.add(job.experience_level);
@@ -1255,7 +1334,7 @@
                 if (job.education_level) educations.add(job.education_level);
             });
 
-            populateSelect('cityFilter', Array.from(cities).sort());
+            populateSelect('regionFilter', Array.from(regions).sort());
             populateSelect('countryFilter', Array.from(countries).sort());
             populateSelect('contractFilter', Array.from(contracts).sort());
             populateSelect('experienceFilter', Array.from(experiences).sort());
@@ -1394,7 +1473,7 @@
             // Obtenir les offres actuellement visibles selon les filtres actifs
             const search = document.getElementById('searchInput').value.toLowerCase();
 
-            const cityContainer = document.getElementById('cityFilter');
+            const regionContainer = document.getElementById('regionFilter');
             const countryContainer = document.getElementById('countryFilter');
             const contractContainer = document.getElementById('contractFilter');
             const experienceContainer = document.getElementById('experienceFilter');
@@ -1402,7 +1481,7 @@
             const companyContainer = document.getElementById('companyFilter');
             const educationContainer = document.getElementById('educationFilter');
 
-            const selectedCities = Array.from(cityContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+            const selectedRegions = Array.from(regionContainer.querySelectorAll('input:checked')).map(cb => cb.value);
             const selectedCountries = Array.from(countryContainer.querySelectorAll('input:checked')).map(cb => cb.value);
             const selectedContracts = Array.from(contractContainer.querySelectorAll('input:checked')).map(cb => cb.value);
             const selectedExperiences = Array.from(experienceContainer.querySelectorAll('input:checked')).map(cb => cb.value);
@@ -1413,7 +1492,7 @@
             // Pour chaque catégorie, calculer quelles valeurs sont disponibles
             const availableValues = {
                 countries: new Set(),
-                cities: new Set(),
+                regions: new Set(),
                 contracts: new Set(),
                 experiences: new Set(),
                 families: new Set(),
@@ -1430,15 +1509,16 @@
                 if (!matchSearch) return;
 
                 // Parser location
-                let jobCity = null, jobCountry = null;
+                let jobCity = null, jobCountry = null, jobRegion = null;
                 if (job.location && job.location.includes(' - ')) {
                     const parts = job.location.split(' - ');
                     jobCity = parts[0];
                     jobCountry = parts[1];
+                    jobRegion = getCityRegion(jobCity, jobCountry);
                 }
 
                 // Pour chaque catégorie, vérifier si ce job serait visible si on désactivait cette catégorie
-                const matchCityOthers = selectedCities.length === 0 || selectedCities.includes(jobCity);
+                const matchRegionOthers = selectedRegions.length === 0 || selectedRegions.includes(jobRegion);
                 const matchCountryOthers = selectedCountries.length === 0 || selectedCountries.includes(jobCountry);
                 const matchContractOthers = selectedContracts.length === 0 || selectedContracts.includes(job.contract_type);
                 const matchExperienceOthers = selectedExperiences.length === 0 || selectedExperiences.includes(job.experience_level);
@@ -1447,25 +1527,25 @@
                 const matchEducationOthers = selectedEducations.length === 0 || selectedEducations.includes(job.education_level);
 
                 // Ajouter aux disponibles selon les autres filtres actifs
-                if (matchCityOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
+                if (matchRegionOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
                     if (jobCountry) availableValues.countries.add(jobCountry);
                 }
                 if (matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
-                    if (jobCity) availableValues.cities.add(jobCity);
+                    if (jobRegion) availableValues.regions.add(jobRegion);
                 }
-                if (matchCityOthers && matchCountryOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
+                if (matchRegionOthers && matchCountryOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
                     if (job.contract_type) availableValues.contracts.add(job.contract_type);
                 }
-                if (matchCityOthers && matchCountryOthers && matchContractOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
+                if (matchRegionOthers && matchCountryOthers && matchContractOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
                     if (job.experience_level) availableValues.experiences.add(job.experience_level);
                 }
-                if (matchCityOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchCompanyOthers && matchEducationOthers) {
+                if (matchRegionOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchCompanyOthers && matchEducationOthers) {
                     if (job.job_family) availableValues.families.add(job.job_family);
                 }
-                if (matchCityOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchEducationOthers) {
+                if (matchRegionOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchEducationOthers) {
                     if (job.company_name) availableValues.companies.add(job.company_name);
                 }
-                if (matchCityOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers) {
+                if (matchRegionOthers && matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers) {
                     if (job.education_level) availableValues.educations.add(job.education_level);
                 }
             });
@@ -1493,7 +1573,7 @@
             }
 
             function updateCheckboxesHide(container, availableSet) {
-                // Pour pays, villes, entreprises, familles: MASQUER
+                // Pour pays, régions, entreprises, familles: MASQUER
                 container.querySelectorAll('label').forEach(label => {
                     const checkbox = label.querySelector('input');
                     const value = checkbox.value;
@@ -1506,9 +1586,9 @@
                 });
             }
 
-            // Pays, villes, entreprises, familles: masquer
+            // Pays, régions, entreprises, familles: masquer
             updateCheckboxesHide(countryContainer, availableValues.countries);
-            updateCheckboxesHide(cityContainer, availableValues.cities);
+            updateCheckboxesHide(regionContainer, availableValues.regions);
             updateCheckboxesHide(companyContainer, availableValues.companies);
             updateCheckboxesHide(familyContainer, availableValues.families);
 
@@ -1522,9 +1602,9 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
 
             // Récupérer les checkboxes cochées
-            const cityContainer = document.getElementById('cityFilter');
+            const regionContainer = document.getElementById('regionFilter');
             const countryContainer = document.getElementById('countryFilter');
-            const selectedCities = Array.from(cityContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+            const selectedRegions = Array.from(regionContainer.querySelectorAll('input:checked')).map(cb => cb.value);
             const selectedCountries = Array.from(countryContainer.querySelectorAll('input:checked')).map(cb => cb.value);
 
             // Récupérer toutes les checkboxes cochées
@@ -1545,14 +1625,18 @@
                     job.job_title.toLowerCase().includes(search) ||
                     job.job_description.toLowerCase().includes(search);
 
-                // Filtrage ville/pays avec multi-sélection
-                let matchCity = true;
+                // Filtrage région/pays avec multi-sélection
+                let matchRegion = true;
                 let matchCountry = true;
                 if (job.location && job.location.includes(' - ')) {
                     const parts = job.location.split(' - ');
-                    matchCity = selectedCities.length === 0 || selectedCities.includes(parts[0]);
-                    matchCountry = selectedCountries.length === 0 || selectedCountries.includes(parts[1]);
-                } else if (selectedCities.length > 0 || selectedCountries.length > 0) {
+                    const city = parts[0];
+                    const country = parts[1];
+                    const region = getCityRegion(city, country);
+
+                    matchRegion = selectedRegions.length === 0 || selectedRegions.includes(region);
+                    matchCountry = selectedCountries.length === 0 || selectedCountries.includes(country);
+                } else if (selectedRegions.length > 0 || selectedCountries.length > 0) {
                     // Si pas de location valide et qu'un filtre est actif, exclure
                     return false;
                 }
@@ -1563,7 +1647,7 @@
                 const matchCompany = selectedCompanies.length === 0 || selectedCompanies.includes(job.company_name);
                 const matchEducation = selectedEducations.length === 0 || selectedEducations.includes(job.education_level);
 
-                return matchSearch && matchCity && matchCountry && matchContract &&
+                return matchSearch && matchRegion && matchCountry && matchContract &&
                     matchExperience && matchFamily && matchCompany && matchEducation;
             });
 
@@ -1624,7 +1708,7 @@
                 <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
                     <div class="job-header">
                         <div>
-                            <div class="job-title">${job.job_title}</div>
+                            <div class="job-title">${cleanJobTitle(job.job_title)}</div>
                             <div class="job-id">${job.job_id}</div>
                         </div>
                     </div>
@@ -1635,7 +1719,6 @@
                         ${job.job_family ? `<span class="tag tag-family">🎯 ${job.job_family}</span>` : ''}
                     </div>
                     ${job.company_name ? `<div class="job-company">🏢 ${job.company_name}</div>` : ''}
-                    ${job.job_description ? `<div class="job-description">${job.job_description.substring(0, 250)}...</div>` : ''}
                     <div class="job-footer">
                         <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
                         <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>

@@ -1007,8 +1007,6 @@
         <div class="topbar">
             <div class="topbar-left">
                 <div class="brand">Taleos</div>
-                <div class="topbar-divider"></div>
-                <div class="topbar-sub">Multi‑banques</div>
             </div>
             <div class="topbar-right">
                 <label class="theme-toggle">
@@ -1037,64 +1035,19 @@
         </div>
 
         <div class="tab-content active" id="listTab">
-            <div class="filters">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="searchInput">🔍 Recherche (titre, description)</label>
-                        <input type="text" id="searchInput" placeholder="Rechercher...">
-                    </div>
-                    <div class="filter-group">
-                        <label>🌍 Pays</label>
-                        <div id="countryFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>🏙️ Ville</label>
-                        <div id="cityFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>📝 Type de contrat</label>
-                        <div id="contractFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>💼 Expérience</label>
-                        <div id="experienceFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
+            <div style="text-align: center; padding: 80px 20px; max-width: 600px; margin: 0 auto;">
+                <div style="font-size: 4rem; margin-bottom: 20px;">🚧</div>
+                <h2 style="color: var(--text-strong); margin-bottom: 15px;">Page en cours de développement</h2>
+                <p style="color: var(--muted); font-size: 1.1rem; line-height: 1.6;">
+                    Cette fonctionnalité avancée sera bientôt disponible. Elle vous permettra de créer des recherches
+                    personnalisées avec des filtres complexes.
+                </p>
+                <div style="margin-top: 40px;">
+                    <a href="offres.html"
+                        style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                        📋 Voir toutes les offres
+                    </a>
                 </div>
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <label>🎯 Famille de métier</label>
-                        <div id="familyFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>🏢 Entreprise</label>
-                        <div id="companyFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <label>🎓 Niveau d'étude</label>
-                        <div id="educationFilter"
-                            style="max-height: 150px; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 8px; padding: 10px; background: white;">
-                        </div>
-                    </div>
-                    <div class="filter-group">
-                        <button class="reset-btn" onclick="resetFilters()">🔄 Réinitialiser</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="jobs-container" id="jobsContainer">
-                <div class="loading">Chargement des offres</div>
             </div>
         </div>
 

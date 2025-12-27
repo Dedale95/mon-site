@@ -1007,8 +1007,6 @@
         <div class="topbar">
             <div class="topbar-left">
                 <div class="brand">Taleos</div>
-                <div class="topbar-divider"></div>
-                <div class="topbar-sub">Multi‑banques</div>
             </div>
             <div class="topbar-right">
                 <label class="theme-toggle">
@@ -1776,12 +1774,12 @@
         function updateMapView() {
             if (!map) return;
 
-            // Nettoyer les marqueurs existants
+            // Nettoyer les marqueurs/layers existants
             markers.forEach(m => map.removeLayer(m));
             markers = [];
 
-            // Affichage par ville uniquement (pas de sélecteur ville/pays)
-            const cluster = L.markerClusterGroup();
+            // Créer les points de chaleur à partir des villes
+            const heatPoints = [];
 
             // Compter les offres par ville
             const cityCounts = {};
@@ -1792,12 +1790,47 @@
                 }
             });
 
-            // Créer les marqueurs
+            // Créer les points de chaleur avec intensité basée sur le nombre d'offres
             Object.entries(cityCounts).forEach(([city, count]) => {
                 const coords = cityCoordinates[city];
                 if (coords) {
-                    const marker = L.marker(coords, {
-                        title: `${city} (${count})`
+                    // Ajouter plusieurs points pour augmenter l'intensité selon le nombre d'offres
+                    // L'intensité est proportionnelle au nombre d'offres (max 1.0)
+                    const intensity = Math.min(count / 50, 1.0); // Normaliser à max 1.0
+                    heatPoints.push([coords[0], coords[1], intensity]);
+                }
+            });
+
+            // Créer la heat layer avec Leaflet.heat
+            if (heatPoints.length > 0) {
+                const heatLayer = L.heatLayer(heatPoints, {
+                    radius: 25,
+                    blur: 35,
+                    maxZoom: 10,
+                    max: 1.0,
+                    gradient: {
+                        0.0: '#3b82f6',
+                        0.3: '#8b5cf6',
+                        0.5: '#ec4899',
+                        0.7: '#f59e0b',
+                        1.0: '#ef4444'
+                    }
+                });
+                heatLayer.addTo(map);
+                markers.push(heatLayer); // Pour pouvoir le retirer plus tard
+            }
+
+            // Ajouter aussi des markers invisibles avec popups pour l'interactivité
+            Object.entries(cityCounts).forEach(([city, count]) => {
+                const coords = cityCoordinates[city];
+                if (coords) {
+                    // Créer un marker transparent avec popup
+                    const marker = L.circleMarker(coords, {
+                        radius: 8,
+                        fillColor: 'transparent',
+                        color: 'rgba(255,255,255,0.3)',
+                        weight: 1,
+                        fillOpacity: 0
                     });
                     marker.bindPopup(`
                         <div style="min-width:180px">
@@ -1805,11 +1838,10 @@
                             <div style="opacity:.8">${count} offre${count > 1 ? 's' : ''}</div>
                         </div>
                     `);
-                    cluster.addLayer(marker);
+                    marker.addTo(map);
                     markers.push(marker);
                 }
             });
-            map.addLayer(cluster);
         }
 
         // Support modal & email
