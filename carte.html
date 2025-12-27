@@ -1018,27 +1018,11 @@
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 20px;">
-        <div class="header">
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-number" id="totalJobs">-</div>
-                    <div class="stat-label">Offres totales</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="filteredJobs">-</div>
-                    <div class="stat-label">Affichées</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="countries">-</div>
-                    <div class="stat-label">Pays</div>
-                </div>
-            </div>
-        </div>
 
-        <div class="tab-content active" id="mapTab">
-            <div id="map"></div>
-        </div>
+
+    <div class="tab-content active" id="mapTab">
+        <div id="map"></div>
+    </div>
     </div>
 
     <!-- Filters Composer Tab -->
@@ -1169,11 +1153,36 @@
             const companies = new Set();
             const educations = new Set();
 
+            // Helper for Title Case
+            const toTitleCase = (str) => {
+                return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+            };
+
             allJobs.forEach(job => {
+                job.cleanCities = [];
+                job.cleanCountry = '';
+
                 if (job.location && job.location.includes(' - ')) {
                     const parts = job.location.split(' - ');
-                    cities.add(parts[0]);
-                    countries.add(parts[1]);
+                    const cityPart = parts[0];
+                    const country = parts[1].trim();
+
+                    job.cleanCountry = country;
+                    countries.add(country);
+
+                    // Split cities by / or ,
+                    const splitCities = cityPart.split(/[\/,]/).map(c => c.trim()).filter(c => c);
+
+                    if (splitCities.length === 0) {
+                        job.cleanCities.push(toTitleCase(cityPart));
+                        cities.add(toTitleCase(cityPart));
+                    } else {
+                        splitCities.forEach(c => {
+                            const cleanC = toTitleCase(c);
+                            job.cleanCities.push(cleanC);
+                            cities.add(cleanC);
+                        });
+                    }
                 }
                 if (job.contract_type) contracts.add(job.contract_type);
                 if (job.experience_level) experiences.add(job.experience_level);
@@ -1198,123 +1207,76 @@
         function populateSelect(id, values) {
             const container = document.getElementById(id);
 
-            // Tous deviennent des checkboxes maintenant
-            if (false && container.tagName === 'SELECT') {
-                // Définir l'ordre logique pour certains filtres
-                const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI', 'Freelance', 'Intérim'];
-                const educationOrder = [
-                    'Inférieur à Bac',
-                    'Bac',
-                    'Bac + 2 / L2',
-                    'Bac + 3 / L3',
-                    'Bac + 4 / M1',
-                    'Bac + 5 / M2 et plus'
-                ];
-                const experienceOrder = ['0 - 2 ans', '3 - 5 ans', '6 - 10 ans', '11 ans et plus'];
+            // Pour les checkboxes - trier selon le filtre
+            const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI', 'Freelance', 'Intérim'];
+            const educationOrder = [
+                'Inférieur à Bac',
+                'Bac',
+                'Bac + 2 / L2',
+                'Bac + 3 / L3',
+                'Bac + 4 / M1',
+                'Bac + 5 / M2 et plus'
+            ];
+            const experienceOrder = ['0 - 2 ans', '3 - 5 ans', '6 - 10 ans', '11 ans et plus'];
 
-                // Trier selon le contexte
-                let sortedValues = values;
-                if (id === 'contractFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = contractOrder.indexOf(a);
-                        const indexB = contractOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                } else if (id === 'educationFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = educationOrder.indexOf(a);
-                        const indexB = educationOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                } else if (id === 'experienceFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = experienceOrder.indexOf(a);
-                        const indexB = experienceOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                }
-
-                sortedValues.forEach(value => {
-                    const option = document.createElement('option');
-                    option.value = value;
-                    option.textContent = value;
-                    container.appendChild(option);
+            let sortedValues = [...values];
+            if (id === 'contractFilter') {
+                sortedValues = values.sort((a, b) => {
+                    const indexA = contractOrder.indexOf(a);
+                    const indexB = contractOrder.indexOf(b);
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                });
+            } else if (id === 'educationFilter') {
+                sortedValues = values.sort((a, b) => {
+                    const indexA = educationOrder.indexOf(a);
+                    const indexB = educationOrder.indexOf(b);
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                });
+            } else if (id === 'experienceFilter') {
+                sortedValues = values.sort((a, b) => {
+                    const indexA = experienceOrder.indexOf(a);
+                    const indexB = experienceOrder.indexOf(b);
+                    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
                 });
             } else {
-                // Pour les checkboxes - trier selon le filtre
-                const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI', 'Freelance', 'Intérim'];
-                const educationOrder = [
-                    'Inférieur à Bac',
-                    'Bac',
-                    'Bac + 2 / L2',
-                    'Bac + 3 / L3',
-                    'Bac + 4 / M1',
-                    'Bac + 5 / M2 et plus'
-                ];
-                const experienceOrder = ['0 - 2 ans', '3 - 5 ans', '6 - 10 ans', '11 ans et plus'];
-
-                let sortedValues = [...values];
-                if (id === 'contractFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = contractOrder.indexOf(a);
-                        const indexB = contractOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                } else if (id === 'educationFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = educationOrder.indexOf(a);
-                        const indexB = educationOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                } else if (id === 'experienceFilter') {
-                    sortedValues = values.sort((a, b) => {
-                        const indexA = experienceOrder.indexOf(a);
-                        const indexB = experienceOrder.indexOf(b);
-                        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                        if (indexA === -1) return 1;
-                        if (indexB === -1) return -1;
-                        return indexA - indexB;
-                    });
-                } else {
-                    sortedValues.sort();
-                }
-
-                sortedValues.forEach(value => {
-                    const label = document.createElement('label');
-                    label.style.display = 'block';
-                    label.style.marginBottom = '5px';
-                    label.style.cursor = 'pointer';
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.value = value;
-                    checkbox.style.marginRight = '8px';
-                    checkbox.onchange = applyFilters;
-
-                    const span = document.createElement('span');
-                    span.className = 'cb-text';
-                    span.textContent = value;
-
-                    label.appendChild(checkbox);
-                    label.appendChild(span);
-                    container.appendChild(label);
-                });
+                sortedValues.sort();
             }
+
+            container.innerHTML = '';
+            sortedValues.forEach(value => {
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.style.marginBottom = '5px';
+                label.style.cursor = 'pointer';
+                label.style.color = '#000000'; // Force PURE black
+                label.style.fontWeight = '400';
+                label.style.fontSize = 'inherit';
+                label.style.fontFamily = 'inherit';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = value;
+                checkbox.style.marginRight = '8px';
+                checkbox.onchange = applyFilters;
+
+                const span = document.createElement('span');
+                span.className = 'cb-text';
+                span.textContent = value;
+                span.style.color = 'inherit';
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
         }
 
         function updateFilterAvailability() {
@@ -1356,17 +1318,10 @@
 
                 if (!matchSearch) return;
 
-                // Parser location
-                let jobCity = null, jobCountry = null;
-                if (job.location && job.location.includes(' - ')) {
-                    const parts = job.location.split(' - ');
-                    jobCity = parts[0];
-                    jobCountry = parts[1];
-                }
-
                 // Pour chaque catégorie, vérifier si ce job serait visible si on désactivait cette catégorie
-                const matchCityOthers = selectedCities.length === 0 || selectedCities.includes(jobCity);
-                const matchCountryOthers = selectedCountries.length === 0 || selectedCountries.includes(jobCountry);
+                // Use cleanCities/cleanCountry
+                const matchCityOthers = selectedCities.length === 0 || (job.cleanCities && job.cleanCities.some(c => selectedCities.includes(c)));
+                const matchCountryOthers = selectedCountries.length === 0 || (job.cleanCountry && selectedCountries.includes(job.cleanCountry));
                 const matchContractOthers = selectedContracts.length === 0 || selectedContracts.includes(job.contract_type);
                 const matchExperienceOthers = selectedExperiences.length === 0 || selectedExperiences.includes(job.experience_level);
                 const matchFamilyOthers = selectedFamilies.length === 0 || selectedFamilies.includes(job.job_family);
@@ -1375,10 +1330,10 @@
 
                 // Ajouter aux disponibles selon les autres filtres actifs
                 if (matchCityOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
-                    if (jobCountry) availableValues.countries.add(jobCountry);
+                    if (job.cleanCountry) availableValues.countries.add(job.cleanCountry);
                 }
                 if (matchCountryOthers && matchContractOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
-                    if (jobCity) availableValues.cities.add(jobCity);
+                    if (job.cleanCities) job.cleanCities.forEach(c => availableValues.cities.add(c));
                 }
                 if (matchCityOthers && matchCountryOthers && matchExperienceOthers && matchFamilyOthers && matchCompanyOthers && matchEducationOthers) {
                     if (job.contract_type) availableValues.contracts.add(job.contract_type);
@@ -1474,14 +1429,13 @@
 
                 // Filtrage ville/pays avec multi-sélection
                 let matchCity = true;
+                if (selectedCities.length > 0) {
+                    matchCity = job.cleanCities && job.cleanCities.some(c => selectedCities.includes(c));
+                }
+
                 let matchCountry = true;
-                if (job.location && job.location.includes(' - ')) {
-                    const parts = job.location.split(' - ');
-                    matchCity = selectedCities.length === 0 || selectedCities.includes(parts[0]);
-                    matchCountry = selectedCountries.length === 0 || selectedCountries.includes(parts[1]);
-                } else if (selectedCities.length > 0 || selectedCountries.length > 0) {
-                    // Si pas de location valide et qu'un filtre est actif, exclure
-                    return false;
+                if (selectedCountries.length > 0) {
+                    matchCountry = job.cleanCountry && selectedCountries.includes(job.cleanCountry);
                 }
 
                 const matchContract = selectedContracts.length === 0 || selectedContracts.includes(job.contract_type);
@@ -1510,10 +1464,9 @@
             // Récupérer les villes pour les pays sélectionnés
             const cities = new Set();
             allJobs.forEach(job => {
-                if (job.location && job.location.includes(' - ')) {
-                    const parts = job.location.split(' - ');
-                    if (selectedCountries.length === 0 || selectedCountries.includes(parts[1])) {
-                        cities.add(parts[0]);
+                if (selectedCountries.length === 0 || (job.cleanCountry && selectedCountries.includes(job.cleanCountry))) {
+                    if (job.cleanCities) {
+                        job.cleanCities.forEach(c => cities.add(c));
                     }
                 }
             });
@@ -1525,6 +1478,10 @@
                 label.style.display = 'block';
                 label.style.marginBottom = '5px';
                 label.style.cursor = 'pointer';
+                label.style.color = '#000000'; // Force PURE black
+                label.style.fontWeight = '400';
+                label.style.fontSize = 'inherit';
+                label.style.fontFamily = 'inherit';
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1533,8 +1490,13 @@
                 checkbox.style.marginRight = '8px';
                 checkbox.onchange = applyFilters;
 
+                const span = document.createElement('span');
+                span.className = 'cb-text';
+                span.textContent = city;
+                span.style.color = 'inherit';
+
                 label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(city));
+                label.appendChild(span);
                 cityContainer.appendChild(label);
             });
         }
@@ -1699,10 +1661,10 @@
         function initMap() {
             if (map) { map.remove(); }
 
-            // Modern basemap (Carto Dark Matter)
+            // Basemap: CartoDB Positron (Light) for better visibility
             map = L.map('map', { zoomControl: true }).setView([28, 8], 2);
 
-            const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 19
@@ -1721,12 +1683,13 @@
             // Créer les points de chaleur à partir des villes
             const heatPoints = [];
 
-            // Compter les offres par ville
+            // Compter les offres par ville (Utiliser filteredJobs pour refléter les filtres)
             const cityCounts = {};
-            allJobs.forEach(job => {
-                if (job.location && job.location.includes(' - ')) {
-                    const city = job.location.split(' - ')[0];
-                    cityCounts[city] = (cityCounts[city] || 0) + 1;
+            filteredJobs.forEach(job => {
+                if (job.cleanCities && job.cleanCities.length > 0) {
+                    job.cleanCities.forEach(city => {
+                        cityCounts[city] = (cityCounts[city] || 0) + 1;
+                    });
                 }
             });
 
@@ -1748,13 +1711,7 @@
                     blur: 35,
                     maxZoom: 10,
                     max: 1.0,
-                    gradient: {
-                        0.0: '#3b82f6',
-                        0.3: '#8b5cf6',
-                        0.5: '#ec4899',
-                        0.7: '#f59e0b',
-                        1.0: '#ef4444'
-                    }
+                    gradient: { 0.4: '#a78bfa', 0.65: '#8b5cf6', 0.9: '#7c3aed', 1: '#5b21b6' } // Purple gradient
                 });
                 heatLayer.addTo(map);
                 markers.push(heatLayer); // Pour pouvoir le retirer plus tard
