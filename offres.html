@@ -1299,10 +1299,12 @@
                 return "Autres régions françaises";
             }
 
-            // Pour les autres pays, si on n'a pas la ville mappée, on retourne une valeur par défaut
-            // Mais l'objectif est d'utiliser le mapping. Si ville inconnue, on peut utiliser le nom de la ville
-            // ou "Autre (Pays)".
-            return `Autre (${country})`;
+            // Pour les autres pays, pour éviter "Autre (Pays)", si on a une ville, on l'utilise comme région
+            if (city && city.trim() !== "") {
+                return city;
+            }
+
+            return country;
         }
 
         // Initialiser les filtres avec les valeurs uniques
@@ -1653,48 +1655,11 @@
 
             renderJobs();
             updateStats();
-            updateCityFilter();
             updateFilterAvailability();
             // Ne pas mettre à jour la carte quand on filtre la liste
         }
 
-        function updateCityFilter() {
-            const countryContainer = document.getElementById('countryFilter');
-            const selectedCountries = Array.from(countryContainer.querySelectorAll('input:checked')).map(cb => cb.value);
-            const cityContainer = document.getElementById('cityFilter');
-            const currentSelectedCities = Array.from(cityContainer.querySelectorAll('input:checked')).map(cb => cb.value);
 
-            // Récupérer les villes pour les pays sélectionnés
-            const cities = new Set();
-            allJobs.forEach(job => {
-                if (job.location && job.location.includes(' - ')) {
-                    const parts = job.location.split(' - ');
-                    if (selectedCountries.length === 0 || selectedCountries.includes(parts[1])) {
-                        cities.add(parts[0]);
-                    }
-                }
-            });
-
-            // Mettre à jour les checkboxes des villes
-            cityContainer.innerHTML = '';
-            Array.from(cities).sort().forEach(city => {
-                const label = document.createElement('label');
-                label.style.display = 'block';
-                label.style.marginBottom = '5px';
-                label.style.cursor = 'pointer';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = city;
-                checkbox.checked = currentSelectedCities.includes(city);
-                checkbox.style.marginRight = '8px';
-                checkbox.onchange = applyFilters;
-
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(city));
-                cityContainer.appendChild(label);
-            });
-        }
 
         function renderJobs() {
             const container = document.getElementById('jobsContainer');
