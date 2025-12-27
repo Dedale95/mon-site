@@ -636,9 +636,9 @@
                 <span class="logo-text">Taleos</span>
             </div>
             <div class="nav-links">
-                <a href="./offres.html" class="nav-link">📋 Liste des offres</a>
-                <a href="./carte.html" class="nav-link">🌍 Vue géographique</a>
-                <a href="./filtres.html" class="nav-link">⚡ Recherche avancée</a>
+                <a href="offres.html" class="nav-link">Offres</a>
+                <a href="carte.html" class="nav-link">Carte</a>
+                <a href="filtres.html" class="nav-link">Recherche avancée</a>
                 <a href="#betaForm" class="nav-link-primary">Accès anticipé</a>
             </div>
         </div>
@@ -996,7 +996,7 @@
                     e.preventDefault();
                     const target = document.getElementById('betaForm');
                     if (target && target.parentElement) {
-                        const headerOffset = 100;
+                        const headerOffset = 150;
                         const elementPosition = target.parentElement.getBoundingClientRect().top;
                         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
