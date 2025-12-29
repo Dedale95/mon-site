@@ -1013,7 +1013,6 @@
             <div class="nav-links">
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link nav-link-primary">Offres</a>
-                <a href="carte.html" class="nav-link">Carte</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
             </div>
         </div>
@@ -2129,27 +2128,49 @@
                     const country = parts[1].trim();
 
                     job.cleanCountries.push(country);
-                    sets.countries.add(country);
-                    counts.countries[country] = (counts.countries[country] || 0) + 1;
 
                     // Split cities by / or ,
                     const cities = cityPart.split(/[\/,]/).map(c => c.trim()).filter(c => c);
+
+                    const frenchRegions = ["Île-de-France", "Auvergne-Rhône-Alpes", "Occitanie", "Provence-Alpes-Côte d'Azur", "Pays de la Loire", "Hauts-de-France", "Autres régions françaises"];
 
                     if (cities.length === 0) {
                         const region = getCityRegion("", country);
                         const cleanRegion = toTitleCase(region);
                         job.cleanRegions.push(cleanRegion);
-                        sets.regions.add(cleanRegion);
-                        counts.regions[cleanRegion] = (counts.regions[cleanRegion] || 0) + 1;
+
+                        if (frenchRegions.includes(cleanRegion) && !job.cleanCountries.includes("France")) {
+                            job.cleanCountries.push("France");
+                        }
                     } else {
                         cities.forEach(rawCity => {
                             const region = getCityRegion(rawCity, country);
-                            const cleanRegion = toTitleCase(region);
+                            // Preserver les accents des régions connues
+                            let cleanRegion = region;
+                            if (region !== "Autres régions françaises" && !Object.values(cityToRegion).includes(region)) {
+                                cleanRegion = toTitleCase(region);
+                            }
+
                             job.cleanRegions.push(cleanRegion);
-                            sets.regions.add(cleanRegion);
-                            counts.regions[cleanRegion] = (counts.regions[cleanRegion] || 0) + 1;
+
+                            if (frenchRegions.includes(cleanRegion) && !job.cleanCountries.includes("France")) {
+                                job.cleanCountries.push("France");
+                            }
                         });
                     }
+
+                    // Nettoyer les doublons et mettre à jour les sets/counts
+                    job.cleanCountries = [...new Set(job.cleanCountries)];
+                    job.cleanRegions = [...new Set(job.cleanRegions)];
+
+                    job.cleanCountries.forEach(c => {
+                        sets.countries.add(c);
+                        counts.countries[c] = (counts.countries[c] || 0) + 1;
+                    });
+                    job.cleanRegions.forEach(r => {
+                        sets.regions.add(r);
+                        counts.regions[r] = (counts.regions[r] || 0) + 1;
+                    });
                 }
 
                 if (job.contract_type) { sets.contracts.add(job.contract_type); counts.contracts[job.contract_type] = (counts.contracts[job.contract_type] || 0) + 1; }
