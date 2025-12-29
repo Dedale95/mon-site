@@ -820,4 +820,62 @@ function renderJobs() {
                 ${job.location ? `<span class="tag tag-location">📍 ${job.location}</span>` : ''}
                 ${job.contract_type ? `<span class="tag tag-contract">📄 ${job.contract_type}</span>` : ''}
                 ${job.experience_level ? `<span class="tag tag-experience">💼 ${job.experience_level}</span>` : ''}
-                ${job.job_family ? `<span class="tag tag-family">
+                ${job.job_family ? `<span class="tag tag-family">🎯 ${job.job_family}</span>` : ''}
+            </div>
+            ${job.company_name ? `<div class="job-company">🏢 ${job.company_name}</div>` : ''}
+            <div class="job-footer">
+                <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
+                <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateStats() {
+    document.getElementById('totalJobs').textContent = allJobs.length;
+    document.getElementById('filteredJobs').textContent = filteredJobs.length;
+    const uniqueCountries = new Set();
+    filteredJobs.forEach(job => {
+        if (job.cleanCountries) job.cleanCountries.forEach(c => uniqueCountries.add(c));
+    });
+    document.getElementById('countries').textContent = uniqueCountries.size;
+}
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
+    applyFilters();
+}
+
+function openSupportModal() {
+    document.getElementById('modalBackdrop').style.display = 'block';
+    document.getElementById('supportModal').style.display = 'block';
+}
+
+function closeSupportModal() {
+    document.getElementById('modalBackdrop').style.display = 'none';
+    document.getElementById('supportModal').style.display = 'none';
+}
+
+function sendSupportEmail() {
+    const type = document.getElementById('supportType').value;
+    const email = document.getElementById('supportEmail').value.trim();
+    const subject = document.getElementById('supportSubject').value.trim() || `[${type}] Nouveau message`;
+    const message = document.getElementById('supportMessage').value.trim();
+    
+    if (!message) {
+        alert('Veuillez saisir un message.');
+        return;
+    }
+    
+    const target = 'thibault.giraudet@outlook.com';
+    const body = encodeURIComponent(`Type: ${type}\n${email ? `Email: ${email}\n` : ''}\n${message}`);
+    const subj = encodeURIComponent(subject);
+    window.location.href = `mailto:${target}?subject=${subj}&body=${body}`;
+    closeSupportModal();
+}
+
+loadJobs();
+    </script>
+</body>
+</html>
