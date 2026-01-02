@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -214,8 +215,8 @@
 
         .filter-checkbox-container label {
             display: block;
-            padding: 8px 10px;
-            margin-bottom: 4px;
+            padding: 2px 8px;
+            margin-bottom: 0px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
@@ -230,6 +231,20 @@
         .filter-checkbox-container input[type="checkbox"] {
             margin-right: 10px;
             accent-color: #667eea;
+        }
+
+        .filter-checkbox-container label.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .filter-checkbox-container label.disabled:hover {
+            background: transparent;
+        }
+
+        .filter-checkbox-container input[type="checkbox"]:disabled {
+            cursor: not-allowed;
         }
 
         .reset-btn {
@@ -374,7 +389,8 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
-        .loading, .no-results {
+        .loading,
+        .no-results {
             text-align: center;
             padding: 80px 20px;
             background: white;
@@ -449,7 +465,9 @@
             font-weight: 600;
         }
 
-        .modal input, .modal textarea, .modal select {
+        .modal input,
+        .modal textarea,
+        .modal select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e5e7eb;
@@ -507,20 +525,25 @@
         }
 
         @media (max-width: 768px) {
-            .nav-container, .nav-links {
+
+            .nav-container,
+            .nav-links {
                 flex-direction: column;
                 gap: 15px;
             }
+
             .nav-link {
                 width: 100%;
                 text-align: center;
             }
+
             .filter-row {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
+
 <body>
     <nav>
         <div class="nav-container">
@@ -644,177 +667,408 @@
     </footer>
 
     <script>
-let allJobs = [];
-let filteredJobs = [];
+        let allJobs = [];
+        let filteredJobs = [];
 
-const cityToRegion = {
-    "Paris": "Île-de-France", "Montrouge": "Île-de-France", "Villejuif": "Île-de-France",
-    "Massy": "Île-de-France", "Guyancourt": "Île-de-France", "La Défense": "Île-de-France",
-    "Saint-Quentin-En-Yvelines": "Île-de-France", "Lyon": "Auvergne-Rhône-Alpes",
-    "Toulouse": "Occitanie", "Marseille": "Provence-Alpes-Côte d'Azur",
-    "Nantes": "Pays de la Loire", "Roubaix": "Hauts-de-France"
-};
+        const cityToRegion = {
+            // Île-de-France
+            "paris": "Île-de-France", "montrouge": "Île-de-France", "villejuif": "Île-de-France",
+            "massy": "Île-de-France", "guyancourt": "Île-de-France", "la défense": "Île-de-France",
+            "la defense": "Île-de-France", "puteaux": "Île-de-France", "courbevoie": "Île-de-France",
+            "nanterre": "Île-de-France", "boulogne-billancourt": "Île-de-France",
+            "issy-les-moulineaux": "Île-de-France", "levallois-perret": "Île-de-France",
+            "neuilly-sur-seine": "Île-de-France", "saint-denis": "Île-de-France",
+            "saint-quentin-en-yvelines": "Île-de-France", "saint quentin en yvelines": "Île-de-France",
+            "région parisienne": "Île-de-France", "cergy": "Île-de-France", "evry": "Île-de-France",
+            "versailles": "Île-de-France", "st denis": "Île-de-France", "issy": "Île-de-France",
 
-function getCityRegion(city, country) {
-    if (cityToRegion[city]) return cityToRegion[city];
-    if (country === "France") return "Autres régions françaises";
-    return city || country;
-}
+            // Auvergne-Rhône-Alpes
+            "lyon": "Auvergne-Rhône-Alpes", "grenoble": "Auvergne-Rhône-Alpes", "valence": "Auvergne-Rhône-Alpes",
+            "saint-etienne": "Auvergne-Rhône-Alpes", "saint-étienne": "Auvergne-Rhône-Alpes",
 
-async function loadJobs() {
-    try {
-        const response = await fetch('scraped_jobs.csv');
-        const text = await response.text();
-        const lines = text.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
+            // Occitanie
+            "toulouse": "Occitanie", "montpellier": "Occitanie",
 
-        allJobs = [];
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const values = parseCSVLine(lines[i]);
-            const job = {};
-            headers.forEach((header, index) => {
-                job[header] = values[index] || '';
-            });
-            
-            job.cleanRegions = [];
-            job.cleanCountries = [];
-            
-            if (job.location && job.location.includes(' - ')) {
-                const parts = job.location.split(' - ');
-                const country = parts[1].trim();
-                job.cleanCountries.push(country);
-                const cities = parts[0].split(/[\/,]/).map(c => c.trim()).filter(c => c);
-                cities.forEach(city => {
-                    const region = getCityRegion(city, country);
-                    job.cleanRegions.push(region);
-                });
-                job.cleanCountries = [...new Set(job.cleanCountries)];
-                job.cleanRegions = [...new Set(job.cleanRegions)];
+            // Provence-Alpes-Côte d'Azur
+            "marseille": "Provence-Alpes-Côte d'Azur", "nice": "Provence-Alpes-Côte d'Azur", "aix-en-provence": "Provence-Alpes-Côte d'Azur",
+
+            // Pays de la Loire
+            "nantes": "Pays de la Loire", "angers": "Pays de la Loire",
+
+            // Hauts-de-France
+            "lille": "Hauts-de-France", "roubaix": "Hauts-de-France", "reims": "Hauts-de-France", "amiens": "Hauts-de-France",
+
+            // Grand Est
+            "strasbourg": "Grand Est", "nancy": "Grand Est", "metz": "Grand Est",
+
+            // Nouvelle-Aquitaine
+            "bordeaux": "Nouvelle-Aquitaine", "limoges": "Nouvelle-Aquitaine", "poitiers": "Nouvelle-Aquitaine",
+
+            // Bretagne
+            "rennes": "Bretagne", "brest": "Bretagne",
+
+            // Centre-Val de Loire
+            "orléans": "Centre-Val de Loire", "orleans": "Centre-Val de Loire", "tours": "Centre-Val de Loire",
+
+            // Normandie
+            "rouen": "Normandie", "caen": "Normandie",
+
+            // Bourgogne-Franche-Comté
+            "dijon": "Bourgogne-Franche-Comté",
+
+            // International
+            "londres": "Londres", "london": "Londres", "new york": "New York", "hong-kong": "Hong-Kong",
+            "singapour": "Singapour", "singapore": "Singapour", "tokyo": "Tokyo", "francfort": "Francfort",
+            "frankfurt": "Francfort", "munich": "Munich", "milan": "Milan", "milano": "Milan",
+            "luxembourg": "Luxembourg", "bruxelles": "Bruxelles", "brussels": "Bruxelles",
+            "genève": "Genève", "geneve": "Genève", "zurich": "Zurich", "zürich": "Zurich",
+            "montréal": "Montréal", "montreal": "Montréal", "casablanca": "Casablanca", "dublin": "Dublin",
+            "madrid": "Madrid", "barcelone": "Barcelone", "barcelona": "Barcelone", "amsterdam": "Amsterdam"
+        };
+
+        function getCityRegion(city, country) {
+            if (!city) return country === "France" ? "Autres régions françaises" : country;
+            const normalizedCity = city.toLowerCase();
+            if (cityToRegion[normalizedCity]) return cityToRegion[normalizedCity];
+            if (country === "France") return "Autres régions françaises";
+            return city; // Pour l'international pas mappé, on garde la ville (ex: "A Coruña")
+        }
+
+        function cleanJobTitle(title) {
+            if (!title) return title;
+            return title
+                .replace(/\s*\(?\s*[HF]\/[FH]\s*\)?/gi, '')
+                .replace(/\s*[HF]\/[FH]/gi, '')
+                .replace(/\s*\(\s*[HF]\s*\/\s*[FH]\s*\)/gi, '')
+                .trim();
+        }
+
+        /**
+         * Parsage CSV robuste gérant les champs avec guillemets et retours à la ligne
+         */
+        function parseCSV(text) {
+            const results = [];
+            let row = [];
+            let field = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        field += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(field.trim());
+                    field = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (field || row.length > 0) {
+                        row.push(field.trim());
+                        results.push(row);
+                    }
+                    row = [];
+                    field = '';
+                    if (char === '\r' && nextChar === '\n') i++;
+                } else {
+                    field += char;
+                }
             }
-            allJobs.push(job);
+            if (field || row.length > 0) {
+                row.push(field.trim());
+                results.push(row);
+            }
+            return results;
         }
 
-        initializeFilters();
-        filteredJobs = [...allJobs];
-        renderJobs();
-        updateStats();
-    } catch (error) {
-        document.getElementById('jobsContainer').innerHTML =
-            '<div class="no-results"><h3>❌ Erreur</h3><p>Impossible de charger les offres.</p></div>';
-    }
-}
+        async function loadJobs() {
+            try {
+                const response = await fetch('scraped_jobs.csv');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const text = await response.text();
+                const data = parseCSV(text);
 
-function parseCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') {
-            inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-            result.push(current.trim());
-            current = '';
-        } else {
-            current += char;
+                if (data.length < 2) return;
+
+                const headers = data[0];
+                allJobs = [];
+
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    const job = {};
+                    headers.forEach((h, index) => {
+                        job[h] = row[index] || '';
+                    });
+
+                    job.cleanRegions = [];
+                    job.cleanCountries = [];
+
+                    if (job.location && job.location.includes(' - ')) {
+                        const parts = job.location.split(' - ');
+                        const cityPart = parts[0];
+                        const country = parts[1].trim();
+                        job.cleanCountries.push(country);
+
+                        const cities = cityPart.split(/[\/,]/).map(c => {
+                            let clean = c.trim();
+                            // Nettoyage basique type Python
+                            clean = clean.replace(/\(.*\)/g, '').trim();
+                            clean = clean.replace(/\d{5,6}/g, '').trim();
+                            // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
+                            if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
+                                const words = clean.split(' ');
+                                const lastWord = words[words.length - 1].toLowerCase();
+                                if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                            }
+                            return clean;
+                        }).filter(c => c);
+
+                        if (cities.length === 0) {
+                            job.cleanRegions.push(getCityRegion('', country));
+                        } else {
+                            cities.forEach(city => {
+                                job.cleanRegions.push(getCityRegion(city, country));
+                            });
+                        }
+                        job.cleanCountries = [...new Set(job.cleanCountries)];
+                        job.cleanRegions = [...new Set(job.cleanRegions)];
+                    }
+                    allJobs.push(job);
+                }
+
+                initializeFilters();
+                filteredJobs = [...allJobs];
+                renderJobs();
+                updateStats();
+            } catch (error) {
+                console.error('Erreur:', error);
+                let errorMsg = 'Impossible de charger les offres.';
+                if (window.location.protocol === 'file:') {
+                    errorMsg = '❌ Erreur de sécurité (CORS) : Le navigateur bloque l\'accès au CSV en local. <br><br><b>Pour corriger :</b><br>1. Ouvrez un terminal dans le dossier du projet.<br>2. Lancez <code>python -m http.server</code><br>3. Allez sur <code>http://localhost:8000/HTML/offres.html</code>';
+                }
+                document.getElementById('jobsContainer').innerHTML =
+                    `<div class="no-results"><h3>😕 Erreur</h3><p style="text-align:left; max-width:500px; margin:0 auto;">${errorMsg}</p></div>`;
+            }
         }
-    }
-    result.push(current.trim());
-    return result;
-}
 
-function initializeFilters() {
-    const sets = {
-        regions: new Set(), countries: new Set(), contracts: new Set(),
-        experiences: new Set(), families: new Set(), companies: new Set(), educations: new Set()
-    };
 
-    allJobs.forEach(job => {
-        if (job.cleanCountries) job.cleanCountries.forEach(c => sets.countries.add(c));
-        if (job.cleanRegions) job.cleanRegions.forEach(r => sets.regions.add(r));
-        if (job.contract_type) sets.contracts.add(job.contract_type);
-        if (job.experience_level) sets.experiences.add(job.experience_level);
-        if (job.job_family) sets.families.add(job.job_family);
-        if (job.company_name) sets.companies.add(job.company_name);
-        if (job.education_level) sets.educations.add(job.education_level);
-    });
+        function initializeFilters() {
+            const sets = {
+                regions: new Set(), countries: new Set(), contracts: new Set(),
+                experiences: new Set(), families: new Set(), companies: new Set(), educations: new Set()
+            };
 
-    populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort());
-    populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort());
-    populateCheckboxFilter('contractFilter', Array.from(sets.contracts).sort());
-    populateCheckboxFilter('experienceFilter', Array.from(sets.experiences).sort());
-    populateCheckboxFilter('familyFilter', Array.from(sets.families).sort());
-    populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort());
-    populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort());
-    
-    document.getElementById('searchInput').addEventListener('input', applyFilters);
-}
+            allJobs.forEach(job => {
+                if (job.cleanCountries) job.cleanCountries.forEach(c => sets.countries.add(c));
+                if (job.cleanRegions) job.cleanRegions.forEach(r => sets.regions.add(r));
+                if (job.contract_type) sets.contracts.add(job.contract_type);
+                if (job.experience_level) sets.experiences.add(job.experience_level);
+                if (job.job_family) sets.families.add(job.job_family);
+                if (job.company_name) sets.companies.add(job.company_name);
+                if (job.education_level) sets.educations.add(job.education_level);
+            });
 
-function populateCheckboxFilter(id, values) {
-    const container = document.getElementById(id);
-    container.innerHTML = '';
-    values.forEach(value => {
-        const label = document.createElement('label');
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.value = value;
-        checkbox.onchange = applyFilters;
-        const span = document.createElement('span');
-        span.textContent = value;
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        container.appendChild(label);
-    });
-}
+            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set());
+            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set());
+            populateCheckboxFilter('contractFilter', Array.from(sets.contracts).sort(), new Set());
+            populateCheckboxFilter('experienceFilter', Array.from(sets.experiences).sort(), new Set());
+            populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set());
+            populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set());
+            populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set());
 
-function applyFilters() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const selectedCountries = getCheckedValues('countryFilter');
-    const selectedRegions = getCheckedValues('regionFilter');
-    const selectedContracts = getCheckedValues('contractFilter');
-    const selectedExperiences = getCheckedValues('experienceFilter');
-    const selectedFamilies = getCheckedValues('familyFilter');
-    const selectedCompanies = getCheckedValues('companyFilter');
-    const selectedEducations = getCheckedValues('educationFilter');
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+        }
 
-    filteredJobs = allJobs.filter(job => {
-        const matchSearch = !search || 
-            job.job_title.toLowerCase().includes(search) ||
-            job.job_description.toLowerCase().includes(search);
-        const matchCountry = !selectedCountries.length || 
-            (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
-        const matchRegion = !selectedRegions.length || 
-            (job.cleanRegions && job.cleanRegions.some(r => selectedRegions.includes(r)));
-        const matchContract = !selectedContracts.length || selectedContracts.includes(job.contract_type);
-        const matchExperience = !selectedExperiences.length || selectedExperiences.includes(job.experience_level);
-        const matchFamily = !selectedFamilies.length || selectedFamilies.includes(job.job_family);
-        const matchCompany = !selectedCompanies.length || selectedCompanies.includes(job.company_name);
-        const matchEducation = !selectedEducations.length || selectedEducations.includes(job.education_level);
+        function populateCheckboxFilter(id, values, disabledValues = new Set()) {
+            const container = document.getElementById(id);
+            // Sauvegarder les valeurs actuellement cochées
+            const checkedValues = new Set(getCheckedValues(id));
+            container.innerHTML = '';
+            values.forEach(value => {
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = value;
+                checkbox.onchange = applyFilters;
+                
+                // Restaurer l'état coché si la valeur était cochée avant
+                if (checkedValues.has(value)) {
+                    checkbox.checked = true;
+                }
+                
+                if (disabledValues.has(value)) {
+                    checkbox.disabled = true;
+                    label.classList.add('disabled');
+                }
+                
+                const span = document.createElement('span');
+                span.textContent = value;
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
+        }
 
-        return matchSearch && matchCountry && matchRegion && matchContract && 
-               matchExperience && matchFamily && matchCompany && matchEducation;
-    });
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCountries = getCheckedValues('countryFilter');
+            const selectedRegions = getCheckedValues('regionFilter');
+            const selectedContracts = getCheckedValues('contractFilter');
+            const selectedExperiences = getCheckedValues('experienceFilter');
+            const selectedFamilies = getCheckedValues('familyFilter');
+            const selectedCompanies = getCheckedValues('companyFilter');
+            const selectedEducations = getCheckedValues('educationFilter');
 
-    renderJobs();
-    updateStats();
-}
+            // Filtrer les jobs selon les critères sélectionnés
+            filteredJobs = allJobs.filter(job => {
+                const matchSearch = !search ||
+                    job.job_title.toLowerCase().includes(search) ||
+                    job.job_description.toLowerCase().includes(search);
+                const matchCountry = !selectedCountries.length ||
+                    (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
+                const matchRegion = !selectedRegions.length ||
+                    (job.cleanRegions && job.cleanRegions.some(r => selectedRegions.includes(r)));
+                const matchContract = !selectedContracts.length || selectedContracts.includes(job.contract_type);
+                const matchExperience = !selectedExperiences.length || selectedExperiences.includes(job.experience_level);
+                const matchFamily = !selectedFamilies.length || selectedFamilies.includes(job.job_family);
+                const matchCompany = !selectedCompanies.length || selectedCompanies.includes(job.company_name);
+                const matchEducation = !selectedEducations.length || selectedEducations.includes(job.education_level);
 
-function getCheckedValues(containerId) {
-    const container = document.getElementById(containerId);
-    return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
-}
+                return matchSearch && matchCountry && matchRegion && matchContract &&
+                    matchExperience && matchFamily && matchCompany && matchEducation;
+            });
 
-function renderJobs() {
-    const container = document.getElementById('jobsContainer');
-    if (filteredJobs.length === 0) {
-        container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
-        return;
-    }
+            // Pour calculer les options disponibles, on doit utiliser les jobs qui matchent TOUS les autres filtres
+            // (pas celui qu'on évalue)
+            const getJobsMatchingOtherFilters = (excludeFilterType) => {
+                return allJobs.filter(job => {
+                    const matchSearch = !search ||
+                        job.job_title.toLowerCase().includes(search) ||
+                        job.job_description.toLowerCase().includes(search);
+                    
+                    const matchCountry = excludeFilterType === 'country' || !selectedCountries.length ||
+                        (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
+                    const matchRegion = excludeFilterType === 'region' || !selectedRegions.length ||
+                        (job.cleanRegions && job.cleanRegions.some(r => selectedRegions.includes(r)));
+                    const matchContract = excludeFilterType === 'contract' || !selectedContracts.length || selectedContracts.includes(job.contract_type);
+                    const matchExperience = excludeFilterType === 'experience' || !selectedExperiences.length || selectedExperiences.includes(job.experience_level);
+                    const matchFamily = excludeFilterType === 'family' || !selectedFamilies.length || selectedFamilies.includes(job.job_family);
+                    const matchCompany = excludeFilterType === 'company' || !selectedCompanies.length || selectedCompanies.includes(job.company_name);
+                    const matchEducation = excludeFilterType === 'education' || !selectedEducations.length || selectedEducations.includes(job.education_level);
 
-    container.innerHTML = filteredJobs.map(job => `
+                    return matchSearch && matchCountry && matchRegion && matchContract &&
+                        matchExperience && matchFamily && matchCompany && matchEducation;
+                });
+            };
+
+            // Pour les pays : si régions sélectionnées, ne montrer que les pays de ces régions
+            let availableCountries = new Set();
+            if (selectedRegions.length > 0) {
+                getJobsMatchingOtherFilters('country').forEach(job => {
+                    if (job.cleanRegions && job.cleanRegions.some(r => selectedRegions.includes(r))) {
+                        if (job.cleanCountries) job.cleanCountries.forEach(c => availableCountries.add(c));
+                    }
+                });
+            } else {
+                getJobsMatchingOtherFilters('country').forEach(job => {
+                    if (job.cleanCountries) job.cleanCountries.forEach(c => availableCountries.add(c));
+                });
+            }
+
+            // Pour les régions : si pays sélectionnés, ne montrer que les régions de ces pays
+            let availableRegions = new Set();
+            if (selectedCountries.length > 0) {
+                getJobsMatchingOtherFilters('region').forEach(job => {
+                    if (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c))) {
+                        if (job.cleanRegions) job.cleanRegions.forEach(r => availableRegions.add(r));
+                    }
+                });
+            } else {
+                getJobsMatchingOtherFilters('region').forEach(job => {
+                    if (job.cleanRegions) job.cleanRegions.forEach(r => availableRegions.add(r));
+                });
+            }
+
+            // Récupérer toutes les valeurs pour chaque filtre
+            const allCountries = new Set();
+            const allRegions = new Set();
+            const allContracts = new Set();
+            const allExperiences = new Set();
+            const allFamilies = new Set();
+            const allCompanies = new Set();
+            const allEducations = new Set();
+            
+            allJobs.forEach(job => {
+                if (job.cleanCountries) job.cleanCountries.forEach(c => allCountries.add(c));
+                if (job.cleanRegions) job.cleanRegions.forEach(r => allRegions.add(r));
+                if (job.contract_type) allContracts.add(job.contract_type);
+                if (job.experience_level) allExperiences.add(job.experience_level);
+                if (job.job_family) allFamilies.add(job.job_family);
+                if (job.company_name) allCompanies.add(job.company_name);
+                if (job.education_level) allEducations.add(job.education_level);
+            });
+
+            // Mettre à jour les filtres avec les options désactivées
+            populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
+                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))));
+            populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
+                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))));
+            const availableContracts = new Set();
+            const availableExperiences = new Set();
+            const availableFamilies = new Set();
+            const availableCompanies = new Set();
+            const availableEducations = new Set();
+            
+            getJobsMatchingOtherFilters('contract').forEach(job => {
+                if (job.contract_type) availableContracts.add(job.contract_type);
+            });
+            getJobsMatchingOtherFilters('experience').forEach(job => {
+                if (job.experience_level) availableExperiences.add(job.experience_level);
+            });
+            getJobsMatchingOtherFilters('family').forEach(job => {
+                if (job.job_family) availableFamilies.add(job.job_family);
+            });
+            getJobsMatchingOtherFilters('company').forEach(job => {
+                if (job.company_name) availableCompanies.add(job.company_name);
+            });
+            getJobsMatchingOtherFilters('education').forEach(job => {
+                if (job.education_level) availableEducations.add(job.education_level);
+            });
+
+            populateCheckboxFilter('contractFilter', Array.from(allContracts).sort(),
+                new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))));
+            populateCheckboxFilter('experienceFilter', Array.from(allExperiences).sort(),
+                new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))));
+            populateCheckboxFilter('familyFilter', Array.from(allFamilies).sort(),
+                new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))));
+            populateCheckboxFilter('companyFilter', Array.from(allCompanies).sort(),
+                new Set([...allCompanies].filter(c => !availableCompanies.has(c) && !selectedCompanies.includes(c))));
+            populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
+                new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))));
+
+            renderJobs();
+            updateStats();
+        }
+
+        function getCheckedValues(containerId) {
+            const container = document.getElementById(containerId);
+            return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+        }
+
+        function renderJobs() {
+            const container = document.getElementById('jobsContainer');
+            if (filteredJobs.length === 0) {
+                container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
+                return;
+            }
+
+            container.innerHTML = filteredJobs.map(job => `
         <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
-            <div class="job-title">${job.job_title}</div>
+            <div class="job-title">${cleanJobTitle(job.job_title)}</div>
             <div class="job-id">${job.job_id}</div>
             <div class="job-tags">
                 ${job.location ? `<span class="tag tag-location">📍 ${job.location}</span>` : ''}
@@ -829,53 +1083,54 @@ function renderJobs() {
             </div>
         </div>
     `).join('');
-}
+        }
 
-function updateStats() {
-    document.getElementById('totalJobs').textContent = allJobs.length;
-    document.getElementById('filteredJobs').textContent = filteredJobs.length;
-    const uniqueCountries = new Set();
-    filteredJobs.forEach(job => {
-        if (job.cleanCountries) job.cleanCountries.forEach(c => uniqueCountries.add(c));
-    });
-    document.getElementById('countries').textContent = uniqueCountries.size;
-}
+        function updateStats() {
+            document.getElementById('totalJobs').textContent = allJobs.length;
+            document.getElementById('filteredJobs').textContent = filteredJobs.length;
+            const uniqueCountries = new Set();
+            filteredJobs.forEach(job => {
+                if (job.cleanCountries) job.cleanCountries.forEach(c => uniqueCountries.add(c));
+            });
+            document.getElementById('countries').textContent = uniqueCountries.size;
+        }
 
-function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
-    applyFilters();
-}
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
+            applyFilters();
+        }
 
-function openSupportModal() {
-    document.getElementById('modalBackdrop').style.display = 'block';
-    document.getElementById('supportModal').style.display = 'block';
-}
+        function openSupportModal() {
+            document.getElementById('modalBackdrop').style.display = 'block';
+            document.getElementById('supportModal').style.display = 'block';
+        }
 
-function closeSupportModal() {
-    document.getElementById('modalBackdrop').style.display = 'none';
-    document.getElementById('supportModal').style.display = 'none';
-}
+        function closeSupportModal() {
+            document.getElementById('modalBackdrop').style.display = 'none';
+            document.getElementById('supportModal').style.display = 'none';
+        }
 
-function sendSupportEmail() {
-    const type = document.getElementById('supportType').value;
-    const email = document.getElementById('supportEmail').value.trim();
-    const subject = document.getElementById('supportSubject').value.trim() || `[${type}] Nouveau message`;
-    const message = document.getElementById('supportMessage').value.trim();
-    
-    if (!message) {
-        alert('Veuillez saisir un message.');
-        return;
-    }
-    
-    const target = 'thibault.giraudet@outlook.com';
-    const body = encodeURIComponent(`Type: ${type}\n${email ? `Email: ${email}\n` : ''}\n${message}`);
-    const subj = encodeURIComponent(subject);
-    window.location.href = `mailto:${target}?subject=${subj}&body=${body}`;
-    closeSupportModal();
-}
+        function sendSupportEmail() {
+            const type = document.getElementById('supportType').value;
+            const email = document.getElementById('supportEmail').value.trim();
+            const subject = document.getElementById('supportSubject').value.trim() || `[${type}] Nouveau message`;
+            const message = document.getElementById('supportMessage').value.trim();
 
-loadJobs();
+            if (!message) {
+                alert('Veuillez saisir un message.');
+                return;
+            }
+
+            const target = 'thibault.giraudet@outlook.com';
+            const body = encodeURIComponent(`Type: ${type}\n${email ? `Email: ${email}\n` : ''}\n${message}`);
+            const subj = encodeURIComponent(subject);
+            window.location.href = `mailto:${target}?subject=${subj}&body=${body}`;
+            closeSupportModal();
+        }
+
+        loadJobs();
     </script>
 </body>
+
 </html>
