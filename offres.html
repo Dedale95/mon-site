@@ -747,42 +747,55 @@
          * Parsage CSV robuste gérant les champs avec guillemets et retours à la ligne
          */
         function parseCSV(text) {
-            const results = [];
+            const arr = [];
+            let quote = false;
             let row = [];
-            let field = '';
-            let inQuotes = false;
+            let col = '';
 
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const nextChar = text[i + 1];
+            // Normalize newlines
+            text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-                if (char === '"') {
-                    if (inQuotes && nextChar === '"') {
-                        field += '"';
-                        i++;
-                    } else {
-                        inQuotes = !inQuotes;
+            for (let c = 0; c < text.length; c++) {
+                let cc = text[c];
+                let nc = text[c + 1];
+
+                if (cc === '"') {
+                    if (quote && nc === '"') {
+                        col += '"';
+                        c++;
+                        continue;
                     }
-                } else if (char === ',' && !inQuotes) {
-                    row.push(field.trim());
-                    field = '';
-                } else if ((char === '\r' || char === '\n') && !inQuotes) {
-                    if (field || row.length > 0) {
-                        row.push(field.trim());
-                        results.push(row);
+                    quote = !quote;
+                    continue;
+                }
+
+                if (cc === ',' && !quote) {
+                    row.push(col);
+                    col = '';
+                    continue;
+                }
+
+                if (cc === '\n' && !quote) {
+                    row.push(col);
+                    // Only push if row has content or we want to handle empty lines strictly
+                    if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
+                        arr.push(row);
                     }
                     row = [];
-                    field = '';
-                    if (char === '\r' && nextChar === '\n') i++;
-                } else {
-                    field += char;
+                    col = '';
+                    continue;
                 }
+
+                col += cc;
             }
-            if (field || row.length > 0) {
-                row.push(field.trim());
-                results.push(row);
+
+            // Push last row if exists
+            if (row.length > 0 || col.length > 0) {
+                row.push(col);
+                arr.push(row);
             }
-            return results;
+
+            return arr;
         }
 
         async function loadJobs() {
