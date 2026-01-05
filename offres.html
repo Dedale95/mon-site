@@ -801,7 +801,20 @@
                     const row = data[i];
                     const job = {};
                     headers.forEach((h, index) => {
-                        job[h] = row[index] || '';
+                        let value = row[index] || '';
+                        // Harmonisation des types de contrat
+                        if (h === 'contract_type') {
+                            if (value.toLowerCase() === 'alternance' || value.toLowerCase() === 'alternance / apprentissage') {
+                                value = 'Alternance / Apprentissage';
+                            }
+                        }
+                        // Harmonisation des niveaux d'études
+                        if (h === 'education_level') {
+                            if (value.toLowerCase().includes('certificat fédéral de capacité')) {
+                                value = 'Certificat Fédéral de Capacité (CFC)';
+                            }
+                        }
+                        job[h] = value;
                     });
 
                     job.cleanRegions = [];
@@ -872,10 +885,30 @@
                 if (job.education_level) sets.educations.add(job.education_level);
             });
 
+            const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI'];
+            const sortedContracts = Array.from(sets.contracts).sort((a, b) => {
+                const indexA = contractOrder.indexOf(a);
+                const indexB = contractOrder.indexOf(b);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
+            const experienceOrder = ['0 - 2 ans', '3 - 5 ans', '6 - 10 ans', '11 - 15 ans', '15 ans +'];
+            const sortedExperiences = Array.from(sets.experiences).sort((a, b) => {
+                const indexA = experienceOrder.indexOf(a);
+                const indexB = experienceOrder.indexOf(b);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
             populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set());
             populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set());
-            populateCheckboxFilter('contractFilter', Array.from(sets.contracts).sort(), new Set());
-            populateCheckboxFilter('experienceFilter', Array.from(sets.experiences).sort(), new Set());
+            populateCheckboxFilter('contractFilter', sortedContracts, new Set());
+            populateCheckboxFilter('experienceFilter', sortedExperiences, new Set());
             populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set());
             populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set());
             populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set());
@@ -894,17 +927,17 @@
                 checkbox.type = 'checkbox';
                 checkbox.value = value;
                 checkbox.onchange = applyFilters;
-                
+
                 // Restaurer l'état coché si la valeur était cochée avant
                 if (checkedValues.has(value)) {
                     checkbox.checked = true;
                 }
-                
+
                 if (disabledValues.has(value)) {
                     checkbox.disabled = true;
                     label.classList.add('disabled');
                 }
-                
+
                 const span = document.createElement('span');
                 span.textContent = value;
                 label.appendChild(checkbox);
@@ -949,7 +982,7 @@
                     const matchSearch = !search ||
                         job.job_title.toLowerCase().includes(search) ||
                         job.job_description.toLowerCase().includes(search);
-                    
+
                     const matchCountry = excludeFilterType === 'country' || !selectedCountries.length ||
                         (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
                     const matchRegion = excludeFilterType === 'region' || !selectedRegions.length ||
@@ -1001,7 +1034,7 @@
             const allFamilies = new Set();
             const allCompanies = new Set();
             const allEducations = new Set();
-            
+
             allJobs.forEach(job => {
                 if (job.cleanCountries) job.cleanCountries.forEach(c => allCountries.add(c));
                 if (job.cleanRegions) job.cleanRegions.forEach(r => allRegions.add(r));
@@ -1013,16 +1046,37 @@
             });
 
             // Mettre à jour les filtres avec les options désactivées
+            const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI'];
+            const sortedAllContracts = Array.from(allContracts).sort((a, b) => {
+                const indexA = contractOrder.indexOf(a);
+                const indexB = contractOrder.indexOf(b);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
+            const experienceOrder = ['0 - 2 ans', '3 - 5 ans', '6 - 10 ans', '11 - 15 ans', '15 ans +'];
+            const sortedAllExperiences = Array.from(allExperiences).sort((a, b) => {
+                const indexA = experienceOrder.indexOf(a);
+                const indexB = experienceOrder.indexOf(b);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
             populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
                 new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))));
             populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
                 new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))));
+
             const availableContracts = new Set();
             const availableExperiences = new Set();
             const availableFamilies = new Set();
             const availableCompanies = new Set();
             const availableEducations = new Set();
-            
+
             getJobsMatchingOtherFilters('contract').forEach(job => {
                 if (job.contract_type) availableContracts.add(job.contract_type);
             });
@@ -1039,9 +1093,9 @@
                 if (job.education_level) availableEducations.add(job.education_level);
             });
 
-            populateCheckboxFilter('contractFilter', Array.from(allContracts).sort(),
+            populateCheckboxFilter('contractFilter', sortedAllContracts,
                 new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))));
-            populateCheckboxFilter('experienceFilter', Array.from(allExperiences).sort(),
+            populateCheckboxFilter('experienceFilter', sortedAllExperiences,
                 new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))));
             populateCheckboxFilter('familyFilter', Array.from(allFamilies).sort(),
                 new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))));
