@@ -905,8 +905,8 @@
                 return a.localeCompare(b);
             });
 
-            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set());
-            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set());
+            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set(), true);
+            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set(), true);
             populateCheckboxFilter('contractFilter', sortedContracts, new Set());
             populateCheckboxFilter('experienceFilter', sortedExperiences, new Set());
             populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set());
@@ -916,28 +916,35 @@
             document.getElementById('searchInput').addEventListener('input', applyFilters);
         }
 
-        function populateCheckboxFilter(id, values, disabledValues = new Set()) {
+        function populateCheckboxFilter(id, values, disabledValues = new Set(), shouldHide = false) {
             const container = document.getElementById(id);
             // Sauvegarder les valeurs actuellement cochées
             const checkedValues = new Set(getCheckedValues(id));
             container.innerHTML = '';
             values.forEach(value => {
-                // Skip rendering if this value is disabled (hide instead of grey out)
-                if (disabledValues.has(value)) {
+                // If shouldHide is true (for country/region), skip rendering disabled options
+                // If shouldHide is false (for other filters), render but grey out
+                if (shouldHide && disabledValues.has(value)) {
                     return;
                 }
-                
+
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = value;
                 checkbox.onchange = applyFilters;
-                
+
                 // Restaurer l'état coché si la valeur était cochée avant
                 if (checkedValues.has(value)) {
                     checkbox.checked = true;
                 }
-                
+
+                // If shouldHide is false and value is disabled, grey it out
+                if (!shouldHide && disabledValues.has(value)) {
+                    checkbox.disabled = true;
+                    label.classList.add('disabled');
+                }
+
                 const span = document.createElement('span');
                 span.textContent = value;
                 label.appendChild(checkbox);
@@ -1067,9 +1074,9 @@
             });
 
             populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
-                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))));
+                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), true);
             populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
-                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))));
+                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), true);
 
             const availableContracts = new Set();
             const availableExperiences = new Set();
