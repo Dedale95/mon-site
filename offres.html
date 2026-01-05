@@ -810,8 +810,8 @@
                         }
                         // Harmonisation des niveaux d'études
                         if (h === 'education_level') {
-                            if (value.toLowerCase().includes('certificat fédéral de capacité')) {
-                                value = 'Certificat Fédéral de Capacité (CFC)';
+                            if (value.toLowerCase().includes('certificat fédéral de capacité') || value.toLowerCase().includes('cfc')) {
+                                value = 'Bac / Certificat Fédéral de Capacité (CFC)';
                             }
                         }
                         job[h] = value;
@@ -922,22 +922,22 @@
             const checkedValues = new Set(getCheckedValues(id));
             container.innerHTML = '';
             values.forEach(value => {
+                // Skip rendering if this value is disabled (hide instead of grey out)
+                if (disabledValues.has(value)) {
+                    return;
+                }
+                
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = value;
                 checkbox.onchange = applyFilters;
-
+                
                 // Restaurer l'état coché si la valeur était cochée avant
                 if (checkedValues.has(value)) {
                     checkbox.checked = true;
                 }
-
-                if (disabledValues.has(value)) {
-                    checkbox.disabled = true;
-                    label.classList.add('disabled');
-                }
-
+                
                 const span = document.createElement('span');
                 span.textContent = value;
                 label.appendChild(checkbox);
