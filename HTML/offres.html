@@ -1153,8 +1153,6 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             
-            // IMPORTANT: Le lien authLink doit être visible par défaut
-            // On ne le masque que si l'utilisateur est vraiment connecté
             if (token) {
                 // Utilisateur connecté - afficher le profil, masquer l'auth
                 if (profileLink) profileLink.style.display = 'block';
@@ -1162,18 +1160,20 @@
             } else {
                 // Utilisateur non connecté - masquer le profil, afficher l'auth
                 if (profileLink) profileLink.style.display = 'none';
-                // authLink reste visible (pas de style display:none)
+                if (authLink) {
+                    authLink.style.display = 'inline-block';
+                    authLink.style.removeProperty('display');
+                }
             }
         }
 
         // Charger les jobs
         loadJobs();
         
-        // Mettre à jour la navigation APRÈS le chargement des jobs
-        // pour s'assurer que le DOM est complètement prêt
-        setTimeout(function() {
-            checkAuthAndUpdateNav();
-        }, 200);
+        // Mettre à jour la navigation - exécuter plusieurs fois pour garantir l'affichage
+        checkAuthAndUpdateNav();
+        setTimeout(checkAuthAndUpdateNav, 100);
+        setTimeout(checkAuthAndUpdateNav, 500);
     </script>
 </body>
 
