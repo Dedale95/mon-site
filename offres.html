@@ -761,6 +761,12 @@
          * Charge les données depuis le fichier JSON (exporté depuis SQLite)
          */
         async function loadJobs() {
+            // Afficher un message de chargement
+            const container = document.getElementById('jobsContainer');
+            if (container) {
+                container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données.</p></div>';
+            }
+            
             // Essayer plusieurs chemins possibles pour le fichier JSON
             const possiblePaths = [
                 'scraped_jobs.json',
@@ -770,19 +776,24 @@
             ];
             
             let data = null;
+            let loadedPath = null;
             let lastError = null;
             
             for (const path of possiblePaths) {
                 try {
+                    console.log(`🔄 Tentative de chargement depuis : ${path}`);
                     const response = await fetch(path);
                     if (response.ok) {
                         data = await response.json();
-                        console.log(`✅ Fichier JSON chargé depuis : ${path}`);
+                        loadedPath = path;
+                        console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
                         break;
+                    } else {
+                        console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
                     }
                 } catch (error) {
                     lastError = error;
-                    console.log(`⚠️ Impossible de charger depuis ${path}, essai suivant...`);
+                    console.log(`⚠️ Erreur lors du chargement depuis ${path}:`, error.message);
                 }
             }
             
