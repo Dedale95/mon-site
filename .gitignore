@@ -1,0 +1,28 @@
+# Bases de données SQLite
+*.db
+
+# Fichiers CSV générés
+*.csv
+
+# Fichiers de log
+*.log
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environnements virtuels
+venv/
+env/
+ENV/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires
+*.tmp
+*.bak

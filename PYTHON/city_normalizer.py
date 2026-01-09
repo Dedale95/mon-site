@@ -1,0 +1,190 @@
+import re
+
+CITY_MAPPING = {
+    # ========== RÉGION PARISIENNE (IDF) ==========
+    'paris': 'Paris',
+    'montrouge': 'Montrouge',
+    'la defense': 'La Défense',
+    'la défense': 'La Défense',
+    'puteaux': 'Puteaux',
+    'courbevoie': 'Courbevoie',
+    'neuilly-sur-seine': 'Neuilly-Sur-Seine',
+    'boulogne-billancourt': 'Boulogne-Billancourt',
+    'issy-les-moulineaux': 'Issy-Les-Moulineaux',
+    'nanterre': 'Nanterre',
+    'levallois-perret': 'Levallois-Perret',
+    'saint-denis': 'Saint-Denis',
+    'fontenay-sous-bois': 'Fontenay-Sous-Bois',
+    'vincennes': 'Vincennes',
+    'montreuil': 'Montreuil',
+    'villejuif': 'Villejuif',
+    'ivry-sur-seine': 'Ivry-Sur-Seine',
+    'paris montparnasse': 'Paris',
+    'guyancourt': 'Guyancourt',
+    'saint-quentin-en-yvelines': 'Saint-Quentin-En-Yvelines',
+    'saint-quentin en yvelines': 'Saint-Quentin-En-Yvelines',
+    'massy': 'Massy',
+    'versailles': 'Versailles',
+    'évry': 'Evry',
+    'evry': 'Evry',
+    'cergy': 'Cergy',
+    'region parisienne': 'Région Parisienne',
+    'ile de france': 'Région Parisienne',
+    
+    # ========== AUTRES GRANDES VILLES FR ==========
+    'lyon': 'Lyon',
+    'marseille': 'Marseille',
+    'toulouse': 'Toulouse',
+    'bordeaux': 'Bordeaux',
+    'lille': 'Lille',
+    'nice': 'Nice',
+    'nantes': 'Nantes',
+    'strasbourg': 'Strasbourg',
+    'montpellier': 'Montpellier',
+    'rennes': 'Rennes',
+    'reims': 'Reims',
+    'grenoble': 'Grenoble',
+    'dijon': 'Dijon',
+    'angers': 'Angers',
+    'nancy': 'Nancy',
+    'orleans': 'Orléans',
+    'orléans': 'Orléans',
+    'saint-etienne': 'Saint-Etienne',
+    'saint-étienne': 'Saint-Etienne',
+    
+    # ========== VILLES INTERNATIONALES ==========
+    'new york': 'New York',
+    'london': 'Londres',
+    'hong kong': 'Hong-Kong',
+    'hong-kong': 'Hong-Kong',
+    'singapore': 'Singapour',
+    'singapour': 'Singapour',
+    'tokyo': 'Tokyo',
+    'shanghai': 'Shanghai',
+    'frankfurt': 'Francfort',
+    'frankfurt am main': 'Francfort',
+    'munich': 'Munich',
+    'münchen': 'Munich',
+    'milan': 'Milan',
+    'milano': 'Milan',
+    'madrid': 'Madrid',
+    'barcelona': 'Barcelone',
+    'amsterdam': 'Amsterdam',
+    'brussels': 'Bruxelles',
+    'bruxelles': 'Bruxelles',
+    'geneva': 'Genève',
+    'geneve': 'Genève',
+    'genève': 'Genève',
+    'zurich': 'Zurich',
+    'zürich': 'Zurich',
+    'lausanne': 'Lausanne',
+    'montreal': 'Montréal',
+    'montréal': 'Montréal',
+    'toronto': 'Toronto',
+    'bangalore': 'Bangalore',
+    'mumbai': 'Bombay',
+    'chennai': 'Chennai',
+    'delhi': 'Delhi',
+    'dubai': 'Dubaï',
+    'dubai/abu dhabi': 'Dubaï',
+    'warsaw': 'Varsovie',
+    'bucuresti': 'Bucarest',
+    'bucharest': 'Bucarest',
+    'prague': 'Prague',
+    'budapest': 'Budapest',
+    'casablanca': 'Casablanca',
+    'luxembourg': 'Luxembourg',
+    'esch-sur-alzette': 'Luxembourg',
+    'dublin': 'Dublin',
+    'sydney': 'Sydney',
+    'melbourne': 'Melbourne',
+    'kuala lumpur': 'Kuala Lumpur',
+    'putrajaya': 'Kuala Lumpur',
+}
+
+def normalize_city(city_raw):
+    """
+    Normalise un nom de ville selon les règles de mapping
+    """
+    if not city_raw:
+        return city_raw
+    
+    # Nettoyer et normaliser
+    city_clean = city_raw.strip().lower()
+    
+    # Supprimer les adresses complètes (Road, Street, Av., #, Floor, etc.)
+    # Détecter si c'est une adresse complète
+    address_patterns = [
+        r'\d+\s+(road|street|avenue|av\.?|boulevard|blvd|drive|dr|lane|ln|way|plaza|tower|building)',
+        r'#\d+',
+        r'\d+th\s+floor',
+        r'\d+º',
+        r'capital tower',
+        r'floor',
+    ]
+    
+    is_address = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in address_patterns)
+    
+    if is_address:
+        # Extraire juste le nom de ville depuis l'adresse
+        # Chercher après les mots-clés d'adresse
+        # Ex: "168 Robinson Road #23-03 Capital Tower Singapore" -> "Singapore"
+        # On cherche généralement à la fin
+        
+        # Si contient des mots-clés de ville connus, les extraire
+        known_city_keywords = ['singapore', 'singapour', 'hong-kong', 'hong kong', 'madrid', 'barcelone', 
+                               'barcelona', 'lisbonne', 'lisboa', 'coruña', 'a coruña']
+        for keyword in known_city_keywords:
+            if keyword in city_clean:
+                # Extraire le mot-clé et quelques mots autour
+                match = re.search(rf'\b{re.escape(keyword)}\b', city_clean)
+                if match:
+                    # Prendre le dernier mot significatif (généralement la ville)
+                    parts = city_clean.split()
+                    # Chercher le mot-clé dans les parties
+                    for i, part in enumerate(parts):
+                        if keyword in part:
+                            # Prendre cette partie et éventuellement la suivante
+                            if i < len(parts) - 1 and parts[i+1] not in ['tower', 'building', 'road', 'street']:
+                                city_clean = ' '.join(parts[i:i+2])
+                            else:
+                                city_clean = parts[i]
+                            break
+                break
+        
+        # Si on n'a pas trouvé, essayer d'extraire le dernier mot significatif
+        if is_address and city_clean == city_raw.strip().lower():
+            parts = [p for p in city_clean.split() if not re.match(r'^\d+', p) and p not in ['road', 'street', 'av.', 'boulevard', 'floor', 'tower', 'building', '#']]
+            if parts:
+                # Prendre les 2-3 derniers mots
+                city_clean = ' '.join(parts[-2:]) if len(parts) > 1 else parts[-1]
+    
+    # Supprimer les parenthèses et leur contenu (ex: "Casablanca (Maroc)")
+    city_clean = re.sub(r'\(.*?\)', '', city_clean).strip()
+    
+    # Supprimer les codes postaux à la fin ou au début (ex: "75001 Paris" ou "Paris 75001")
+    city_clean = re.sub(r'\b\d{5,6}\b', '', city_clean).strip()
+    
+    # Supprimer les caractères spéciaux d'adresses restants
+    city_clean = re.sub(r'[#º]', '', city_clean).strip()
+    
+    # Gérer les cas spéciaux avec "/" ou ","
+    if '/' in city_clean:
+        city_clean = city_clean.split('/')[0].strip()
+    if ',' in city_clean:
+        city_clean = city_clean.split(',')[0].strip()
+    
+    # Supprimer les mentions type "avec des déplacements..." ou "– Campus"
+    city_clean = re.sub(r' (avec|des|–|—|ou|et).*$', '', city_clean).strip()
+    
+    # Supprimer les espaces multiples
+    city_clean = re.sub(r'\s+', ' ', city_clean).strip()
+    
+    # Appliquer le mapping
+    if city_clean in CITY_MAPPING:
+        return CITY_MAPPING[city_clean]
+    
+    # Si pas dans le mapping, retourner en Title Case
+    # Regex pour mettre en majuscule après un tiret
+    city_title = city_clean.title()
+    return re.sub(r'-([a-z])', lambda m: '-' + m.group(1).upper(), city_title)
