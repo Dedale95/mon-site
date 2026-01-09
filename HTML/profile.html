@@ -275,8 +275,8 @@
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
-                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink">Mon Profil</a>
-                <a href="auth.html" class="nav-link" id="authLink" style="display: none;">Inscription / Connexion</a>
+                <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
+                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink" style="display: none;">Mon Profil</a>
                 <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
             </div>
         </div>
@@ -538,7 +538,28 @@
             window.location.href = 'auth.html';
         }
 
+        // Vérifier l'authentification et mettre à jour la navigation
+        function checkAuthAndUpdateNav() {
+            const token = localStorage.getItem('authToken');
+            const profileLink = document.getElementById('profileLink');
+            const authLink = document.getElementById('authLink');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (token) {
+                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
+                if (profileLink) profileLink.style.display = 'block';
+                if (authLink) authLink.style.display = 'none';
+                if (logoutBtn) logoutBtn.style.display = 'block';
+            } else {
+                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
+                if (profileLink) profileLink.style.display = 'none';
+                if (authLink) authLink.style.display = 'block';
+                if (logoutBtn) logoutBtn.style.display = 'none';
+            }
+        }
+
         // Initialisation
+        checkAuthAndUpdateNav();
         if (checkAuth()) {
             loadProfile();
         }
