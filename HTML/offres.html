@@ -1153,43 +1153,24 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             
-            // Le lien authLink doit toujours être visible par défaut
-            if (authLink) {
-                authLink.style.display = '';
-                authLink.style.visibility = '';
-            }
-            
             if (token) {
                 // Utilisateur connecté - afficher le profil, masquer l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'block';
-                    profileLink.style.removeProperty('display');
-                }
-                if (authLink) {
-                    authLink.style.display = 'none';
-                }
+                if (profileLink) profileLink.style.display = 'block';
+                if (authLink) authLink.style.display = 'none';
             } else {
                 // Utilisateur non connecté - masquer le profil, afficher l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'none';
-                }
-                if (authLink) {
-                    authLink.style.display = '';
-                    authLink.style.removeProperty('display');
-                }
+                if (profileLink) profileLink.style.display = 'none';
+                if (authLink) authLink.style.display = 'block';
             }
         }
 
-        // Appeler au chargement de la page
+        // Charger les jobs
         loadJobs();
         
-        // Mettre à jour la navigation après le chargement
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', checkAuthAndUpdateNav);
-        } else {
-            // DOM déjà chargé, exécuter immédiatement
-            setTimeout(checkAuthAndUpdateNav, 100);
-        }
+        // Mettre à jour la navigation après un court délai pour s'assurer que le DOM est prêt
+        setTimeout(function() {
+            checkAuthAndUpdateNav();
+        }, 50);
     </script>
 </body>
 
