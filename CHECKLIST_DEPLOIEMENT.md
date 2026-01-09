@@ -1,4 +1,4 @@
-# ✅ CHECKLIST DE DÉPLOIEMENT - À COCHER AU FUR ET À MESURE
+# ✅ CHECKLIST DE DÉPLOIEMENT - RENDER.COM (GRATUIT)
 
 Imprimez cette page ou gardez-la ouverte pendant le déploiement.
 
@@ -12,18 +12,20 @@ Imprimez cette page ou gardez-la ouverte pendant le déploiement.
 
 ---
 
-## 🚂 ÉTAPE 2 : RAILWAY
+## 🌐 ÉTAPE 2 : RENDER.COM
 
-- [ ] Compte Railway créé (connecté avec GitHub)
-- [ ] Nouveau projet créé depuis le dépôt `mon-site`
-- [ ] Service créé automatiquement
+- [ ] Compte Render créé (connecté avec GitHub)
+- [ ] Nouveau Web Service créé depuis le dépôt `mon-site`
+- [ ] Plan Free sélectionné
 
 ---
 
 ## ⚙️ ÉTAPE 3 : CONFIGURATION DU SERVICE
 
-- [ ] Root Directory = `PYTHON` (vérifié dans Settings)
-- [ ] Start Command = `python auth_server.py` (vérifié dans Settings)
+- [ ] Root Directory = `PYTHON` (dans le formulaire)
+- [ ] Build Command = `pip install -r requirements_auth.txt`
+- [ ] Start Command = `python auth_server.py`
+- [ ] Plan = Free
 
 ---
 
@@ -42,15 +44,15 @@ Ajoutez ces variables dans l'onglet "Variables" de Railway :
 
 ## 🌐 ÉTAPE 5 : DÉPLOIEMENT
 
-- [ ] Déploiement terminé (statut "Active" dans Railway)
-- [ ] URL Railway récupérée : _________________________________________
+- [ ] Déploiement terminé (statut "Live" dans Render)
+- [ ] URL Render récupérée : _________________________________________
 - [ ] Variable `BASE_URL` ajoutée avec l'URL ci-dessus
 
 ---
 
 ## 🧪 ÉTAPE 6 : TEST DU SERVEUR
 
-- [ ] Test de `/api/health` réussi
+- [ ] Test de `/api/health` réussi (⚠️ attendre 30-60s la première fois)
   - URL testée : https://________________________/api/health
   - Résultat : `{"status":"ok"}` ✅
 
@@ -60,10 +62,10 @@ Ajoutez ces variables dans l'onglet "Variables" de Railway :
 
 - [ ] Fichier `HTML/auth.html` modifié
   - Ancienne URL : `https://VOTRE-APP.railway.app/api`
-  - Nouvelle URL : _________________________________________
+  - Nouvelle URL Render : _________________________________________
 - [ ] Fichier `HTML/profile.html` modifié
   - Ancienne URL : `https://VOTRE-APP.railway.app/api`
-  - Nouvelle URL : _________________________________________
+  - Nouvelle URL Render : _________________________________________
 - [ ] Changements poussés sur GitHub
   - Commande exécutée : `git add HTML/auth.html HTML/profile.html`
   - Commande exécutée : `git commit -m "Mise à jour: URL API Railway"`
@@ -74,7 +76,7 @@ Ajoutez ces variables dans l'onglet "Variables" de Railway :
 ## 🎯 ÉTAPE 8 : TEST FINAL
 
 - [ ] Site visité : https://dedale95.github.io/mon-site/auth.html
-- [ ] Test d'inscription effectué
+- [ ] Test d'inscription effectué (⚠️ attendre 30-60s la première fois)
 - [ ] Inscription réussie ✅
 - [ ] Email de vérification reçu (vérifier les spams aussi)
 
@@ -82,11 +84,13 @@ Ajoutez ces variables dans l'onglet "Variables" de Railway :
 
 ## 📝 NOTES IMPORTANTES
 
-**URL Railway** : _________________________________________
+**URL Render** : _________________________________________
 
 **Email utilisé pour SMTP** : _________________________________________
 
 **Date du déploiement** : _________________________________________
+
+**⚠️ RAPPEL** : Le plan gratuit Render met le service en veille après 15 min d'inactivité. Le premier appel prend 30-60 secondes.
 
 ---
 
