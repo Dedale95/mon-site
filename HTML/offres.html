@@ -761,10 +761,36 @@
          * Charge les données depuis le fichier JSON (exporté depuis SQLite)
          */
         async function loadJobs() {
+            // Essayer plusieurs chemins possibles pour le fichier JSON
+            const possiblePaths = [
+                'scraped_jobs.json',
+                'HTML/scraped_jobs.json',
+                './scraped_jobs.json',
+                './HTML/scraped_jobs.json'
+            ];
+            
+            let data = null;
+            let lastError = null;
+            
+            for (const path of possiblePaths) {
+                try {
+                    const response = await fetch(path);
+                    if (response.ok) {
+                        data = await response.json();
+                        console.log(`✅ Fichier JSON chargé depuis : ${path}`);
+                        break;
+                    }
+                } catch (error) {
+                    lastError = error;
+                    console.log(`⚠️ Impossible de charger depuis ${path}, essai suivant...`);
+                }
+            }
+            
+            if (!data) {
+                throw new Error(`Impossible de charger le fichier JSON depuis aucun des chemins : ${possiblePaths.join(', ')}`);
+            }
+            
             try {
-                const response = await fetch('scraped_jobs.json');
-                if (!response.ok) throw new Error('Network response was not ok');
-                const data = await response.json();
 
                 if (!data || data.length === 0) {
                     console.warn('Aucune donnée trouvée dans le JSON');
@@ -834,13 +860,24 @@
             } catch (error) {
                 console.error('Erreur:', error);
                 let errorMsg = 'Impossible de charger les offres.';
+                
                 if (window.location.protocol === 'file:') {
                     errorMsg = '❌ Erreur de sécurité (CORS) : Le navigateur bloque l\'accès au JSON en local. <br><br><b>Pour corriger :</b><br>1. Ouvrez un terminal dans le dossier du projet.<br>2. Lancez <code>python -m http.server</code><br>3. Allez sur <code>http://localhost:8000/HTML/offres.html</code><br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON.';
                 } else {
-                    errorMsg += '<br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.';
+                    errorMsg += '<br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.<br><br>';
+                    errorMsg += '<b>Chemins testés :</b><br>';
+                    possiblePaths.forEach(path => {
+                        errorMsg += `- ${path}<br>`;
+                    });
+                    errorMsg += '<br><b>Si vous venez de mettre à jour le fichier sur GitHub, attendez quelques minutes que GitHub Pages se mette à jour.</b>';
                 }
-                document.getElementById('jobsContainer').innerHTML =
-                    `<div class="no-results"><h3>😕 Erreur</h3><p style="text-align:left; max-width:500px; margin:0 auto;">${errorMsg}</p></div>`;
+                
+                const container = document.getElementById('jobsContainer');
+                if (container) {
+                    container.innerHTML = `<div class="no-results"><h3>😕 Erreur</h3><p style="text-align:left; max-width:600px; margin:0 auto;">${errorMsg}</p></div>`;
+                } else {
+                    console.error('Container jobsContainer non trouvé');
+                }
             }
         }
 
