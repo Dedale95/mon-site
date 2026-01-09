@@ -1168,10 +1168,20 @@
         }
 
         // Appeler au chargement de la page
-        window.addEventListener('DOMContentLoaded', function() {
+        // S'assurer que le lien est visible par défaut
+        document.addEventListener('DOMContentLoaded', function() {
             checkAuthAndUpdateNav();
+            loadJobs();
         });
-        loadJobs();
+        
+        // Fallback si DOMContentLoaded a déjà été déclenché
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                checkAuthAndUpdateNav();
+            });
+        } else {
+            checkAuthAndUpdateNav();
+        }
     </script>
 </body>
 
