@@ -121,11 +121,23 @@ def normalize_city(city_raw):
         r'\d+º',
         r'capital tower',
         r'floor',
+        r'av\.\s+[a-z]',  # Ex: "Av. Linares", "Av. Miguel"
+        r'gmbh',
+        r'co\.\s*kg',
+        r'leasing',
+        r'factoring',
+    ]
+    
+    # Mots-clés de noms d'entreprises à exclure
+    company_keywords = [
+        'crédit agricole', 'leasing', 'factoring', 'gmbh', 'co.', 's.a.',
+        'indosuez', 'amundi', 'caceis', 'lcl', 'bforbank', 'merca'
     ]
     
     is_address = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in address_patterns)
+    is_company = any(keyword in city_clean for keyword in company_keywords)
     
-    if is_address:
+    if is_address or is_company:
         # Extraire juste le nom de ville depuis l'adresse
         # Chercher après les mots-clés d'adresse
         # Ex: "168 Robinson Road #23-03 Capital Tower Singapore" -> "Singapore"

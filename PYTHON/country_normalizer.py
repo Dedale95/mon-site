@@ -85,7 +85,13 @@ def normalize_country(country_raw):
     if not country_raw:
         return country_raw
     
-    country_clean = country_raw.strip().lower()
+    country_clean = country_raw.strip()
+    
+    # Supprimer le préfixe "- " si présent (ex: "- France" → "France")
+    if country_clean.startswith('- '):
+        country_clean = country_clean[2:].strip()
+    
+    country_clean = country_clean.lower()
     
     # Supprimer les codes numériques (ex: "91" qui est un département français)
     if country_clean.isdigit() or (len(country_clean) <= 3 and country_clean.isdigit()):
@@ -115,10 +121,13 @@ def normalize_country(country_raw):
         return COUNTRY_MAPPING[country_clean]
     
     # Si pas dans le mapping, mettre la première lettre en majuscule
-    result = country_raw.strip().title()
+    result = country_raw.strip()
+    if result.startswith('- '):
+        result = result[2:].strip()
+    result = result.title()
     
-    # Éviter les doublons : si le résultat est "France" et qu'on a déjà "France" dans le mapping, retourner "France"
-    if result.lower() == 'france':
+    # Harmoniser "France" (toujours retourner "France" sans préfixe)
+    if result.lower() == 'france' or result == '- France':
         return 'France'
     
     return result

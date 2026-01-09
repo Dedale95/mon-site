@@ -60,24 +60,49 @@ def merge_from_databases():
         return cleaned.strip()
     
     def normalize_education_level(edu):
-        """Normalise les niveaux d'étude pour harmoniser avec les filtres"""
+        """Normalise les niveaux d'étude selon les règles :
+        - Bac+3 et Bachelor → même niveau
+        - Certificat Fédéral de Capacité et Bac → fusionner
+        - Inférieur à Bac et Bac → fusionner
+        - Master et Bac+5 → fusionner
+        """
         if not edu:
             return edu
         
         edu_lower = edu.lower().strip()
         
-        # Mapping pour harmoniser
+        # Mapping de normalisation
         education_mapping = {
-            'bachelor': 'Bac + 5 / M2 et plus',
+            # Bachelor → Bac + 3 / L3
+            'bachelor': 'Bac + 3 / L3',
+            'bac + 3': 'Bac + 3 / L3',
+            'bac+3': 'Bac + 3 / L3',
+            'licence': 'Bac + 3 / L3',
+            'l3': 'Bac + 3 / L3',
+            
+            # Master → Bac + 5 / M2 et plus
             'master': 'Bac + 5 / M2 et plus',
+            'm2': 'Bac + 5 / M2 et plus',
             'mba': 'Bac + 5 / M2 et plus',
             'bac + 5': 'Bac + 5 / M2 et plus',
-            'bac + 4': 'Bac + 4 / M1',
-            'bac + 3': 'Bac + 3 / L3',
-            'bac + 2': 'Bac + 2 / L2',
+            'bac+5': 'Bac + 5 / M2 et plus',
+            'grande école': 'Bac + 5 / M2 et plus',
+            'école d\'ingénieur': 'Bac + 5 / M2 et plus',
+            'école de commerce': 'Bac + 5 / M2 et plus',
+            
+            # Certificat Fédéral de Capacité → Bac
+            'certificat fédéral de capacité': 'Bac',
+            'cfc': 'Bac',
+            'certificat  fédéral de capacité': 'Bac',
+            
+            # Inférieur à Bac → Bac
+            'inférieur à bac': 'Bac',
+            'inférieur au bac': 'Bac',
+            'sans bac': 'Bac',
+            
+            # Bac → Bac
             'bac': 'Bac',
-            'certificat fédéral de capacité': 'Certificat Fédéral de Capacité',
-            'inférieur à bac': 'Inférieur à Bac',
+            'baccalauréat': 'Bac',
         }
         
         # Vérifier les correspondances exactes d'abord
@@ -85,10 +110,10 @@ def merge_from_databases():
             if key in edu_lower:
                 return value
         
-        # Si déjà dans le format standard, le garder
+        # Si déjà dans un format standard, le garder
         standard_levels = [
             'Bac', 'Bac + 2 / L2', 'Bac + 3 / L3', 'Bac + 4 / M1',
-            'Bac + 5 / M2 et plus', 'Certificat Fédéral de Capacité', 'Inférieur à Bac'
+            'Bac + 5 / M2 et plus'
         ]
         if edu in standard_levels:
             return edu
