@@ -768,11 +768,16 @@
             }
             
             // Essayer plusieurs chemins possibles pour le fichier JSON
+            // On essaie d'abord la version allégée (seulement les offres Live)
             const possiblePaths = [
-                'scraped_jobs.json',
+                'HTML/scraped_jobs_live.json',
+                'scraped_jobs_live.json',
+                './HTML/scraped_jobs_live.json',
+                './scraped_jobs_live.json',
                 'HTML/scraped_jobs.json',
-                './scraped_jobs.json',
-                './HTML/scraped_jobs.json'
+                'scraped_jobs.json',
+                './HTML/scraped_jobs.json',
+                './scraped_jobs.json'
             ];
             
             let data = null;

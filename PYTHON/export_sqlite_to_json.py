@@ -94,12 +94,20 @@ def main():
             print(f"   ⚠️ Aucune offre trouvée dans {db_path.name}")
     
     if all_jobs:
-        # Sauvegarder en JSON
+        # Sauvegarder en JSON (version complète)
         with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
             json.dump(all_jobs, f, ensure_ascii=False, indent=2)
         
         print()
         print(f"✅ Export terminé : {len(all_jobs)} jobs sauvegardés dans {OUTPUT_JSON}")
+        
+        # Créer une version allégée avec seulement les offres Live (pour GitHub Pages)
+        live_jobs = [job for job in all_jobs if job.get('status') == 'Live']
+        OUTPUT_JSON_LIVE = HTML_DIR / "scraped_jobs_live.json"
+        with open(OUTPUT_JSON_LIVE, 'w', encoding='utf-8') as f:
+            json.dump(live_jobs, f, ensure_ascii=False, indent=2)
+        
+        print(f"✅ Version allégée créée : {len(live_jobs)} offres Live dans {OUTPUT_JSON_LIVE.name}")
         
         # Afficher la répartition par entreprise
         companies = {}
