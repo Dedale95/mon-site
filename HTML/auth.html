@@ -462,15 +462,16 @@
     <script>
         // Détecter automatiquement l'URL de l'API selon l'environnement
         const API_BASE = (() => {
-            // En production (GitHub Pages), utiliser une URL d'API déployée
+            // En production (GitHub Pages), utiliser l'URL de l'API déployée
+            // Remplacez cette URL par celle de votre déploiement (Railway, Render, etc.)
+            const PRODUCTION_API = 'https://VOTRE-APP.railway.app/api'; // À MODIFIER après déploiement
+            
             // En développement local, utiliser localhost
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 return 'http://localhost:5000/api';
             } else {
-                // Pour GitHub Pages, vous devrez déployer votre API Flask ailleurs
-                // Par exemple sur Heroku, Railway, Render, etc.
-                // Pour l'instant, on essaie localhost en cas d'erreur
-                return 'http://localhost:5000/api';
+                // En production, utiliser l'URL déployée
+                return PRODUCTION_API;
             }
         })();
         

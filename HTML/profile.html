@@ -411,7 +411,21 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        // Détecter automatiquement l'URL de l'API selon l'environnement
+        const API_BASE = (() => {
+            // Remplacez cette URL par celle de votre déploiement (Railway, Render, etc.)
+            const PRODUCTION_API = 'https://VOTRE-APP.railway.app/api'; // À MODIFIER après déploiement
+            
+            // En développement local, utiliser localhost
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:5000/api';
+            } else {
+                // En production, utiliser l'URL déployée
+                return PRODUCTION_API;
+            }
+        })();
+        
+        console.log('API Base URL:', API_BASE);
 
         // Vérifier si l'utilisateur est connecté
         function checkAuth() {

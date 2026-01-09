@@ -19,7 +19,19 @@ from functools import wraps
 import jwt
 
 app = Flask(__name__)
-CORS(app)  # Permet les requêtes depuis le frontend
+# Configuration CORS pour permettre les requêtes depuis GitHub Pages
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://dedale95.github.io",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "file://"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Configuration
 BASE_DIR = Path(__file__).parent
