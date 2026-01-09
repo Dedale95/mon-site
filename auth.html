@@ -460,7 +460,21 @@
     </footer>
 
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        // Détecter automatiquement l'URL de l'API selon l'environnement
+        const API_BASE = (() => {
+            // En production (GitHub Pages), utiliser une URL d'API déployée
+            // En développement local, utiliser localhost
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                return 'http://localhost:5000/api';
+            } else {
+                // Pour GitHub Pages, vous devrez déployer votre API Flask ailleurs
+                // Par exemple sur Heroku, Railway, Render, etc.
+                // Pour l'instant, on essaie localhost en cas d'erreur
+                return 'http://localhost:5000/api';
+            }
+        })();
+        
+        console.log('API Base URL:', API_BASE);
 
         // Fonction pour afficher/masquer le mot de passe
         function togglePassword(inputId, button) {
@@ -594,8 +608,15 @@
                     showError('signupError', data.error || 'Une erreur est survenue lors de l\'inscription');
                 }
             } catch (error) {
-                showError('signupError', 'Erreur de connexion au serveur. Veuillez réessayer.');
-                console.error('Error:', error);
+                console.error('Erreur complète:', error);
+                let errorMessage = 'Erreur de connexion au serveur. ';
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage += 'Le serveur d\'authentification n\'est pas accessible. ';
+                    errorMessage += 'Assurez-vous que le serveur Flask est démarré (python auth_server.py).';
+                } else {
+                    errorMessage += error.message;
+                }
+                showError('signupError', errorMessage);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'S\'inscrire';
