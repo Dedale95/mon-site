@@ -555,6 +555,8 @@
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link nav-link-primary">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
+                <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
+                <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
             </div>
         </div>
     </nav>
@@ -1145,6 +1147,25 @@
             closeSupportModal();
         }
 
+        // Vérifier l'authentification et mettre à jour la navigation
+        function checkAuthAndUpdateNav() {
+            const token = localStorage.getItem('authToken');
+            const profileLink = document.getElementById('profileLink');
+            const authLink = document.getElementById('authLink');
+            
+            if (token) {
+                // Utilisateur connecté
+                if (profileLink) profileLink.style.display = 'block';
+                if (authLink) authLink.style.display = 'none';
+            } else {
+                // Utilisateur non connecté
+                if (profileLink) profileLink.style.display = 'none';
+                if (authLink) authLink.style.display = 'block';
+            }
+        }
+
+        // Appeler au chargement de la page
+        checkAuthAndUpdateNav();
         loadJobs();
     </script>
 </body>

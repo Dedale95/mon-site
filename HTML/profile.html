@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - Taleos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+
+        /* Navigation */
+        nav {
+            background: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 10000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #666;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .nav-link-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-link-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .profile-header {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .profile-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .profile-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .form-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.95rem;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: white;
+            font-family: inherit;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group select {
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .success-message {
+            color: #10b981;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            padding: 12px;
+            background: #d1fae5;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            padding: 12px;
+            background: #fee2e2;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .logout-btn {
+            background: #ef4444;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px auto;
+            }
+
+            .profile-card {
+                padding: 30px 20px;
+            }
+
+            nav {
+                padding: 15px 20px;
+            }
+
+            .nav-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                width: 100%;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="landing_page_finance.html" class="logo">
+                <div class="logo-icon">T</div>
+                <div class="logo-text">Taleos</div>
+            </a>
+            <div class="nav-links">
+                <a href="landing_page_finance.html" class="nav-link">Présentation</a>
+                <a href="offres.html" class="nav-link">Offres</a>
+                <a href="filtres.html" class="nav-link">Recherche avancée</a>
+                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink">Mon Profil</a>
+                <a href="auth.html" class="nav-link" id="authLink" style="display: none;">Inscription / Connexion</a>
+                <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Container principal -->
+    <div class="container">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h1>Mon Profil</h1>
+                <p>Complétez votre profil pour personnaliser votre expérience</p>
+            </div>
+
+            <form id="profileForm" onsubmit="handleSaveProfile(event)">
+                <!-- Section Informations personnelles -->
+                <div class="form-section">
+                    <h2>Informations personnelles</h2>
+                    
+                    <div class="form-group">
+                        <label for="civility">Civilité</label>
+                        <select id="civility" name="civility">
+                            <option value="">Sélectionnez...</option>
+                            <option value="Madame">Madame</option>
+                            <option value="Monsieur">Monsieur</option>
+                            <option value="Ne souhaite pas se prononcer">Ne souhaite pas se prononcer</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="firstName">Prénom</label>
+                        <input type="text" id="firstName" name="firstName" placeholder="Votre prénom">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastName">Nom</label>
+                        <input type="text" id="lastName" name="lastName" placeholder="Votre nom">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="Votre numéro de téléphone">
+                    </div>
+                </div>
+
+                <!-- Section Adresse -->
+                <div class="form-section">
+                    <h2>Adresse</h2>
+                    
+                    <div class="form-group">
+                        <label for="address">Adresse</label>
+                        <input type="text" id="address" name="address" placeholder="Numéro et nom de rue">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="postalCode">Code postal</label>
+                        <input type="text" id="postalCode" name="postalCode" placeholder="Code postal">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city">Ville</label>
+                        <input type="text" id="city" name="city" placeholder="Votre ville">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="country">Pays</label>
+                        <select id="country" name="country">
+                            <option value="">Sélectionnez un pays...</option>
+                            <option value="Albanie">Albanie</option>
+                            <option value="Algérie">Algérie</option>
+                            <option value="Allemagne">Allemagne</option>
+                            <option value="Argentine">Argentine</option>
+                            <option value="Australie">Australie</option>
+                            <option value="Autre">Autre</option>
+                            <option value="Autriche">Autriche</option>
+                            <option value="Belgique">Belgique</option>
+                            <option value="Brunei">Brunei</option>
+                            <option value="Brésil">Brésil</option>
+                            <option value="Canada">Canada</option>
+                            <option value="Chili">Chili</option>
+                            <option value="Chine">Chine</option>
+                            <option value="Corée">Corée</option>
+                            <option value="Danemark">Danemark</option>
+                            <option value="Egypte">Egypte</option>
+                            <option value="Emirats Arabes Unis">Emirats Arabes Unis</option>
+                            <option value="Espagne">Espagne</option>
+                            <option value="Etats-Unis d'Amérique">Etats-Unis d'Amérique</option>
+                            <option value="Finlande">Finlande</option>
+                            <option value="France">France</option>
+                            <option value="Grèce">Grèce</option>
+                            <option value="Hong-Kong">Hong-Kong</option>
+                            <option value="Ile Maurice">Ile Maurice</option>
+                            <option value="Inde">Inde</option>
+                            <option value="Irlande">Irlande</option>
+                            <option value="Italie">Italie</option>
+                            <option value="Japon">Japon</option>
+                            <option value="Jersey">Jersey</option>
+                            <option value="Liban">Liban</option>
+                            <option value="Luxembourg">Luxembourg</option>
+                            <option value="Madagascar">Madagascar</option>
+                            <option value="Malaisie">Malaisie</option>
+                            <option value="Maroc">Maroc</option>
+                            <option value="Mexique">Mexique</option>
+                            <option value="Monaco">Monaco</option>
+                            <option value="Norvège">Norvège</option>
+                            <option value="Pays-Bas">Pays-Bas</option>
+                            <option value="Pologne">Pologne</option>
+                            <option value="Portugal">Portugal</option>
+                            <option value="Roumanie">Roumanie</option>
+                            <option value="Royaume-Uni">Royaume-Uni</option>
+                            <option value="Russie">Russie</option>
+                            <option value="République Tchèque">République Tchèque</option>
+                            <option value="Serbie">Serbie</option>
+                            <option value="Singapour">Singapour</option>
+                            <option value="Suisse">Suisse</option>
+                            <option value="Suède">Suède</option>
+                            <option value="Taiwan">Taiwan</option>
+                            <option value="Thailande">Thailande</option>
+                            <option value="Ukraine">Ukraine</option>
+                            <option value="Uruguay">Uruguay</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="success-message" id="successMessage"></div>
+                <div class="error-message" id="errorMessage"></div>
+
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // Vérifier si l'utilisateur est connecté
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            const userEmail = localStorage.getItem('userEmail');
+            
+            if (!token || !userEmail) {
+                // Rediriger vers la page de connexion
+                window.location.href = 'auth.html';
+                return false;
+            }
+            
+            // Afficher/masquer les éléments de navigation
+            document.getElementById('profileLink').style.display = 'block';
+            document.getElementById('authLink').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'block';
+            
+            return true;
+        }
+
+        // Charger le profil
+        async function loadProfile() {
+            const token = localStorage.getItem('authToken');
+            
+            try {
+                const response = await fetch(`${API_BASE}/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Remplir le formulaire avec les données existantes
+                    if (data.profile) {
+                        const profile = data.profile;
+                        if (profile.civility) document.getElementById('civility').value = profile.civility;
+                        if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                        if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                        if (profile.phone) document.getElementById('phone').value = profile.phone;
+                        if (profile.address) document.getElementById('address').value = profile.address;
+                        if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
+                        if (profile.city) document.getElementById('city').value = profile.city;
+                        if (profile.country) document.getElementById('country').value = profile.country;
+                    }
+                } else if (response.status === 401) {
+                    // Token invalide, rediriger vers la connexion
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'auth.html';
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement du profil:', error);
+            }
+        }
+
+        // Sauvegarder le profil
+        async function handleSaveProfile(event) {
+            event.preventDefault();
+            
+            const token = localStorage.getItem('authToken');
+            const formData = {
+                civility: document.getElementById('civility').value,
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                postal_code: document.getElementById('postalCode').value.trim(),
+                city: document.getElementById('city').value.trim(),
+                country: document.getElementById('country').value
+            };
+
+            const btn = document.getElementById('saveBtn');
+            const successMsg = document.getElementById('successMessage');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            btn.disabled = true;
+            btn.textContent = 'Enregistrement...';
+            successMsg.classList.remove('show');
+            errorMsg.classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/profile`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successMsg.textContent = 'Profil enregistré avec succès !';
+                    successMsg.classList.add('show');
+                } else {
+                    errorMsg.textContent = data.error || 'Une erreur est survenue lors de l\'enregistrement';
+                    errorMsg.classList.add('show');
+                    
+                    if (response.status === 401) {
+                        // Token invalide
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('userEmail');
+                        setTimeout(() => {
+                            window.location.href = 'auth.html';
+                        }, 2000);
+                    }
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Erreur de connexion au serveur. Veuillez réessayer.';
+                errorMsg.classList.add('show');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enregistrer';
+            }
+        }
+
+        // Déconnexion
+        function handleLogout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userEmail');
+            window.location.href = 'auth.html';
+        }
+
+        // Initialisation
+        if (checkAuth()) {
+            loadProfile();
+        }
+    </script>
+</body>
+</html>
