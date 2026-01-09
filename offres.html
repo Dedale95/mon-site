@@ -555,6 +555,8 @@
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link nav-link-primary">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
+                <a href="auth.html" class="nav-link" id="authLink" style="display: inline-block !important;">Inscription / Connexion</a>
+                <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
             </div>
         </div>
     </nav>
@@ -744,91 +746,38 @@
         }
 
         /**
-         * Parsage CSV robuste gérant les champs avec guillemets et retours à la ligne
+         * Charge les données depuis le fichier JSON (exporté depuis SQLite)
          */
-        function parseCSV(text) {
-            const arr = [];
-            let quote = false;
-            let row = [];
-            let col = '';
-
-            // Normalize newlines
-            text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-            for (let c = 0; c < text.length; c++) {
-                let cc = text[c];
-                let nc = text[c + 1];
-
-                if (cc === '"') {
-                    if (quote && nc === '"') {
-                        col += '"';
-                        c++;
-                        continue;
-                    }
-                    quote = !quote;
-                    continue;
-                }
-
-                if (cc === ',' && !quote) {
-                    row.push(col);
-                    col = '';
-                    continue;
-                }
-
-                if (cc === '\n' && !quote) {
-                    row.push(col);
-                    // Only push if row has content or we want to handle empty lines strictly
-                    if (row.length > 1 || (row.length === 1 && row[0] !== '')) {
-                        arr.push(row);
-                    }
-                    row = [];
-                    col = '';
-                    continue;
-                }
-
-                col += cc;
-            }
-
-            // Push last row if exists
-            if (row.length > 0 || col.length > 0) {
-                row.push(col);
-                arr.push(row);
-            }
-
-            return arr;
-        }
-
         async function loadJobs() {
             try {
-                const response = await fetch('scraped_jobs.csv');
+                const response = await fetch('scraped_jobs.json');
                 if (!response.ok) throw new Error('Network response was not ok');
-                const text = await response.text();
-                const data = parseCSV(text);
+                const data = await response.json();
 
-                if (data.length < 2) return;
+                if (!data || data.length === 0) {
+                    console.warn('Aucune donnée trouvée dans le JSON');
+                    return;
+                }
 
-                const headers = data[0];
                 allJobs = [];
 
-                for (let i = 1; i < data.length; i++) {
-                    const row = data[i];
-                    const job = {};
-                    headers.forEach((h, index) => {
-                        let value = row[index] || '';
-                        // Harmonisation des types de contrat
-                        if (h === 'contract_type') {
-                            if (value.toLowerCase() === 'alternance' || value.toLowerCase() === 'alternance / apprentissage') {
-                                value = 'Alternance / Apprentissage';
-                            }
+                for (let i = 0; i < data.length; i++) {
+                    const job = data[i];
+                    
+                    // Harmonisation des types de contrat
+                    if (job.contract_type) {
+                        const contractLower = job.contract_type.toLowerCase();
+                        if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
+                            job.contract_type = 'Alternance / Apprentissage';
                         }
-                        // Harmonisation des niveaux d'études
-                        if (h === 'education_level') {
-                            if (value.toLowerCase().includes('certificat fédéral de capacité') || value.toLowerCase().includes('cfc')) {
-                                value = 'Bac / Certificat Fédéral de Capacité (CFC)';
-                            }
+                    }
+                    
+                    // Harmonisation des niveaux d'études
+                    if (job.education_level) {
+                        if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
+                            job.education_level = 'Certificat Fédéral de Capacité (CFC)';
                         }
-                        job[h] = value;
-                    });
+                    }
 
                     job.cleanRegions = [];
                     job.cleanCountries = [];
@@ -874,7 +823,9 @@
                 console.error('Erreur:', error);
                 let errorMsg = 'Impossible de charger les offres.';
                 if (window.location.protocol === 'file:') {
-                    errorMsg = '❌ Erreur de sécurité (CORS) : Le navigateur bloque l\'accès au CSV en local. <br><br><b>Pour corriger :</b><br>1. Ouvrez un terminal dans le dossier du projet.<br>2. Lancez <code>python -m http.server</code><br>3. Allez sur <code>http://localhost:8000/HTML/offres.html</code>';
+                    errorMsg = '❌ Erreur de sécurité (CORS) : Le navigateur bloque l\'accès au JSON en local. <br><br><b>Pour corriger :</b><br>1. Ouvrez un terminal dans le dossier du projet.<br>2. Lancez <code>python -m http.server</code><br>3. Allez sur <code>http://localhost:8000/HTML/offres.html</code><br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON.';
+                } else {
+                    errorMsg += '<br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.';
                 }
                 document.getElementById('jobsContainer').innerHTML =
                     `<div class="no-results"><h3>😕 Erreur</h3><p style="text-align:left; max-width:500px; margin:0 auto;">${errorMsg}</p></div>`;
@@ -918,8 +869,8 @@
                 return a.localeCompare(b);
             });
 
-            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set(), true);
-            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set(), true);
+            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set());
+            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set());
             populateCheckboxFilter('contractFilter', sortedContracts, new Set());
             populateCheckboxFilter('experienceFilter', sortedExperiences, new Set());
             populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set());
@@ -929,18 +880,12 @@
             document.getElementById('searchInput').addEventListener('input', applyFilters);
         }
 
-        function populateCheckboxFilter(id, values, disabledValues = new Set(), shouldHide = false) {
+        function populateCheckboxFilter(id, values, disabledValues = new Set()) {
             const container = document.getElementById(id);
             // Sauvegarder les valeurs actuellement cochées
             const checkedValues = new Set(getCheckedValues(id));
             container.innerHTML = '';
             values.forEach(value => {
-                // If shouldHide is true (for country/region), skip rendering disabled options
-                // If shouldHide is false (for other filters), render but grey out
-                if (shouldHide && disabledValues.has(value)) {
-                    return;
-                }
-
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -952,8 +897,7 @@
                     checkbox.checked = true;
                 }
 
-                // If shouldHide is false and value is disabled, grey it out
-                if (!shouldHide && disabledValues.has(value)) {
+                if (disabledValues.has(value)) {
                     checkbox.disabled = true;
                     label.classList.add('disabled');
                 }
@@ -1087,9 +1031,9 @@
             });
 
             populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
-                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), true);
+                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))));
             populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
-                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), true);
+                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))));
 
             const availableContracts = new Set();
             const availableExperiences = new Set();
@@ -1203,7 +1147,33 @@
             closeSupportModal();
         }
 
+        // Vérifier l'authentification et mettre à jour la navigation
+        function checkAuthAndUpdateNav() {
+            const token = localStorage.getItem('authToken');
+            const profileLink = document.getElementById('profileLink');
+            const authLink = document.getElementById('authLink');
+            
+            if (token) {
+                // Utilisateur connecté - afficher le profil, masquer l'auth
+                if (profileLink) profileLink.style.display = 'block';
+                if (authLink) authLink.style.display = 'none';
+            } else {
+                // Utilisateur non connecté - masquer le profil, afficher l'auth
+                if (profileLink) profileLink.style.display = 'none';
+                if (authLink) {
+                    authLink.style.display = 'inline-block';
+                    authLink.style.removeProperty('display');
+                }
+            }
+        }
+
+        // Charger les jobs
         loadJobs();
+        
+        // Mettre à jour la navigation - exécuter plusieurs fois pour garantir l'affichage
+        checkAuthAndUpdateNav();
+        setTimeout(checkAuthAndUpdateNav, 100);
+        setTimeout(checkAuthAndUpdateNav, 500);
     </script>
 </body>
 
