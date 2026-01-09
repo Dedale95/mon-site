@@ -794,10 +794,18 @@
                     console.log(`🔄 Tentative de chargement depuis : ${path}`);
                     const response = await fetch(path);
                     if (response.ok) {
-                        data = await response.json();
-                        loadedPath = path;
-                        console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
-                        break;
+                        try {
+                            data = await response.json();
+                            if (data && Array.isArray(data) && data.length > 0) {
+                                loadedPath = path;
+                                console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
+                                break;
+                            } else {
+                                console.log(`⚠️ Fichier JSON vide ou invalide pour : ${path}`);
+                            }
+                        } catch (parseError) {
+                            console.log(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError.message);
+                        }
                     } else {
                         console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
                     }
