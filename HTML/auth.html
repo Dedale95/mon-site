@@ -172,6 +172,42 @@
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
         }
 
+        /* Container pour les champs de mot de passe avec bouton d'œil */
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input-wrapper input {
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .password-toggle:focus {
+            outline: none;
+        }
+
         .form-group input.error {
             border-color: #ef4444;
         }
@@ -256,6 +292,34 @@
             color: #10b981;
         }
 
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+        }
+
+        footer p {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .footer-love {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .footer-love span {
+            display: inline-block;
+        }
+
         @media (max-width: 768px) {
             .auth-container {
                 margin-top: 80px;
@@ -311,7 +375,12 @@
 
                 <div class="form-group">
                     <label for="loginPassword">Mot de passe</label>
-                    <input type="password" id="loginPassword" name="password" required>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="loginPassword" name="password" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Afficher/Masquer le mot de passe">
+                            <span id="loginPasswordToggle">👁️</span>
+                        </button>
+                    </div>
                     <div class="error-message" id="loginPasswordError"></div>
                 </div>
 
@@ -331,7 +400,12 @@
 
                 <div class="form-group">
                     <label for="signupPassword">Mot de passe</label>
-                    <input type="password" id="signupPassword" name="password" required oninput="validatePassword()">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="signupPassword" name="password" required oninput="validatePassword()">
+                        <button type="button" class="password-toggle" onclick="togglePassword('signupPassword', this)" aria-label="Afficher/Masquer le mot de passe">
+                            <span id="signupPasswordToggle">👁️</span>
+                        </button>
+                    </div>
                     <div class="password-requirements" id="passwordRequirements">
                         <strong>Le mot de passe doit contenir :</strong>
                         <ul>
@@ -346,7 +420,12 @@
 
                 <div class="form-group">
                     <label for="confirmPassword">Confirmer le mot de passe</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required oninput="validatePasswordMatch()">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required oninput="validatePasswordMatch()">
+                        <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword', this)" aria-label="Afficher/Masquer le mot de passe">
+                            <span id="confirmPasswordToggle">👁️</span>
+                        </button>
+                    </div>
                     <div class="error-message" id="confirmPasswordError"></div>
                 </div>
 
@@ -358,8 +437,32 @@
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 Taleos. Tous droits réservés.</p>
+        <div class="footer-love">
+            <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
+            <span>•</span>
+            <span>🇫🇷 Fièrement Made in France</span>
+        </div>
+    </footer>
+
     <script>
         const API_BASE = 'http://localhost:5000/api';
+
+        // Fonction pour afficher/masquer le mot de passe
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const toggleIcon = button.querySelector('span');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggleIcon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggleIcon.textContent = '👁️';
+            }
+        }
 
         function switchTab(tab) {
             // Mettre à jour les onglets
