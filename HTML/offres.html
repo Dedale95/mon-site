@@ -1167,10 +1167,8 @@
         // Charger les jobs
         loadJobs();
         
-        // Mettre à jour la navigation après un court délai pour s'assurer que le DOM est prêt
-        setTimeout(function() {
-            checkAuthAndUpdateNav();
-        }, 50);
+        // Mettre à jour la navigation
+        checkAuthAndUpdateNav();
     </script>
 </body>
 
