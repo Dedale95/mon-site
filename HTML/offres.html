@@ -1160,12 +1160,17 @@
             } else {
                 // Utilisateur non connecté
                 if (profileLink) profileLink.style.display = 'none';
-                if (authLink) authLink.style.display = 'block';
+                if (authLink) {
+                    authLink.style.display = 'block';
+                    authLink.style.visibility = 'visible';
+                }
             }
         }
 
         // Appeler au chargement de la page
-        checkAuthAndUpdateNav();
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuthAndUpdateNav();
+        });
         loadJobs();
     </script>
 </body>
