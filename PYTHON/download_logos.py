@@ -74,25 +74,34 @@ def download_logo(domain: str, filename: str, size: int = 128) -> bool:
     Returns:
         True si le téléchargement a réussi, False sinon
     """
-    # Essayer plusieurs URLs possibles
+    # Essayer plusieurs services alternatifs (Clearbit a été discontinué le 1er décembre 2025)
+    # Brandfetch offre un endpoint gratuit sans clé API
     urls_to_try = [
+        # Brandfetch - Endpoint gratuit sans authentification
+        f"https://cdn.brandfetch.io/{domain}/logo?transparent=true",
+        f"https://cdn.brandfetch.io/{domain}/logo",
+        # Logo.dev (nécessite clé API - on essaie quand même au cas où)
+        f"https://img.logo.dev/{domain}?token=free",
+        # Ancien Clearbit (discontinué mais on essaie au cas où)
         f"https://logo.clearbit.com/{domain}?size={size}",
         f"https://logo.clearbit.com/{domain}",
-        f"http://logo.clearbit.com/{domain}?size={size}",
     ]
     
     for url in urls_to_try:
         try:
             print(f"📥 Tentative {domain} ({url[:50]}...)...", end=" ", flush=True)
             
-            # Configuration avec retry automatique
+            # Configuration avec retry automatique et headers
             session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
             adapter = requests.adapters.HTTPAdapter(max_retries=3)
             session.mount('http://', adapter)
             session.mount('https://', adapter)
             
             # Télécharger avec timeout plus long et retry
-            response = session.get(url, timeout=15, allow_redirects=True)
+            response = session.get(url, timeout=20, allow_redirects=True, verify=True)
             
             if response.status_code == 200 and response.content:
                 # Vérifier que c'est bien une image
