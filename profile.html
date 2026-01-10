@@ -510,6 +510,90 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Checkbox Styles */
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            color: #1a1a1a;
+            position: relative;
+            min-height: 44px;
+        }
+
+        .checkbox-label:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 0;
+            height: 0;
+        }
+
+        .checkbox-label input[type="checkbox"] + .checkbox-text::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 5px;
+            background: white;
+            margin-right: 0;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .checkbox-label:hover input[type="checkbox"] + .checkbox-text::before {
+            border-color: #667eea;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkbox-text::before {
+            background: #667eea;
+            border-color: #667eea;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2 6l3 3 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 12px 12px;
+        }
+
+        .checkbox-label input[type="checkbox"]:focus + .checkbox-text::before {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+
+        .checkbox-text {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Footer */
         footer {
             background: #1a1a1a;
@@ -723,6 +807,107 @@
                             <option value="Ukraine">Ukraine</option>
                             <option value="Uruguay">Uruguay</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Section Métiers qui m'intéressent -->
+                <div class="form-section">
+                    <h2>Les métiers qui m'intéressent</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Sélectionnez tous les métiers qui vous intéressent. Vous pouvez en sélectionner plusieurs.</p>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Achat" id="job_achat">
+                            <span class="checkbox-text">Achat</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Administration / Services Généraux" id="job_admin">
+                            <span class="checkbox-text">Administration / Services Généraux</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Analyse financière et économique" id="job_analyse">
+                            <span class="checkbox-text">Analyse financière et économique</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Assurances" id="job_assurances">
+                            <span class="checkbox-text">Assurances</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Autres" id="job_autres">
+                            <span class="checkbox-text">Autres</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Commercial / Relations Clients" id="job_commercial">
+                            <span class="checkbox-text">Commercial / Relations Clients</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Conformité / Sécurité financière" id="job_conformite">
+                            <span class="checkbox-text">Conformité / Sécurité financière</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Direction générale" id="job_direction">
+                            <span class="checkbox-text">Direction générale</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Financement et Investissement" id="job_financement">
+                            <span class="checkbox-text">Financement et Investissement</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Finances / Comptabilité / Contrôle de gestion" id="job_finances">
+                            <span class="checkbox-text">Finances / Comptabilité / Contrôle de gestion</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Gestion d'Actifs" id="job_actifs">
+                            <span class="checkbox-text">Gestion d'Actifs</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Gestion des opérations" id="job_operations">
+                            <span class="checkbox-text">Gestion des opérations</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Immobilier" id="job_immobilier">
+                            <span class="checkbox-text">Immobilier</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Inspection / Audit" id="job_audit">
+                            <span class="checkbox-text">Inspection / Audit</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Juridique" id="job_juridique">
+                            <span class="checkbox-text">Juridique</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Marketing et Communication" id="job_marketing">
+                            <span class="checkbox-text">Marketing et Communication</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Métiers du médical et social" id="job_medical">
+                            <span class="checkbox-text">Métiers du médical et social</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Organisation / Qualité" id="job_organisation">
+                            <span class="checkbox-text">Organisation / Qualité</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Recouvrement / Contentieux" id="job_recouvrement">
+                            <span class="checkbox-text">Recouvrement / Contentieux</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Ressources Humaines" id="job_rh">
+                            <span class="checkbox-text">Ressources Humaines</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="Risques / Contrôles permanents" id="job_risques">
+                            <span class="checkbox-text">Risques / Contrôles permanents</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="IT, Digital et Data" id="job_it">
+                            <span class="checkbox-text">IT, Digital et Data</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="jobs" value="RSE / ESG" id="job_rse">
+                            <span class="checkbox-text">RSE / ESG</span>
+                        </label>
                     </div>
                 </div>
 
@@ -998,6 +1183,9 @@
                         if (profile.country) document.getElementById('country').value = profile.country;
                         console.log('✅ Profil chargé depuis Firestore');
                         
+                        // Charger les métiers sélectionnés
+                        loadJobs(profile);
+                        
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
                         loadFileInfo('letter', profile);
@@ -1035,6 +1223,9 @@
                         if (profile.country) document.getElementById('country').value = profile.country;
                         console.log('✅ Profil chargé depuis localStorage');
                         
+                        // Charger les métiers sélectionnés
+                        loadJobs(profile);
+                        
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
                         loadFileInfo('letter', profile);
@@ -1055,6 +1246,27 @@
                     console.log('ℹ️ Aucun profil sauvegardé trouvé pour cet utilisateur');
                 }
             }
+        }
+
+        // Fonction pour charger les métiers sélectionnés
+        function loadJobs(profile) {
+            const jobs = profile.jobs || [];
+            
+            // Décocher tous les checkboxes d'abord
+            const allCheckboxes = document.querySelectorAll('input[name="jobs"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Cocher les métiers sauvegardés
+            jobs.forEach(jobValue => {
+                const checkbox = document.querySelector(`input[name="jobs"][value="${jobValue}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            console.log(`✅ Métiers chargés: ${jobs.length} métier(s) sélectionné(s)`);
         }
 
         // Fonction pour charger et afficher les informations d'un fichier existant
@@ -1371,6 +1583,13 @@
                 return;
             }
             
+            // Collecter les métiers sélectionnés
+            const selectedJobs = [];
+            const jobCheckboxes = document.querySelectorAll('input[name="jobs"]:checked');
+            jobCheckboxes.forEach(checkbox => {
+                selectedJobs.push(checkbox.value);
+            });
+
             const formData = {
                 civility: document.getElementById('civility').value,
                 first_name: document.getElementById('firstName').value.trim(),
@@ -1380,6 +1599,7 @@
                 postal_code: document.getElementById('postalCode').value.trim(),
                 city: document.getElementById('city').value.trim(),
                 country: document.getElementById('country').value,
+                jobs: selectedJobs, // Array des métiers sélectionnés
                 email: userEmail || '',
                 updated_at: new Date().toISOString(),
                 created_at: null // Sera défini lors de la première création
