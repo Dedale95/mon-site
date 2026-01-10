@@ -1097,34 +1097,59 @@
                 container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données.</p></div>';
             }
             
+            // Vérifier si on est en mode file:// (fichier ouvert directement)
+            const isFileProtocol = window.location.protocol === 'file:';
+            if (isFileProtocol) {
+                console.warn('⚠️ Fichier ouvert via file:// - Les requêtes fetch peuvent être bloquées. Utilisez un serveur local.');
+            }
+            
             // Essayer plusieurs chemins possibles pour le fichier JSON
             // On essaie d'abord la version allégée (seulement les offres Live)
             // On essaie aussi via raw.githubusercontent.com comme fallback
-            // Priorité : chemin relatif selon l'emplacement du fichier HTML
             const currentPath = window.location.pathname;
             const currentHref = window.location.href;
             const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
                                    currentHref.includes('/HTML/') || currentHref.includes('HTML/');
             
             // Construire les chemins selon l'emplacement du fichier HTML
-            const possiblePaths = [
-                // Priorité 1 : Si HTML est dans HTML/, essayer d'abord le chemin relatif simple (le plus probable)
-                'scraped_jobs_live.json',
-                './scraped_jobs_live.json',
-                // Priorité 2 : Si HTML est à la racine, essayer avec préfixe HTML/
-                'HTML/scraped_jobs_live.json',
-                './HTML/scraped_jobs_live.json',
-                // Fallback : Si scraped_jobs_live.json ne fonctionne pas, essayer scraped_jobs.json
-                'scraped_jobs.json',
-                './scraped_jobs.json',
-                'HTML/scraped_jobs.json',
-                './HTML/scraped_jobs.json',
-                // Fallback GitHub (si déployé sur GitHub Pages)
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json'
-            ];
+            // Si file://, prioriser GitHub Raw qui fonctionne même avec file://
+            // Sinon, prioriser les chemins locaux pour performance
+            let possiblePaths;
+            if (isFileProtocol) {
+                // Si file://, essayer d'abord GitHub Raw (fonctionne même avec file://)
+                possiblePaths = [
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json',
+                    // Essayer aussi les chemins locaux (peu probable qu'ils fonctionnent avec file://)
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs_live.json',
+                    './scraped_jobs_live.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json',
+                    'scraped_jobs.json',
+                    './scraped_jobs.json'
+                ];
+            } else {
+                // Si HTTP/HTTPS, prioriser les chemins locaux (plus rapide)
+                possiblePaths = [
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs_live.json',
+                    './scraped_jobs_live.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json',
+                    'scraped_jobs.json',
+                    './scraped_jobs.json',
+                    // Fallback GitHub (si déployé sur GitHub Pages)
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json'
+                ];
+            }
             
             let data = null;
             let loadedPath = null;
@@ -1152,7 +1177,10 @@
                     }
                 } catch (error) {
                     lastError = error;
-                    console.log(`⚠️ Erreur lors du chargement depuis ${path}:`, error.message);
+                    // Ne pas afficher les erreurs CORS pour file:// car c'est attendu
+                    if (!isFileProtocol || (!error.message.includes('CORS') && !error.message.includes('Failed to fetch'))) {
+                        console.log(`⚠️ Erreur lors du chargement depuis ${path}:`, error.message);
+                    }
                 }
             }
             
@@ -1160,22 +1188,53 @@
                 console.error('❌ Impossible de charger le fichier JSON depuis aucun des chemins testés');
                 const container = document.getElementById('jobsContainer');
                 if (container) {
-                    container.innerHTML = `
-                        <div class="no-results">
-                            <h3>😕 Erreur</h3>
-                            <p>Impossible de charger les offres.</p>
-                            <p><strong>Note :</strong> Assurez-vous d'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.</p>
-                            <details style="margin-top: 20px; text-align: left;">
-                                <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Chemins testés :</summary>
-                                <ul style="margin-left: 20px; margin-top: 10px;">
-                                    ${possiblePaths.map(p => `<li>${p}</li>`).join('')}
-                                </ul>
-                            </details>
-                            <p style="margin-top: 20px; font-size: 0.9rem; color: #666;">
-                                Si vous venez de mettre à jour le fichier sur GitHub, attendez quelques minutes que GitHub Pages se mette à jour.
-                            </p>
-                        </div>
-                    `;
+                    // Message d'erreur adapté selon le protocole
+                    let errorMessage = '';
+                    if (isFileProtocol) {
+                        errorMessage = `
+                            <div class="no-results">
+                                <h3>😕 Erreur de chargement</h3>
+                                <p><strong>Le fichier est ouvert via file://</strong></p>
+                                <p>Les navigateurs bloquent les requêtes vers les fichiers locaux pour des raisons de sécurité CORS.</p>
+                                <p style="margin-top: 20px;"><strong>Solution : Utilisez un serveur local</strong></p>
+                                <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 0.9rem; text-align: left;">
+                                    <p style="margin: 10px 0; font-weight: bold;">Méthode 1 : Script automatique (recommandé)</p>
+                                    <p style="margin: 10px 0;">Dans un terminal, exécutez :</p>
+                                    <p style="margin: 10px 0; padding-left: 20px;">./start_server.sh</p>
+                                    <p style="margin: 20px 0 10px 0; font-weight: bold;">Méthode 2 : Commande manuelle</p>
+                                    <p style="margin: 10px 0;">Dans un terminal, exécutez :</p>
+                                    <p style="margin: 10px 0; padding-left: 20px;"><code>cd HTML</code></p>
+                                    <p style="margin: 10px 0; padding-left: 20px;"><code>python3 -m http.server 8000</code></p>
+                                    <p style="margin: 20px 0 10px 0;">Puis ouvrez dans votre navigateur :</p>
+                                    <p style="margin: 10px 0; padding-left: 20px;"><a href="http://localhost:8000/offres.html" target="_blank" style="color: #667eea; text-decoration: underline;">http://localhost:8000/offres.html</a></p>
+                                </div>
+                                <p style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                                    <strong>Alternative :</strong> Les données sont également disponibles sur GitHub : 
+                                    <a href="https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json" target="_blank" style="color: #667eea; text-decoration: underline;">
+                                        GitHub Raw
+                                    </a>
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        errorMessage = `
+                            <div class="no-results">
+                                <h3>😕 Erreur</h3>
+                                <p>Impossible de charger les offres.</p>
+                                <p><strong>Note :</strong> Assurez-vous d'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.</p>
+                                <details style="margin-top: 20px; text-align: left;">
+                                    <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Chemins testés :</summary>
+                                    <ul style="margin-left: 20px; margin-top: 10px;">
+                                        ${possiblePaths.map(p => `<li>${p}</li>`).join('')}
+                                    </ul>
+                                </details>
+                                <p style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                                    Si vous venez de mettre à jour le fichier sur GitHub, attendez quelques minutes que GitHub Pages se mette à jour.
+                                </p>
+                            </div>
+                        `;
+                    }
+                    container.innerHTML = errorMessage;
                 }
                 throw new Error(`Impossible de charger le fichier JSON depuis aucun des chemins : ${possiblePaths.join(', ')}`);
             }
@@ -1249,25 +1308,8 @@
                 updateStats();
             } catch (error) {
                 console.error('Erreur:', error);
-                let errorMsg = 'Impossible de charger les offres.';
-                
-                if (window.location.protocol === 'file:') {
-                    errorMsg = '❌ Erreur de sécurité (CORS) : Le navigateur bloque l\'accès au JSON en local. <br><br><b>Pour corriger :</b><br>1. Ouvrez un terminal dans le dossier du projet.<br>2. Lancez <code>python -m http.server</code><br>3. Allez sur <code>http://localhost:8000/HTML/offres.html</code><br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON.';
-                } else {
-                    errorMsg += '<br><br><b>Note :</b> Assurez-vous d\'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.<br><br>';
-                    errorMsg += '<b>Chemins testés :</b><br>';
-                    possiblePaths.forEach(path => {
-                        errorMsg += `- ${path}<br>`;
-                    });
-                    errorMsg += '<br><b>Si vous venez de mettre à jour le fichier sur GitHub, attendez quelques minutes que GitHub Pages se mette à jour.</b>';
-                }
-                
-                const container = document.getElementById('jobsContainer');
-                if (container) {
-                    container.innerHTML = `<div class="no-results"><h3>😕 Erreur</h3><p style="text-align:left; max-width:600px; margin:0 auto;">${errorMsg}</p></div>`;
-                } else {
-                    console.error('Container jobsContainer non trouvé');
-                }
+                // Le message d'erreur est déjà géré dans le bloc if (!data) ci-dessus
+                // Cette partie du catch ne devrait normalement pas être atteinte
             }
         }
 
