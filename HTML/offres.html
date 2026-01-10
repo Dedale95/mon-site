@@ -856,7 +856,9 @@
                 .replace(/\s*groupe\s*$/gi, '')
                 .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
                 .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
-                .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques
+                // Ne pas supprimer "societe_" pour "Société Générale" (fichier = societe_generale.png)
+                // Supprimer seulement les préfixes juridiques simples (sa_, sas_, sarl_) mais garder societe_
+                .replace(/^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques (mais garder societe_)
                 .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, '') // Supprimer les suffixes juridiques restants
                 .replace(/^bbforbank$/, 'bforbank'); // Correction spéciale pour BforBank (fichier = bforbank.png)
             
@@ -889,9 +891,11 @@
                 'credit_agricole_group_infrastructure_platform': ['credit_agricole', 'credit_agricole_group'],
                 'deloitte': ['deloitte', 'deloitte_france'],
                 'societe_generale': ['societe_generale'],
+                'generale': ['societe_generale'], // Correction : "Société Générale" normalisé devient "generale" mais fichier = societe_generale.png
                 'caceis': ['caceis'],
                 'lcl': ['lcl', 'credit_lyonnais'],
-                'indosuez_wealth_management': ['indosuez_wealth_management', 'indosuez'],
+                'indosuez_wealth_management': ['indosuez', 'indosuez_wealth_management'], // Correction : fichier = indosuez.png
+                'indosuez': ['indosuez'],
                 'amundi': ['amundi'],
                 'bbforbank': ['bforbank'], // Correction : fichier s'appelle bforbank.png (avec 1 b)
                 'bforbank': ['bforbank'],
