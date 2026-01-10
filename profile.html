@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -266,6 +267,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav>
@@ -279,8 +281,10 @@
                 <a href="offres.html" class="nav-link">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
-                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink" style="display: none;">Mon Profil</a>
-                <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
+                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink" style="display: none;">Mon
+                    Profil</a>
+                <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()"
+                    style="display: none;">Déconnexion</button>
             </div>
         </div>
     </nav>
@@ -297,7 +301,7 @@
                 <!-- Section Informations personnelles -->
                 <div class="form-section">
                     <h2>Informations personnelles</h2>
-                    
+
                     <div class="form-group">
                         <label for="civility">Civilité</label>
                         <select id="civility" name="civility">
@@ -327,7 +331,7 @@
                 <!-- Section Adresse -->
                 <div class="form-section">
                     <h2>Adresse</h2>
-                    
+
                     <div class="form-group">
                         <label for="address">Adresse</label>
                         <input type="text" id="address" name="address" placeholder="Numéro et nom de rue">
@@ -419,12 +423,12 @@
         // ============================================
         // REMPLACEZ ces valeurs par celles de votre projet Firebase
         const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
-            authDomain: "VOTRE_AUTH_DOMAIN",
-            projectId: "VOTRE_PROJECT_ID",
-            storageBucket: "VOTRE_STORAGE_BUCKET",
-            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-            appId: "VOTRE_APP_ID"
+            apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
+            authDomain: "project-taleos.firebaseapp.com",
+            projectId: "project-taleos",
+            storageBucket: "project-taleos.firebasestorage.app",
+            messagingSenderId: "974062127016",
+            appId: "1:974062127016:web:b6cffae44f1bae56f03f9d"
         };
 
         // Initialiser Firebase
@@ -434,16 +438,16 @@
         // Vérifier si l'utilisateur est connecté
         function checkAuth() {
             const user = auth.currentUser;
-            
+
             if (!user) {
                 // Rediriger vers la page de connexion
                 window.location.href = 'auth.html';
                 return false;
             }
-            
+
             return true;
         }
-        
+
         // Écouter les changements d'état d'authentification
         auth.onAuthStateChanged((user) => {
             if (!user) {
@@ -458,11 +462,11 @@
                 window.location.href = 'auth.html';
                 return;
             }
-            
+
             // Charger le profil depuis localStorage (clé basée sur l'email de l'utilisateur)
             const profileKey = `profile_${user.email}`;
             const savedProfile = localStorage.getItem(profileKey);
-            
+
             if (savedProfile) {
                 try {
                     const profile = JSON.parse(savedProfile);
@@ -483,7 +487,7 @@
         // Sauvegarder le profil dans localStorage
         async function handleSaveProfile(event) {
             event.preventDefault();
-            
+
             const user = auth.currentUser;
             if (!user) {
                 window.location.href = 'auth.html';
@@ -504,7 +508,7 @@
             const btn = document.getElementById('saveBtn');
             const successMsg = document.getElementById('successMessage');
             const errorMsg = document.getElementById('errorMessage');
-            
+
             btn.disabled = true;
             btn.textContent = 'Enregistrement...';
             successMsg.classList.remove('show');
@@ -514,7 +518,7 @@
                 // Sauvegarder le profil dans localStorage (clé basée sur l'email)
                 const profileKey = `profile_${user.email}`;
                 localStorage.setItem(profileKey, JSON.stringify(formData));
-                
+
                 successMsg.textContent = 'Profil enregistré avec succès !';
                 successMsg.classList.add('show');
             } catch (error) {
@@ -552,7 +556,7 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
-            
+
             if (token) {
                 // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
                 if (profileLink) profileLink.style.display = 'block';
@@ -573,4 +577,5 @@
         }
     </script>
 </body>
+
 </html>
