@@ -387,9 +387,52 @@
         }
 
         .job-company {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             color: #666;
             font-weight: 500;
             margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .company-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 4px;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .company-logo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .company-logo-placeholder {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border: 1px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .company-name-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
         }
 
         .job-footer {
@@ -779,6 +822,92 @@
                 .replace(/\s*[HF]\/[FH]/gi, '')
                 .replace(/\s*\(\s*[HF]\s*\/\s*[FH]\s*\)/gi, '')
                 .trim();
+        }
+
+        // Fonction pour obtenir l'URL du logo d'une entreprise
+        function getCompanyLogoUrl(companyName) {
+            if (!companyName) return null;
+            
+            // Normaliser le nom de l'entreprise pour créer un domaine probable
+            let normalized = companyName
+                .toLowerCase()
+                .trim()
+                .replace(/[àáâãäå]/g, 'a')
+                .replace(/[èéêë]/g, 'e')
+                .replace(/[ìíîï]/g, 'i')
+                .replace(/[òóôõö]/g, 'o')
+                .replace(/[ùúûü]/g, 'u')
+                .replace(/[ç]/g, 'c')
+                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
+                .replace(/\s+/g, '') // Supprimer les espaces
+                .replace(/^société|^societe|^sa$|^sas$|^sarl$|^sas|^sarl|^group$|^groupe$/g, ''); // Supprimer les préfixes juridiques
+            
+            if (!normalized) return null;
+            
+            // Mapping manuel pour les entreprises connues avec domaines spécifiques
+            const companyDomainMap = {
+                'creditagricole': 'credit-agricole.fr',
+                'créditagricole': 'credit-agricole.fr',
+                'creditagricolefrance': 'credit-agricole.fr',
+                'sociétégénérale': 'societegenerale.com',
+                'societegenerale': 'societegenerale.com',
+                'sg': 'societegenerale.com',
+                'deloitte': 'deloitte.com',
+                'deloittefrance': 'deloitte.com',
+                'bnpparibas': 'bnpparibas.com',
+                'bnpparibasfrance': 'bnpparibas.com',
+                'axa': 'axa.com',
+                'axafrance': 'axa.com',
+                'allianz': 'allianz.com',
+                'kpmg': 'kpmg.com',
+                'kpmgfrance': 'kpmg.com',
+                'ey': 'ey.com',
+                'ernstyoung': 'ey.com',
+                'ernst&young': 'ey.com',
+                'pwc': 'pwc.com',
+                'pricewaterhousecoopers': 'pwc.com',
+                'jpmorgan': 'jpmorgan.com',
+                'jpmorganchase': 'jpmorgan.com',
+                'goldmansachs': 'goldmansachs.com',
+                'morganstanley': 'morganstanley.com',
+                'ubs': 'ubs.com',
+                'creditsuisse': 'credit-suisse.com',
+                'deutschebank': 'deutsche-bank.de',
+                'hsbc': 'hsbc.com',
+                'barclays': 'barclays.com',
+                'natixis': 'natixis.com',
+                'bpce': 'bpce.fr',
+                'caisseepargne': 'caisse-epargne.fr',
+                'lcl': 'lcl.fr',
+                'creditlyonnais': 'lcl.fr',
+                'banquepopulaire': 'banquepopulaire.fr',
+                'caissedepargne': 'caisse-epargne.fr'
+            };
+            
+            // Vérifier dans le mapping (avec et sans espaces)
+            const normalizedNoSpaces = normalized.replace(/\s+/g, '');
+            const mappedDomain = companyDomainMap[normalizedNoSpaces] || 
+                                 companyDomainMap[normalized] ||
+                                 companyDomainMap[companyName.toLowerCase().trim()];
+            
+            if (mappedDomain) {
+                return `https://logo.clearbit.com/${mappedDomain}`;
+            }
+            
+            // Si pas de mapping, essayer avec le nom normalisé
+            // Essayer d'abord .fr (pour les entreprises françaises), puis .com
+            return `https://logo.clearbit.com/${normalizedNoSpaces}.com`;
+        }
+
+        // Fonction pour générer un placeholder si le logo n'est pas disponible
+        function getCompanyLogoPlaceholder(companyName) {
+            if (!companyName) return '';
+            const initials = companyName
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase())
+                .slice(0, 2)
+                .join('');
+            return initials || companyName.charAt(0).toUpperCase();
         }
 
         /**
@@ -1186,7 +1315,11 @@
                 return;
             }
 
-            container.innerHTML = filteredJobs.map(job => `
+            container.innerHTML = filteredJobs.map(job => {
+                const logoUrl = job.company_name ? getCompanyLogoUrl(job.company_name) : null;
+                const logoPlaceholder = job.company_name ? getCompanyLogoPlaceholder(job.company_name) : '';
+                
+                return `
         <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
             <div class="job-title">${cleanJobTitle(job.job_title)}</div>
             <div class="job-id">${job.job_id}</div>
@@ -1196,13 +1329,32 @@
                 ${job.experience_level ? `<span class="tag tag-experience">💼 ${job.experience_level}</span>` : ''}
                 ${job.job_family ? `<span class="tag tag-family">🎯 ${job.job_family}</span>` : ''}
             </div>
-            ${job.company_name ? `<div class="job-company">🏢 ${job.company_name}</div>` : ''}
+            ${job.company_name ? `
+                <div class="job-company">
+                    <div class="company-name-wrapper">
+                        ${logoUrl ? `
+                            <img 
+                                src="${logoUrl}" 
+                                alt="${job.company_name}" 
+                                class="company-logo"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                loading="lazy"
+                            >
+                            <div class="company-logo-placeholder" style="display: none;">${logoPlaceholder}</div>
+                        ` : `
+                            <div class="company-logo-placeholder">${logoPlaceholder}</div>
+                        `}
+                        <span>${job.company_name}</span>
+                    </div>
+                </div>
+            ` : ''}
             <div class="job-footer">
                 <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
                 <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
             </div>
         </div>
-    `).join('');
+    `;
+            }).join('');
         }
 
         function updateStats() {
