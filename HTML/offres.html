@@ -1106,24 +1106,44 @@
                                    currentHref.includes('/HTML/') || currentHref.includes('HTML/');
             
             // Construire les chemins selon l'emplacement du fichier HTML
-            const possiblePaths = [
-                // Priorité 1 : Chemin relatif simple (le plus probable si HTML est dans HTML/)
-                'scraped_jobs_live.json',
-                './scraped_jobs_live.json',
-                // Priorité 2 : Avec préfixe HTML/ (si HTML est à la racine)
-                'HTML/scraped_jobs_live.json',
-                './HTML/scraped_jobs_live.json',
-                // Fallback : Version complète (si live.json ne fonctionne pas)
-                'scraped_jobs.json',
-                './scraped_jobs.json',
-                'HTML/scraped_jobs.json',
-                './HTML/scraped_jobs.json',
-                // Fallback GitHub (si déployé sur GitHub Pages - fonctionne même avec file://)
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
-                'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json'
-            ];
+            // Si file://, prioriser GitHub Raw qui fonctionne même avec file://
+            // Sinon, prioriser les chemins locaux pour performance
+            let possiblePaths;
+            if (isFileProtocol) {
+                // Si file://, essayer d'abord GitHub Raw (fonctionne même avec file://)
+                possiblePaths = [
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json',
+                    // Essayer aussi les chemins locaux (peu probable qu'ils fonctionnent avec file://)
+                    'scraped_jobs_live.json',
+                    './scraped_jobs_live.json',
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs.json',
+                    './scraped_jobs.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json'
+                ];
+            } else {
+                // Si HTTP/HTTPS, prioriser les chemins locaux (plus rapide)
+                possiblePaths = [
+                    'scraped_jobs_live.json',
+                    './scraped_jobs_live.json',
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs.json',
+                    './scraped_jobs.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json',
+                    // Fallback GitHub (si déployé sur GitHub Pages)
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json'
+                ];
+            }
             
             let data = null;
             let loadedPath = null;
