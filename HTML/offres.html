@@ -949,9 +949,7 @@
             if (fileNameVariants.length > 0) {
                 const primaryFileName = fileNameVariants[0];
                 // Essayer seulement PNG (le format le plus commun et optimisé)
-                const logoUrl = `${basePath}${primaryFileName}.png`;
-                console.log(`🔍 Logo pour "${companyName}": ${logoUrl} (normalisé: ${primaryFileName})`);
-                return logoUrl;
+                return `${basePath}${primaryFileName}.png`;
             }
             
             // Si aucune variante, utiliser Clearbit directement
