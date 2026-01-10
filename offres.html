@@ -857,7 +857,8 @@
                 .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
                 .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
                 .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques
-                .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, ''); // Supprimer les suffixes juridiques restants
+                .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, '') // Supprimer les suffixes juridiques restants
+                .replace(/^bbforbank$/, 'bforbank'); // Correction spéciale pour BforBank (fichier = bforbank.png)
             
             if (!normalized) return null;
             
@@ -892,7 +893,8 @@
                 'lcl': ['lcl', 'credit_lyonnais'],
                 'indosuez_wealth_management': ['indosuez_wealth_management', 'indosuez'],
                 'amundi': ['amundi'],
-                'bbforbank': ['bbforbank', 'bforbank'],
+                'bbforbank': ['bforbank'], // Correction : fichier s'appelle bforbank.png (avec 1 b)
+                'bforbank': ['bforbank'],
                 'gruppo_bancario_credit_agricole_italia': ['credit_agricole', 'credit_agricole_italia'],
                 'idia_capital_investissement': ['idia_capital_investissement', 'idia'],
                 'uptevia': ['uptevia']
