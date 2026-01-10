@@ -250,6 +250,53 @@
             display: block;
         }
 
+        /* Loader élégant pour la connexion */
+        .login-loader-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-radius: 12px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .login-loader-container.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .loader-subtext {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            text-align: center;
+        }
+
         .btn {
             width: 100%;
             padding: 16px;
@@ -400,8 +447,15 @@
 
                 <div class="success-message" id="loginSuccess"></div>
                 <div class="error-message" id="loginError"></div>
+                
+                <!-- Loader élégant pour la connexion -->
+                <div class="login-loader-container" id="loginLoader">
+                    <div class="spinner"></div>
+                    <p class="loader-text">Connexion réussie</p>
+                    <p class="loader-subtext">Redirection en cours...</p>
+                </div>
 
-                <button type="submit" class="btn">Se connecter</button>
+                <button type="submit" class="btn" id="loginBtn">Se connecter</button>
             </form>
 
             <!-- Formulaire d'inscription -->
@@ -469,12 +523,12 @@
         // REMPLACEZ ces valeurs par celles de votre projet Firebase
         // (Vous les trouverez dans Firebase Console → Project Settings → General)
         const firebaseConfig = {
-            apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
-            authDomain: "project-taleos.firebaseapp.com",
-            projectId: "project-taleos",
-            storageBucket: "project-taleos.firebasestorage.app",
-            messagingSenderId: "974062127016",
-            appId: "1:974062127016:web:b6cffae44f1bae56f03f9d"
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "VOTRE_AUTH_DOMAIN",
+            projectId: "VOTRE_PROJECT_ID",
+            storageBucket: "VOTRE_STORAGE_BUCKET",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
         };
 
         // Initialiser Firebase
@@ -540,6 +594,9 @@
                 el.textContent = '';
             });
             document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
+            // Masquer le loader
+            const loader = document.getElementById('loginLoader');
+            if (loader) loader.classList.remove('show');
         }
 
         function showError(elementId, message) {
@@ -698,10 +755,21 @@
                 localStorage.setItem('authToken', user.uid);
                 localStorage.setItem('userEmail', user.email);
                 
-                showSuccess('loginSuccess', 'Connexion réussie ! Redirection...');
+                // Masquer le bouton de connexion et afficher le loader élégant
+                const loginBtn = document.getElementById('loginBtn');
+                const loader = document.getElementById('loginLoader');
+                const loginForm = document.getElementById('loginForm');
+                
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (loader) {
+                    loader.classList.add('show');
+                }
+                if (loginForm) loginForm.style.pointerEvents = 'none';
+                
+                // Rediriger après un délai
                 setTimeout(() => {
                     window.location.href = 'offres.html';
-                }, 1500);
+                }, 1800);
                 
             } catch (error) {
                 console.error('Erreur de connexion:', error);
