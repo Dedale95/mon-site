@@ -1299,34 +1299,31 @@
 
                 allJobs = [];
 
-                // Traitement optimisé par batch pour ne pas bloquer l'UI
-                const processBatch = (start, batchSize) => {
-                    const end = Math.min(start + batchSize, data.length);
-                    for (let i = start; i < end; i++) {
-                        const job = data[i];
-                        
-                        // Harmonisation des types de contrat
-                        if (job.contract_type) {
-                            const contractLower = job.contract_type.toLowerCase();
-                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
-                                job.contract_type = 'Alternance / Apprentissage';
-                            }
+                // Traitement optimisé par batch avec async/await pour éviter le débordement de stack
+                const processJob = (job) => {
+                    // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
+                    if (job.contract_type && typeof job.contract_type === 'string') {
+                        const contractLower = job.contract_type.toLowerCase();
+                        if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
+                            job.contract_type = 'Alternance / Apprentissage';
                         }
-                        
-                        // Harmonisation des niveaux d'études
-                        if (job.education_level) {
-                            if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
-                                job.education_level = 'Certificat Fédéral de Capacité (CFC)';
-                            }
+                    }
+                    
+                    // Harmonisation des niveaux d'études
+                    if (job.education_level && typeof job.education_level === 'string') {
+                        if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
+                            job.education_level = 'Certificat Fédéral de Capacité (CFC)';
                         }
+                    }
 
-                        job.cleanRegions = [];
-                        job.cleanCountries = [];
+                    job.cleanRegions = [];
+                    job.cleanCountries = [];
 
-                        if (job.location && job.location.includes(' - ')) {
-                            const parts = job.location.split(' - ');
-                            const cityPart = parts[0];
-                            const country = parts[1].trim();
+                    if (job.location && typeof job.location === 'string' && job.location.includes(' - ')) {
+                        const parts = job.location.split(' - ');
+                        const cityPart = parts[0];
+                        const country = parts[1] ? parts[1].trim() : '';
+                        if (country) {
                             job.cleanCountries.push(country);
 
                             const cities = cityPart.split(/[\/,]/).map(c => {
@@ -1341,7 +1338,7 @@
                                     if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
                                 }
                                 return clean;
-                            }).filter(c => c);
+                            }).filter(c => c && c.length > 0);
 
                             if (cities.length === 0) {
                                 job.cleanRegions.push(getCityRegion('', country));
@@ -1353,21 +1350,32 @@
                             job.cleanCountries = [...new Set(job.cleanCountries)];
                             job.cleanRegions = [...new Set(job.cleanRegions)];
                         }
-                        allJobs.push(job);
                     }
+                    return job;
                 };
 
-                // Traiter par batch de 100 pour ne pas bloquer l'UI
-                const batchSize = 100;
+                // Traiter par batch de 50 pour éviter le débordement de stack
+                const batchSize = 50;
                 for (let start = 0; start < data.length; start += batchSize) {
-                    processBatch(start, batchSize);
+                    const end = Math.min(start + batchSize, data.length);
+                    for (let i = start; i < end; i++) {
+                        try {
+                            const processedJob = processJob(data[i]);
+                            allJobs.push(processedJob);
+                        } catch (error) {
+                            console.error(`Erreur lors du traitement du job ${i}:`, error, data[i]);
+                            // Continuer avec le job suivant même en cas d'erreur
+                        }
+                    }
+                    
                     // Mettre à jour le message de progression périodiquement
                     if (start % 500 === 0 && jobsContainer) {
                         const progress = Math.floor((start / data.length) * 100);
                         jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + start + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
                     }
-                    // Laisser le navigateur respirer entre les batches
-                    if (start % 500 === 0) {
+                    
+                    // Laisser le navigateur respirer entre les batches pour éviter de bloquer l'UI
+                    if (start % 100 === 0) {
                         await new Promise(resolve => setTimeout(resolve, 0));
                     }
                 }
