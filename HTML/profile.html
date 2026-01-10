@@ -433,13 +433,18 @@
 
         // Variable pour stocker l'utilisateur connecté
         let currentUser = null;
+        let authReady = false;
         
         // Écouter les changements d'état d'authentification
+        // Cette fonction est appelée automatiquement quand Firebase est prêt
         auth.onAuthStateChanged((user) => {
+            authReady = true;
+            console.log('État d\'authentification Firebase:', user ? user.email : 'Aucun utilisateur');
+            
             if (user) {
                 // Utilisateur connecté
                 currentUser = user;
-                console.log('Utilisateur connecté:', user.email);
+                console.log('✅ Utilisateur connecté:', user.email);
                 // Mettre à jour localStorage pour la navigation
                 localStorage.setItem('authToken', user.uid);
                 localStorage.setItem('userEmail', user.email);
@@ -448,23 +453,75 @@
                 // Mettre à jour la navigation
                 checkAuthAndUpdateNav();
             } else {
-                // Utilisateur non connecté - rediriger vers la connexion
-                console.log('Utilisateur non connecté, redirection...');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userEmail');
-                window.location.href = 'auth.html';
+                // Vérifier localStorage comme fallback (au cas où Firebase n'a pas encore restauré la session)
+                const token = localStorage.getItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                
+                if (token && email) {
+                    // Il y a un token dans localStorage, attendre un peu que Firebase restaure la session
+                    console.log('Token présent dans localStorage, attente restauration Firebase...');
+                    setTimeout(() => {
+                        if (auth.currentUser) {
+                            // Firebase a restauré la session
+                            currentUser = auth.currentUser;
+                            loadProfile();
+                            checkAuthAndUpdateNav();
+                        } else {
+                            // Toujours pas d'utilisateur après 2 secondes, rediriger
+                            console.log('Aucun utilisateur Firebase après attente, redirection...');
+                            localStorage.removeItem('authToken');
+                            localStorage.removeItem('userEmail');
+                            window.location.href = 'auth.html';
+                        }
+                    }, 2000);
+                } else {
+                    // Aucun token dans localStorage, rediriger immédiatement
+                    console.log('Aucun utilisateur et aucun token, redirection...');
+                    window.location.href = 'auth.html';
+                }
             }
         });
+        
+        // Fallback : Si Firebase ne répond pas après 3 secondes, vérifier localStorage
+        setTimeout(() => {
+            if (!authReady && !currentUser) {
+                console.log('Firebase n\'a pas répondu après 3s, vérification localStorage...');
+                const token = localStorage.getItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                if (token && email) {
+                    // Il y a un token, on considère que l'utilisateur est connecté
+                    currentUser = { email: email, uid: token };
+                    loadProfile();
+                    checkAuthAndUpdateNav();
+                } else if (!auth.currentUser) {
+                    window.location.href = 'auth.html';
+                }
+            }
+        }, 3000);
 
         // Charger le profil depuis localStorage
         function loadProfile() {
-            if (!currentUser) {
-                console.log('Pas d\'utilisateur connecté');
+            // Utiliser currentUser ou auth.currentUser ou localStorage comme fallback
+            let userEmail = null;
+            
+            if (currentUser && currentUser.email) {
+                userEmail = currentUser.email;
+            } else if (auth.currentUser && auth.currentUser.email) {
+                userEmail = auth.currentUser.email;
+                currentUser = auth.currentUser;
+            } else {
+                userEmail = localStorage.getItem('userEmail');
+            }
+            
+            if (!userEmail) {
+                console.log('⚠️ Pas d\'email utilisateur trouvé');
                 return;
             }
             
+            console.log('Chargement du profil pour:', userEmail);
+            
             // Charger le profil depuis localStorage (clé basée sur l'email de l'utilisateur)
-            const profileKey = `profile_${currentUser.email}`;
+            const profileKey = `profile_${userEmail}`;
             const savedProfile = localStorage.getItem(profileKey);
             
             if (savedProfile) {
@@ -478,12 +535,12 @@
                     if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
                     if (profile.city) document.getElementById('city').value = profile.city;
                     if (profile.country) document.getElementById('country').value = profile.country;
-                    console.log('Profil chargé depuis localStorage');
+                    console.log('✅ Profil chargé depuis localStorage');
                 } catch (error) {
-                    console.error('Erreur lors du chargement du profil:', error);
+                    console.error('❌ Erreur lors du chargement du profil:', error);
                 }
             } else {
-                console.log('Aucun profil sauvegardé trouvé');
+                console.log('ℹ️ Aucun profil sauvegardé trouvé pour cet utilisateur');
             }
         }
 
@@ -491,7 +548,19 @@
         async function handleSaveProfile(event) {
             event.preventDefault();
             
-            if (!currentUser) {
+            // Vérifier l'utilisateur avec plusieurs fallbacks
+            let userEmail = null;
+            
+            if (currentUser && currentUser.email) {
+                userEmail = currentUser.email;
+            } else if (auth.currentUser && auth.currentUser.email) {
+                userEmail = auth.currentUser.email;
+                currentUser = auth.currentUser;
+            } else {
+                userEmail = localStorage.getItem('userEmail');
+            }
+            
+            if (!userEmail) {
                 window.location.href = 'auth.html';
                 return;
             }
@@ -519,20 +588,22 @@
 
             try {
                 // Sauvegarder le profil dans localStorage (clé basée sur l'email)
-                const profileKey = `profile_${currentUser.email}`;
+                const profileKey = `profile_${userEmail}`;
                 localStorage.setItem(profileKey, JSON.stringify(formData));
                 
                 successMsg.textContent = 'Profil enregistré avec succès !';
                 successMsg.classList.add('show');
                 
                 // Faire défiler vers le message de succès
-                successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                setTimeout(() => {
+                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
                 
-                console.log('Profil sauvegardé:', formData);
+                console.log('✅ Profil sauvegardé pour:', userEmail, formData);
             } catch (error) {
                 errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement.';
                 errorMsg.classList.add('show');
-                console.error('Error:', error);
+                console.error('❌ Erreur:', error);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Enregistrer';
@@ -565,7 +636,7 @@
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
-            if (token) {
+            if (token || currentUser) {
                 // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
                 if (profileLink) profileLink.style.display = 'block';
                 if (authLink) authLink.style.display = 'none';
