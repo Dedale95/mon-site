@@ -589,7 +589,7 @@
                 <a href="offres.html" class="nav-link nav-link-primary">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
-                <a href="profile.html" class="nav-link nav-link-primary" id="profileLink" style="display: none;">Mon Profil</a>
+                <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
                 <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
             </div>
         </div>
@@ -695,7 +695,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2025 Taleos. Tous droits réservés.</p>
+        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
         <div class="footer-love">
             <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
             <span>•</span>
@@ -1249,6 +1249,23 @@
             closeSupportModal();
         }
 
+        // Mettre en surbrillance uniquement la page actuelle
+        function highlightCurrentPage() {
+            const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                link.classList.remove('nav-link-primary');
+                const linkHref = link.getAttribute('href');
+                if (linkHref && linkHref === currentPage) {
+                    const linkText = link.textContent.trim();
+                    if (linkText !== 'Mon Profil' && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
+                        link.classList.add('nav-link-primary');
+                    }
+                }
+            });
+        }
+
         // Vérifier l'authentification et mettre à jour la navigation
         function checkAuthAndUpdateNav() {
             const token = localStorage.getItem('authToken');
@@ -1257,19 +1274,32 @@
             const logoutBtn = document.getElementById('logoutBtn');
             
             if (token) {
-                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
-                if (profileLink) profileLink.style.display = 'block';
-                if (logoutBtn) logoutBtn.style.display = 'block';
+                if (profileLink) {
+                    profileLink.style.display = 'block';
+                    profileLink.classList.remove('nav-link-primary');
+                }
+                if (logoutBtn) {
+                    logoutBtn.style.display = 'block';
+                    logoutBtn.classList.remove('nav-link-primary');
+                }
                 if (authLink) authLink.style.display = 'none';
             } else {
-                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
-                if (profileLink) profileLink.style.display = 'none';
-                if (logoutBtn) logoutBtn.style.display = 'none';
+                if (profileLink) {
+                    profileLink.style.display = 'none';
+                    profileLink.classList.remove('nav-link-primary');
+                }
+                if (logoutBtn) {
+                    logoutBtn.style.display = 'none';
+                    logoutBtn.classList.remove('nav-link-primary');
+                }
                 if (authLink) {
                     authLink.style.display = 'inline-block';
                     authLink.style.removeProperty('display');
+                    authLink.classList.remove('nav-link-primary');
                 }
             }
+            
+            setTimeout(() => highlightCurrentPage(), 50);
         }
 
         // Initialiser Firebase (si pas déjà initialisé)
@@ -1319,9 +1349,16 @@
         loadJobs();
         
         // Mettre à jour la navigation - exécuter plusieurs fois pour garantir l'affichage
+        highlightCurrentPage();
         checkAuthAndUpdateNav();
-        setTimeout(checkAuthAndUpdateNav, 100);
-        setTimeout(checkAuthAndUpdateNav, 500);
+        setTimeout(() => {
+            highlightCurrentPage();
+            checkAuthAndUpdateNav();
+        }, 100);
+        setTimeout(() => {
+            highlightCurrentPage();
+            checkAuthAndUpdateNav();
+        }, 500);
     </script>
 </body>
 
