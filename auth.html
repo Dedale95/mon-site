@@ -508,7 +508,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2025 Taleos. Tous droits réservés.</p>
+        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
         <div class="footer-love">
             <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
             <span>•</span>
@@ -694,6 +694,11 @@
             btn.textContent = 'Inscription en cours...';
 
             try {
+                // Vérifier que Firebase Auth est disponible
+                if (!auth) {
+                    throw new Error('Firebase Auth n\'est pas initialisé. Veuillez recharger la page.');
+                }
+                
                 // Créer l'utilisateur avec Firebase
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
