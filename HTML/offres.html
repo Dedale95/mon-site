@@ -435,6 +435,13 @@
             flex: 1;
         }
 
+        .company-logo-container {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
         .job-footer {
             display: flex;
             justify-content: space-between;
@@ -824,8 +831,73 @@
                 .trim();
         }
 
-        // Fonction pour obtenir l'URL du logo d'une entreprise
+        // Fonction pour générer le nom de fichier à partir du nom d'une entreprise
+        function getCompanyLogoFileName(companyName) {
+            if (!companyName) return null;
+            
+            // Normaliser le nom de l'entreprise pour créer un nom de fichier
+            let normalized = companyName
+                .toLowerCase()
+                .trim()
+                .replace(/[àáâãäå]/g, 'a')
+                .replace(/[èéêë]/g, 'e')
+                .replace(/[ìíîï]/g, 'i')
+                .replace(/[òóôõö]/g, 'o')
+                .replace(/[ùúûü]/g, 'u')
+                .replace(/[ç]/g, 'c')
+                .replace(/[ñ]/g, 'n')
+                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux
+                .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
+                .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|_sa$|_sas$|_sarl$|_group$|_groupe$/g, ''); // Supprimer les préfixes/suffixes juridiques
+            
+            if (!normalized) return null;
+            
+            // Nettoyer les underscores multiples et en début/fin
+            normalized = normalized.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+            
+            return normalized;
+        }
+
+        // Fonction pour obtenir les URLs du logo d'une entreprise (local en priorité, puis Clearbit)
+        function getCompanyLogoUrls(companyName) {
+            if (!companyName) return [];
+            
+            const urls = [];
+            
+            // Essayer d'abord le logo local
+            const localFileName = getCompanyLogoFileName(companyName);
+            if (localFileName) {
+                // Ajouter les chemins locaux possibles (PNG, JPG, SVG)
+                // Le chemin dépend de la structure du projet
+                // Si le fichier HTML est dans HTML/, le logo sera dans HTML/images/logos/
+                // Si le fichier HTML est à la racine, le logo sera dans images/logos/
+                const currentPath = window.location.pathname;
+                const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/');
+                
+                const basePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
+                urls.push(`${basePath}${localFileName}.png`);
+                urls.push(`${basePath}${localFileName}.jpg`);
+                urls.push(`${basePath}${localFileName}.jpeg`);
+                urls.push(`${basePath}${localFileName}.svg`);
+            }
+            
+            // Ajouter Clearbit comme fallback
+            const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
+            if (clearbitUrl) {
+                urls.push(clearbitUrl);
+            }
+            
+            return urls;
+        }
+
+        // Fonction pour obtenir l'URL principale du logo (première tentative)
         function getCompanyLogoUrl(companyName) {
+            const urls = getCompanyLogoUrls(companyName);
+            return urls.length > 0 ? urls[0] : null;
+        }
+
+        // Fonction pour obtenir l'URL du logo Clearbit (fallback)
+        function getCompanyLogoUrlClearbit(companyName) {
             if (!companyName) return null;
             
             // Normaliser le nom de l'entreprise pour créer un domaine probable
@@ -895,7 +967,6 @@
             }
             
             // Si pas de mapping, essayer avec le nom normalisé
-            // Essayer d'abord .fr (pour les entreprises françaises), puis .com
             return `https://logo.clearbit.com/${normalizedNoSpaces}.com`;
         }
 
@@ -908,6 +979,45 @@
                 .slice(0, 2)
                 .join('');
             return initials || companyName.charAt(0).toUpperCase();
+        }
+
+        // Fonction pour gérer les erreurs de chargement de logo (essaye les sources suivantes)
+        function handleLogoError(imgElement) {
+            if (!imgElement) return;
+            
+            const sourcesStr = imgElement.getAttribute('data-sources');
+            if (!sourcesStr) {
+                // Pas de sources disponibles, afficher le placeholder
+                showLogoPlaceholder(imgElement);
+                return;
+            }
+            
+            const sources = sourcesStr.split(',');
+            const currentIndex = parseInt(imgElement.getAttribute('data-index') || '0', 10);
+            
+            // Si on a une autre source à essayer, l'utiliser
+            if (currentIndex < sources.length - 1) {
+                const nextIndex = currentIndex + 1;
+                imgElement.setAttribute('data-index', nextIndex.toString());
+                imgElement.src = sources[nextIndex];
+            } else {
+                // Toutes les sources ont échoué, afficher le placeholder
+                showLogoPlaceholder(imgElement);
+            }
+        }
+
+        // Fonction pour afficher le placeholder quand toutes les sources ont échoué
+        function showLogoPlaceholder(imgElement) {
+            if (!imgElement) return;
+            
+            imgElement.style.display = 'none';
+            const container = imgElement.parentElement;
+            if (container) {
+                const placeholder = container.querySelector('.company-logo-placeholder');
+                if (placeholder) {
+                    placeholder.style.display = 'flex';
+                }
+            }
         }
 
         /**
@@ -1316,8 +1426,13 @@
             }
 
             container.innerHTML = filteredJobs.map(job => {
-                const logoUrl = job.company_name ? getCompanyLogoUrl(job.company_name) : null;
+                const logoUrls = job.company_name ? getCompanyLogoUrls(job.company_name) : [];
                 const logoPlaceholder = job.company_name ? getCompanyLogoPlaceholder(job.company_name) : '';
+                const companyNameForAttr = job.company_name ? job.company_name.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : '';
+                
+                // Créer un ID unique pour chaque job card pour gérer les erreurs de chargement
+                const cardId = `job-${job.job_id || Math.random().toString(36).substr(2, 9)}`;
+                const logoUrlsStr = logoUrls.length > 0 ? logoUrls.join(',') : '';
                 
                 return `
         <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
@@ -1332,15 +1447,20 @@
             ${job.company_name ? `
                 <div class="job-company">
                     <div class="company-name-wrapper">
-                        ${logoUrl ? `
-                            <img 
-                                src="${logoUrl}" 
-                                alt="${job.company_name}" 
-                                class="company-logo"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                loading="lazy"
-                            >
-                            <div class="company-logo-placeholder" style="display: none;">${logoPlaceholder}</div>
+                        ${logoUrls.length > 0 ? `
+                            <div class="company-logo-container" id="${cardId}-logo-container">
+                                <img 
+                                    src="${logoUrls[0]}" 
+                                    alt="${companyNameForAttr}" 
+                                    class="company-logo"
+                                    id="${cardId}-logo"
+                                    data-sources="${logoUrlsStr}"
+                                    data-index="0"
+                                    onerror="handleLogoError(this)"
+                                    loading="lazy"
+                                >
+                                <div class="company-logo-placeholder" id="${cardId}-placeholder" style="display: none;">${logoPlaceholder}</div>
+                            </div>
                         ` : `
                             <div class="company-logo-placeholder">${logoPlaceholder}</div>
                         `}
