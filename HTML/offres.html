@@ -905,51 +905,50 @@
             return variants;
         }
 
-        // Fonction pour obtenir les URLs du logo d'une entreprise (local en priorité, puis Clearbit)
+        // Fonction optimisée pour obtenir l'URL principale du logo (une seule URL pour performance)
+        function getCompanyLogoUrl(companyName) {
+            if (!companyName) return null;
+            
+            // Déterminer le chemin de base selon où se trouve le fichier HTML
+            const currentPath = window.location.pathname;
+            const currentHref = window.location.href;
+            const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
+                                   currentHref.includes('/HTML/') || currentHref.includes('HTML/');
+            
+            // Chemin de base optimisé (une seule tentative pour performance)
+            const basePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
+            
+            // Obtenir la variante principale du nom de fichier (première de la liste)
+            const fileNameVariants = getCompanyLogoFileNameVariants(companyName);
+            if (fileNameVariants.length > 0) {
+                const primaryFileName = fileNameVariants[0];
+                // Essayer seulement PNG (le format le plus commun et optimisé)
+                return `${basePath}${primaryFileName}.png`;
+            }
+            
+            // Si aucune variante, utiliser Clearbit directement
+            return getCompanyLogoUrlClearbit(companyName);
+        }
+
+        // Fonction pour obtenir les URLs de fallback (utilisée seulement en cas d'erreur)
         function getCompanyLogoUrls(companyName) {
             if (!companyName) return [];
             
             const urls = [];
-            
-            // Essayer d'abord le logo local avec toutes les variantes possibles
-            const fileNameVariants = getCompanyLogoFileNameVariants(companyName);
-            
-            if (fileNameVariants.length > 0) {
-                // Déterminer le chemin de base selon où se trouve le fichier HTML
-                const currentPath = window.location.pathname;
-                const currentHref = window.location.href;
-                const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
-                                       currentHref.includes('/HTML/') || currentHref.includes('HTML/');
-                
-                // Utiliser le chemin le plus probable en premier
-                const primaryBasePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
-                const secondaryBasePath = isInHTMLFolder ? './images/logos/' : './HTML/images/logos/';
-                
-                // Pour chaque variante de nom de fichier (dans l'ordre de priorité)
-                fileNameVariants.forEach(fileName => {
-                    // Pour chaque format d'image (PNG en premier car le plus commun)
-                    ['png', 'jpg', 'jpeg', 'svg'].forEach(ext => {
-                        // Chemin principal
-                        urls.push(`${primaryBasePath}${fileName}.${ext}`);
-                        // Chemin secondaire
-                        urls.push(`${secondaryBasePath}${fileName}.${ext}`);
-                    });
-                });
+            const primaryUrl = getCompanyLogoUrl(companyName);
+            if (primaryUrl) {
+                urls.push(primaryUrl);
             }
             
-            // Ajouter Clearbit comme fallback
-            const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
-            if (clearbitUrl) {
-                urls.push(clearbitUrl);
+            // Ajouter Clearbit comme fallback seulement si on a une URL locale
+            if (primaryUrl && primaryUrl.includes('images/logos/')) {
+                const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
+                if (clearbitUrl) {
+                    urls.push(clearbitUrl);
+                }
             }
             
             return urls;
-        }
-
-        // Fonction pour obtenir l'URL principale du logo (première tentative)
-        function getCompanyLogoUrl(companyName) {
-            const urls = getCompanyLogoUrls(companyName);
-            return urls.length > 0 ? urls[0] : null;
         }
 
         // Fonction pour obtenir l'URL du logo Clearbit (fallback)
@@ -1037,29 +1036,33 @@
             return initials || companyName.charAt(0).toUpperCase();
         }
 
-        // Fonction pour gérer les erreurs de chargement de logo (essaye les sources suivantes)
+        // Fonction optimisée pour gérer les erreurs de chargement de logo (une seule tentative de fallback)
         function handleLogoError(imgElement) {
             if (!imgElement) return;
             
-            const sourcesStr = imgElement.getAttribute('data-sources');
-            if (!sourcesStr) {
-                // Pas de sources disponibles, afficher le placeholder
+            // Si déjà tenté le fallback, afficher directement le placeholder
+            if (imgElement.hasAttribute('data-fallback-tried')) {
                 showLogoPlaceholder(imgElement);
                 return;
             }
             
-            const sources = sourcesStr.split(',');
-            const currentIndex = parseInt(imgElement.getAttribute('data-index') || '0', 10);
+            // Marquer qu'on a tenté le fallback
+            imgElement.setAttribute('data-fallback-tried', 'true');
             
-            // Si on a une autre source à essayer, l'utiliser
-            if (currentIndex < sources.length - 1) {
-                const nextIndex = currentIndex + 1;
-                imgElement.setAttribute('data-index', nextIndex.toString());
-                imgElement.src = sources[nextIndex];
-            } else {
-                // Toutes les sources ont échoué, afficher le placeholder
-                showLogoPlaceholder(imgElement);
+            // Essayer Clearbit une seule fois si l'URL était locale
+            const currentSrc = imgElement.src;
+            if (currentSrc && currentSrc.includes('images/logos/')) {
+                const companyName = imgElement.alt;
+                const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
+                if (clearbitUrl && clearbitUrl !== currentSrc) {
+                    imgElement.src = clearbitUrl;
+                    // Si Clearbit échoue aussi, on affichera le placeholder au prochain onerror
+                    return;
+                }
             }
+            
+            // Si pas de fallback possible, afficher le placeholder immédiatement
+            showLogoPlaceholder(imgElement);
         }
 
         // Fonction pour afficher le placeholder quand toutes les sources ont échoué
@@ -1481,14 +1484,18 @@
                 return;
             }
 
+            // Optimisation : pré-calculer les URLs de logos une seule fois par entreprise unique
+            const companyLogoCache = new Map();
+            const uniqueCompanies = new Set(filteredJobs.map(job => job.company_name).filter(Boolean));
+            uniqueCompanies.forEach(companyName => {
+                companyLogoCache.set(companyName, getCompanyLogoUrl(companyName));
+            });
+            
             container.innerHTML = filteredJobs.map(job => {
-                const logoUrls = job.company_name ? getCompanyLogoUrls(job.company_name) : [];
+                // Utiliser le cache pour éviter de recalculer la même URL plusieurs fois
+                const logoUrl = job.company_name ? companyLogoCache.get(job.company_name) : null;
                 const logoPlaceholder = job.company_name ? getCompanyLogoPlaceholder(job.company_name) : '';
                 const companyNameForAttr = job.company_name ? job.company_name.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : '';
-                
-                // Créer un ID unique pour chaque job card pour gérer les erreurs de chargement
-                const cardId = `job-${job.job_id || Math.random().toString(36).substr(2, 9)}`;
-                const logoUrlsStr = logoUrls.length > 0 ? logoUrls.join(',') : '';
                 
                 return `
         <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
@@ -1503,19 +1510,16 @@
             ${job.company_name ? `
                 <div class="job-company">
                     <div class="company-name-wrapper">
-                        ${logoUrls.length > 0 ? `
-                            <div class="company-logo-container" id="${cardId}-logo-container">
+                        ${logoUrl ? `
+                            <div class="company-logo-container">
                                 <img 
-                                    src="${logoUrls[0]}" 
+                                    src="${logoUrl}" 
                                     alt="${companyNameForAttr}" 
                                     class="company-logo"
-                                    id="${cardId}-logo"
-                                    data-sources="${logoUrlsStr}"
-                                    data-index="0"
                                     onerror="handleLogoError(this)"
                                     loading="lazy"
                                 >
-                                <div class="company-logo-placeholder" id="${cardId}-placeholder" style="display: none;">${logoPlaceholder}</div>
+                                <div class="company-logo-placeholder" style="display: none;">${logoPlaceholder}</div>
                             </div>
                         ` : `
                             <div class="company-logo-placeholder">${logoPlaceholder}</div>
