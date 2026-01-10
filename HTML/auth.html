@@ -528,30 +528,49 @@
             projectId: "project-taleos",
             storageBucket: "project-taleos.firebasestorage.app",
             messagingSenderId: "974062127016",
-            appId: "1:974062127016:web:b6cffae44f1bae56f03f9d"
+            appId: "1:974062127016:web:b6cffae44f1bae56f03f9d",
+            measurementId: "G-4PZJ4QXMJ0"
         };
 
-        // Initialiser Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        
-        console.log('Firebase initialisé');
-        
-        // Écouter les changements d'état d'authentification
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                console.log('Utilisateur connecté:', user.email);
-                // Si l'utilisateur est connecté et vérifié, rediriger vers les offres
-                if (user.emailVerified) {
-                    localStorage.setItem('authToken', user.uid);
-                    localStorage.setItem('userEmail', user.email);
+        // Initialiser Firebase (vérifier qu'il n'est pas déjà initialisé)
+        let auth;
+        try {
+            if (typeof firebase !== 'undefined') {
+                // Vérifier si Firebase est déjà initialisé
+                if (!firebase.apps || firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                    console.log('✅ Firebase initialisé avec succès');
+                } else {
+                    console.log('ℹ️ Firebase déjà initialisé');
                 }
+                auth = firebase.auth();
             } else {
-                console.log('Utilisateur déconnecté');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userEmail');
+                console.error('❌ Firebase SDK non chargé. Vérifiez que les scripts Firebase sont bien chargés dans <head>');
             }
-        });
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'initialisation Firebase:', error);
+            console.error('Détails de l\'erreur:', error.message, error.code);
+        }
+        
+        // Écouter les changements d'état d'authentification (seulement si auth est défini)
+        if (auth) {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    console.log('Utilisateur connecté:', user.email);
+                    // Si l'utilisateur est connecté et vérifié, rediriger vers les offres
+                    if (user.emailVerified) {
+                        localStorage.setItem('authToken', user.uid);
+                        localStorage.setItem('userEmail', user.email);
+                    }
+                } else {
+                    console.log('Utilisateur déconnecté');
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userEmail');
+                }
+            });
+        } else {
+            console.error('❌ Impossible d\'initialiser Firebase Auth. Vérifiez votre configuration.');
+        }
 
         // Fonction pour afficher/masquer le mot de passe
         function togglePassword(inputId, button) {
