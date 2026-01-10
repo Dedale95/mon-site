@@ -232,12 +232,14 @@
         }
 
         .logout-btn {
-            background: #ef4444;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin-left: 10px;
+            color: white !important;
         }
 
         .logout-btn:hover {
-            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         @media (max-width: 768px) {
@@ -614,17 +616,16 @@
         async function handleLogout() {
             try {
                 await auth.signOut();
-                // Nettoyer localStorage
-                const userEmail = localStorage.getItem('userEmail');
-                if (userEmail) {
-                    localStorage.removeItem(`profile_${userEmail}`);
-                }
+                // NE PAS supprimer le profil - il doit persister pour la reconnexion
+                // On supprime seulement les tokens d'authentification
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userEmail');
                 window.location.href = 'auth.html';
             } catch (error) {
                 console.error('Erreur lors de la déconnexion:', error);
                 // Déconnexion de toute façon
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
                 window.location.href = 'auth.html';
             }
         }
