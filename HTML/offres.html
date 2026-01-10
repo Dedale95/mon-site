@@ -1088,7 +1088,7 @@
             // Afficher un message de chargement
             const container = document.getElementById('jobsContainer');
             if (container) {
-                container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données.</p></div>';
+                container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données.</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Le fichier contient 2301 offres (~7.2MB), cela peut prendre quelques secondes...</p></div>';
             }
             
             // Vérifier si on est en mode file:// (fichier ouvert directement)
@@ -1152,27 +1152,60 @@
             for (const path of possiblePaths) {
                 try {
                     console.log(`🔄 Tentative de chargement depuis : ${path}`);
-                    const response = await fetch(path);
-                    if (response.ok) {
-                        try {
-                            data = await response.json();
-                            if (data && Array.isArray(data) && data.length > 0) {
-                                loadedPath = path;
-                                console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
-                                break;
-                            } else {
-                                console.log(`⚠️ Fichier JSON vide ou invalide pour : ${path}`);
+                    
+                    // Créer un AbortController pour timeout (30 secondes)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000);
+                    
+                    try {
+                        const response = await fetch(path, { 
+                            signal: controller.signal,
+                            headers: {
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
                             }
-                        } catch (parseError) {
-                            console.log(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError.message);
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            try {
+                                // Le fichier est volumineux (7.5MB), afficher un message de progression
+                                const jobsContainer = document.getElementById('jobsContainer');
+                                if (jobsContainer && path.includes('github')) {
+                                    jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Téléchargement en cours...</h3><p>Chargement depuis GitHub (7.2MB, 2301 offres), veuillez patienter...</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Cela peut prendre 10-30 secondes selon votre connexion.</p></div>';
+                                }
+                                
+                                console.log(`📥 Téléchargement du JSON depuis ${path}...`);
+                                data = await response.json();
+                                console.log(`✅ JSON téléchargé et parsé avec succès`);
+                                
+                                if (data && Array.isArray(data) && data.length > 0) {
+                                    loadedPath = path;
+                                    console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
+                                    break;
+                                } else {
+                                    console.log(`⚠️ Fichier JSON vide ou invalide pour : ${path}`);
+                                }
+                            } catch (parseError) {
+                                console.error(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError.message);
+                            }
+                        } else {
+                            console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
                         }
-                    } else {
-                        console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
+                    } catch (fetchError) {
+                        clearTimeout(timeoutId);
+                        if (fetchError.name === 'AbortError') {
+                            console.log(`⏱️ Timeout (30s) pour : ${path}`);
+                            lastError = new Error('Timeout: Le fichier est trop volumineux ou la connexion est lente');
+                        } else {
+                            throw fetchError;
+                        }
                     }
                 } catch (error) {
                     lastError = error;
                     // Ne pas afficher les erreurs CORS pour file:// car c'est attendu
-                    if (!isFileProtocol || !error.message.includes('CORS') && !error.message.includes('Failed to fetch')) {
+                    if (!isFileProtocol || (!error.message.includes('CORS') && !error.message.includes('Failed to fetch'))) {
                         console.log(`⚠️ Erreur lors du chargement depuis ${path}:`, error.message);
                     }
                 }
