@@ -584,6 +584,23 @@
             }
         }
 
+        // Initialiser Firebase (si pas déjà initialisé)
+        if (typeof firebase !== 'undefined' && (!firebase.apps || firebase.apps.length === 0)) {
+            try {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
+                    authDomain: "project-taleos.firebaseapp.com",
+                    projectId: "project-taleos",
+                    storageBucket: "project-taleos.firebasestorage.app",
+                    messagingSenderId: "974062127016",
+                    appId: "1:974062127016:web:b6cffae44f1bae56f03f9d"
+                };
+                firebase.initializeApp(firebaseConfig);
+            } catch (e) {
+                console.log('Firebase déjà initialisé ou erreur:', e);
+            }
+        }
+
         // Fonction de déconnexion avec Firebase
         async function handleLogout() {
             try {
