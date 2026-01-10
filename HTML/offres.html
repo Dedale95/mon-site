@@ -1444,8 +1444,13 @@
                             }
                             
                             if (currentIndex < data.length) {
-                                // Continuer avec le batch suivant
-                                setTimeout(() => resolve(processBatch()), 0);
+                                // Continuer avec le batch suivant de manière asynchrone
+                                setTimeout(() => {
+                                    processBatch().then(() => resolve()).catch(err => {
+                                        console.error('Erreur dans processBatch:', err);
+                                        resolve(); // Continuer même en cas d'erreur
+                                    });
+                                }, 0);
                             } else {
                                 // Terminé
                                 resolve();
