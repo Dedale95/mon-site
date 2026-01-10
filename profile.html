@@ -7,6 +7,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -480,7 +481,7 @@
         };
 
         // Initialiser Firebase (vérifier qu'il n'est pas déjà initialisé)
-        let auth;
+        let auth, db;
         try {
             if (typeof firebase !== 'undefined') {
                 // Vérifier si Firebase est déjà initialisé
@@ -491,6 +492,13 @@
                     console.log('ℹ️ Firebase déjà initialisé');
                 }
                 auth = firebase.auth();
+                // Initialiser Firestore
+                if (typeof firebase.firestore !== 'undefined') {
+                    db = firebase.firestore();
+                    console.log('✅ Firestore initialisé avec succès');
+                } else {
+                    console.warn('⚠️ Firestore SDK non disponible');
+                }
             } else {
                 console.error('❌ Firebase SDK non chargé');
             }
@@ -515,8 +523,10 @@
                 // Mettre à jour localStorage pour la navigation
                 localStorage.setItem('authToken', user.uid);
                 localStorage.setItem('userEmail', user.email);
-                // Charger le profil
-                loadProfile();
+                // Charger le profil (fonction async)
+                loadProfile().catch(error => {
+                    console.error('Erreur lors du chargement du profil:', error);
+                });
                 // Mettre à jour la navigation
                 highlightCurrentPage();
                 checkAuthAndUpdateNav();
@@ -528,11 +538,13 @@
                 if (token && email) {
                     // Il y a un token dans localStorage, attendre un peu que Firebase restaure la session
                     console.log('Token présent dans localStorage, attente restauration Firebase...');
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         if (auth.currentUser) {
                             // Firebase a restauré la session
                             currentUser = auth.currentUser;
-                            loadProfile();
+                            await loadProfile().catch(error => {
+                                console.error('Erreur lors du chargement du profil:', error);
+                            });
                             checkAuthAndUpdateNav();
                         } else {
                             // Toujours pas d'utilisateur après 2 secondes, rediriger
@@ -551,7 +563,7 @@
         });
         
         // Fallback : Si Firebase ne répond pas après 3 secondes, vérifier localStorage
-        setTimeout(() => {
+        setTimeout(async () => {
             if (!authReady && !currentUser) {
                 console.log('Firebase n\'a pas répondu après 3s, vérification localStorage...');
                 const token = localStorage.getItem('authToken');
@@ -559,77 +571,138 @@
                 if (token && email) {
                     // Il y a un token, on considère que l'utilisateur est connecté
                     currentUser = { email: email, uid: token };
-                    loadProfile();
+                    await loadProfile().catch(error => {
+                        console.error('Erreur lors du chargement du profil:', error);
+                    });
                     highlightCurrentPage();
                     checkAuthAndUpdateNav();
-                } else if (!auth.currentUser) {
+                } else if (!auth || !auth.currentUser) {
                     window.location.href = 'auth.html';
                 }
             }
         }, 3000);
 
-        // Charger le profil depuis localStorage
-        function loadProfile() {
+        // Charger le profil depuis Firestore (avec fallback localStorage)
+        async function loadProfile() {
             // Utiliser currentUser ou auth.currentUser ou localStorage comme fallback
+            let user = null;
             let userEmail = null;
+            let userId = null;
             
-            if (currentUser && currentUser.email) {
+            if (currentUser && currentUser.uid) {
+                user = currentUser;
+                userId = currentUser.uid;
                 userEmail = currentUser.email;
-            } else if (auth.currentUser && auth.currentUser.email) {
+            } else if (auth && auth.currentUser && auth.currentUser.uid) {
+                user = auth.currentUser;
+                userId = auth.currentUser.uid;
                 userEmail = auth.currentUser.email;
                 currentUser = auth.currentUser;
             } else {
                 userEmail = localStorage.getItem('userEmail');
+                userId = localStorage.getItem('authToken');
             }
             
-            if (!userEmail) {
-                console.log('⚠️ Pas d\'email utilisateur trouvé');
+            if (!userId && !userEmail) {
+                console.log('⚠️ Pas d\'utilisateur trouvé');
                 return;
             }
             
-            console.log('Chargement du profil pour:', userEmail);
+            console.log('Chargement du profil pour:', userEmail || userId);
             
-            // Charger le profil depuis localStorage (clé basée sur l'email de l'utilisateur)
-            const profileKey = `profile_${userEmail}`;
-            const savedProfile = localStorage.getItem(profileKey);
-            
-            if (savedProfile) {
+            // Essayer de charger depuis Firestore d'abord
+            if (db && userId) {
                 try {
-                    const profile = JSON.parse(savedProfile);
-                    if (profile.civility) document.getElementById('civility').value = profile.civility;
-                    if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
-                    if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
-                    if (profile.phone) document.getElementById('phone').value = profile.phone;
-                    if (profile.address) document.getElementById('address').value = profile.address;
-                    if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
-                    if (profile.city) document.getElementById('city').value = profile.city;
-                    if (profile.country) document.getElementById('country').value = profile.country;
-                    console.log('✅ Profil chargé depuis localStorage');
+                    const profileDoc = await db.collection('profiles').doc(userId).get();
+                    
+                    if (profileDoc.exists) {
+                        const profile = profileDoc.data();
+                        // Remplir le formulaire avec les données
+                        if (profile.civility) document.getElementById('civility').value = profile.civility;
+                        if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                        if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                        if (profile.phone) document.getElementById('phone').value = profile.phone;
+                        if (profile.address) document.getElementById('address').value = profile.address;
+                        if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
+                        if (profile.city) document.getElementById('city').value = profile.city;
+                        if (profile.country) document.getElementById('country').value = profile.country;
+                        console.log('✅ Profil chargé depuis Firestore');
+                        
+                        // Synchroniser avec localStorage comme cache
+                        if (userEmail) {
+                            const profileKey = `profile_${userEmail}`;
+                            localStorage.setItem(profileKey, JSON.stringify(profile));
+                        }
+                        return;
+                    } else {
+                        console.log('ℹ️ Aucun profil trouvé dans Firestore, vérification localStorage...');
+                    }
                 } catch (error) {
-                    console.error('❌ Erreur lors du chargement du profil:', error);
+                    console.error('❌ Erreur lors du chargement depuis Firestore:', error);
+                    console.log('Tentative de chargement depuis localStorage...');
                 }
-            } else {
-                console.log('ℹ️ Aucun profil sauvegardé trouvé pour cet utilisateur');
+            }
+            
+            // Fallback: Charger depuis localStorage
+            if (userEmail) {
+                const profileKey = `profile_${userEmail}`;
+                const savedProfile = localStorage.getItem(profileKey);
+                
+                if (savedProfile) {
+                    try {
+                        const profile = JSON.parse(savedProfile);
+                        if (profile.civility) document.getElementById('civility').value = profile.civility;
+                        if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                        if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                        if (profile.phone) document.getElementById('phone').value = profile.phone;
+                        if (profile.address) document.getElementById('address').value = profile.address;
+                        if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
+                        if (profile.city) document.getElementById('city').value = profile.city;
+                        if (profile.country) document.getElementById('country').value = profile.country;
+                        console.log('✅ Profil chargé depuis localStorage');
+                        
+                        // Si Firestore est disponible, synchroniser les données vers Firestore
+                        if (db && userId && currentUser) {
+                            try {
+                                await db.collection('profiles').doc(userId).set(profile, { merge: true });
+                                console.log('✅ Profil synchronisé vers Firestore');
+                            } catch (error) {
+                                console.warn('⚠️ Impossible de synchroniser vers Firestore:', error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Erreur lors du chargement du profil:', error);
+                    }
+                } else {
+                    console.log('ℹ️ Aucun profil sauvegardé trouvé pour cet utilisateur');
+                }
             }
         }
 
-        // Sauvegarder le profil dans localStorage
+        // Sauvegarder le profil dans Firestore (avec fallback localStorage)
         async function handleSaveProfile(event) {
             event.preventDefault();
             
             // Vérifier l'utilisateur avec plusieurs fallbacks
+            let user = null;
             let userEmail = null;
+            let userId = null;
             
-            if (currentUser && currentUser.email) {
+            if (currentUser && currentUser.uid) {
+                user = currentUser;
+                userId = currentUser.uid;
                 userEmail = currentUser.email;
-            } else if (auth.currentUser && auth.currentUser.email) {
+            } else if (auth && auth.currentUser && auth.currentUser.uid) {
+                user = auth.currentUser;
+                userId = auth.currentUser.uid;
                 userEmail = auth.currentUser.email;
                 currentUser = auth.currentUser;
             } else {
                 userEmail = localStorage.getItem('userEmail');
+                userId = localStorage.getItem('authToken');
             }
             
-            if (!userEmail) {
+            if (!userId && !userEmail) {
                 window.location.href = 'auth.html';
                 return;
             }
@@ -643,7 +716,9 @@
                 postal_code: document.getElementById('postalCode').value.trim(),
                 city: document.getElementById('city').value.trim(),
                 country: document.getElementById('country').value,
-                updated_at: new Date().toISOString()
+                email: userEmail || '',
+                updated_at: new Date().toISOString(),
+                created_at: null // Sera défini lors de la première création
             };
 
             const btn = document.getElementById('saveBtn');
@@ -656,11 +731,42 @@
             errorMsg.classList.remove('show');
 
             try {
-                // Sauvegarder le profil dans localStorage (clé basée sur l'email)
-                const profileKey = `profile_${userEmail}`;
-                localStorage.setItem(profileKey, JSON.stringify(formData));
+                let savedToFirestore = false;
                 
-                successMsg.textContent = 'Profil enregistré avec succès !';
+                // Essayer de sauvegarder dans Firestore d'abord
+                if (db && userId) {
+                    try {
+                        // Vérifier si le document existe déjà pour préserver created_at
+                        const profileDoc = await db.collection('profiles').doc(userId).get();
+                        
+                        if (!profileDoc.exists || !profileDoc.data().created_at) {
+                            formData.created_at = new Date().toISOString();
+                        } else {
+                            formData.created_at = profileDoc.data().created_at;
+                        }
+                        
+                        // Sauvegarder dans Firestore
+                        await db.collection('profiles').doc(userId).set(formData, { merge: true });
+                        savedToFirestore = true;
+                        console.log('✅ Profil sauvegardé dans Firestore pour:', userId);
+                    } catch (firestoreError) {
+                        console.error('❌ Erreur lors de la sauvegarde dans Firestore:', firestoreError);
+                        // Continuer avec localStorage en cas d'erreur
+                    }
+                }
+                
+                // Sauvegarder aussi dans localStorage comme cache et fallback
+                if (userEmail) {
+                    const profileKey = `profile_${userEmail}`;
+                    localStorage.setItem(profileKey, JSON.stringify(formData));
+                    console.log('✅ Profil sauvegardé dans localStorage pour:', userEmail);
+                }
+                
+                if (savedToFirestore) {
+                    successMsg.textContent = '✅ Profil enregistré avec succès dans le cloud !';
+                } else {
+                    successMsg.textContent = '✅ Profil enregistré localement. Synchronisation avec le cloud disponible à la prochaine connexion.';
+                }
                 successMsg.classList.add('show');
                 
                 // Faire défiler vers le message de succès
@@ -668,11 +774,21 @@
                     successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 100);
                 
-                console.log('✅ Profil sauvegardé pour:', userEmail, formData);
+                // Masquer le message après 5 secondes
+                setTimeout(() => {
+                    successMsg.classList.remove('show');
+                }, 5000);
+                
+                console.log('✅ Profil sauvegardé:', { userId, userEmail, formData });
             } catch (error) {
-                errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement.';
+                errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.';
                 errorMsg.classList.add('show');
-                console.error('❌ Erreur:', error);
+                console.error('❌ Erreur lors de la sauvegarde:', error);
+                
+                // Masquer le message d'erreur après 5 secondes
+                setTimeout(() => {
+                    errorMsg.classList.remove('show');
+                }, 5000);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Enregistrer';
