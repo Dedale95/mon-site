@@ -914,18 +914,38 @@
             // Déterminer le chemin de base selon où se trouve le fichier HTML
             const currentPath = window.location.pathname;
             const currentHref = window.location.href;
-            const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
-                                   currentHref.includes('/HTML/') || currentHref.includes('HTML/');
             
-            // Chemin de base optimisé (une seule tentative pour performance)
-            const basePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
+            // Vérifier si on est dans le dossier HTML ou à la racine
+            // Sur GitHub Pages : /mon-site/offres.html → utiliser images/logos/
+            // Sur GitHub Pages : /mon-site/HTML/offres.html → utiliser images/logos/
+            // En local : /HTML/offres.html → utiliser images/logos/
+            // En local : /offres.html → utiliser HTML/images/logos/
+            const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.endsWith('/offres.html');
+            const isAtRoot = currentPath.endsWith('/') || !currentPath.includes('/HTML/');
+            
+            // Chemin de base optimisé - toujours utiliser le chemin relatif depuis la page
+            // Si la page est dans HTML/, les logos sont dans images/logos/
+            // Si la page est à la racine, les logos sont dans HTML/images/logos/
+            let basePath;
+            if (window.location.href.includes('github.io')) {
+                // Sur GitHub Pages, toujours utiliser le chemin depuis la racine du repo
+                basePath = 'HTML/images/logos/';
+            } else if (isInHTMLFolder) {
+                // En local, si dans HTML/, utiliser chemin relatif
+                basePath = 'images/logos/';
+            } else {
+                // En local, si à la racine, utiliser chemin vers HTML/
+                basePath = 'HTML/images/logos/';
+            }
             
             // Obtenir la variante principale du nom de fichier (première de la liste)
             const fileNameVariants = getCompanyLogoFileNameVariants(companyName);
             if (fileNameVariants.length > 0) {
                 const primaryFileName = fileNameVariants[0];
                 // Essayer seulement PNG (le format le plus commun et optimisé)
-                return `${basePath}${primaryFileName}.png`;
+                const logoUrl = `${basePath}${primaryFileName}.png`;
+                console.log(`🔍 Logo pour "${companyName}": ${logoUrl} (normalisé: ${primaryFileName})`);
+                return logoUrl;
             }
             
             // Si aucune variante, utiliser Clearbit directement
