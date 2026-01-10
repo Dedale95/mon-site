@@ -930,6 +930,11 @@
                         if (cancelBtn) {
                             cancelBtn.textContent = 'Annuler';
                             cancelBtn.setAttribute('onclick', 'closeForgotPasswordModal()');
+                            cancelBtn.style.marginLeft = '';
+                        }
+                        const modalFooter = document.querySelector('.modal-footer');
+                        if (modalFooter) {
+                            modalFooter.style.justifyContent = 'flex-end';
                         }
                     }, 300);
                 }
@@ -1010,13 +1015,20 @@
                 emailSent.classList.add('show');
                 sentEmail.textContent = email;
                 
-                // Masquer le bouton annuler et modifier le bouton principal
+                // Masquer le bouton "Envoyer l'email" et modifier le bouton annuler en "Fermer"
                 const cancelBtn = document.getElementById('cancelBtn');
+                const modalFooter = document.querySelector('.modal-footer');
                 if (cancelBtn) {
                     cancelBtn.textContent = 'Fermer';
                     cancelBtn.setAttribute('onclick', 'closeForgotPasswordModal()');
+                    cancelBtn.style.marginLeft = 'auto';
                 }
-                resetBtn.style.display = 'none';
+                if (resetBtn) {
+                    resetBtn.style.display = 'none';
+                }
+                if (modalFooter) {
+                    modalFooter.style.justifyContent = 'flex-end';
+                }
                 
                 console.log('✅ Email de réinitialisation envoyé à:', email);
                 
