@@ -650,8 +650,12 @@
 
         // Mettre en surbrillance uniquement la page actuelle
         function highlightCurrentPage() {
-            const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
-            const navLinks = document.querySelectorAll('.nav-link');
+            let currentPage = window.location.pathname.split('/').pop();
+            if (!currentPage || currentPage === '') {
+                currentPage = window.location.href.split('/').pop();
+            }
+            
+            const navLinks = document.querySelectorAll('.nav-link:not(#logoutBtn)');
             
             navLinks.forEach(link => {
                 link.classList.remove('nav-link-primary');
@@ -659,12 +663,15 @@
                 const linkText = link.textContent.trim();
                 
                 // Sur la page profil, mettre en surbrillance "Mon Profil"
-                if (currentPage === 'profile.html' && linkText === 'Mon Profil') {
+                if ((currentPage === 'profile.html' || currentPage.includes('profile')) && linkText === 'Mon Profil') {
                     link.classList.add('nav-link-primary');
                 }
-                // Pour les autres pages, mettre en surbrillance selon l'URL
-                else if (linkHref && linkHref === currentPage && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
-                    link.classList.add('nav-link-primary');
+                // Pour les autres liens, mettre en surbrillance selon l'URL (sauf les liens spéciaux)
+                else if (linkHref && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
+                    const linkPage = linkHref.split('/').pop();
+                    if (linkPage === currentPage) {
+                        link.classList.add('nav-link-primary');
+                    }
                 }
             });
         }
