@@ -1094,20 +1094,7 @@
             }, 50);
         }
         
-        // Écouter les changements d'état Firebase si disponible
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            try {
-                const auth = firebase.auth();
-                auth.onAuthStateChanged((user) => {
-                    // Mettre à jour la navigation quand l'état d'authentification change
-                    checkAuthAndUpdateNav();
-                });
-            } catch (e) {
-                // Firebase non disponible
-            }
-        }
-
-        // Initialiser Firebase (si pas déjà initialisé)
+        // Initialiser Firebase (si pas déjà initialisé) - DOIT ÊTRE AVANT les fonctions qui l'utilisent
         if (typeof firebase !== 'undefined') {
             try {
                 if (!firebase.apps || firebase.apps.length === 0) {
@@ -1123,8 +1110,23 @@
                     firebase.initializeApp(firebaseConfig);
                     console.log('✅ Firebase initialisé');
                 }
+                // Écouter les changements d'état Firebase APRÈS l'initialisation
+                const auth = firebase.auth();
+                auth.onAuthStateChanged((user) => {
+                    // Mettre à jour la navigation quand l'état d'authentification change
+                    checkAuthAndUpdateNav();
+                });
             } catch (e) {
                 console.log('ℹ️ Firebase déjà initialisé ou erreur:', e.message);
+                // Si déjà initialisé, essayer d'écouter quand même
+                try {
+                    const auth = firebase.auth();
+                    auth.onAuthStateChanged((user) => {
+                        checkAuthAndUpdateNav();
+                    });
+                } catch (e2) {
+                    console.log('Impossible d\'écouter Firebase:', e2);
+                }
             }
         }
 
