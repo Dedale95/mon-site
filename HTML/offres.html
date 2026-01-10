@@ -1299,86 +1299,163 @@
 
                 allJobs = [];
 
-                // Traitement optimisé par batch avec async/await pour éviter le débordement de stack
+                // Traitement optimisé par batch avec requestAnimationFrame pour éviter le débordement de stack
                 const processJob = (job) => {
-                    // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
-                    if (job.contract_type && typeof job.contract_type === 'string') {
-                        const contractLower = job.contract_type.toLowerCase();
-                        if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
-                            job.contract_type = 'Alternance / Apprentissage';
-                        }
-                    }
-                    
-                    // Harmonisation des niveaux d'études
-                    if (job.education_level && typeof job.education_level === 'string') {
-                        if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
-                            job.education_level = 'Certificat Fédéral de Capacité (CFC)';
-                        }
-                    }
-
-                    job.cleanRegions = [];
-                    job.cleanCountries = [];
-
-                    if (job.location && typeof job.location === 'string' && job.location.includes(' - ')) {
-                        const parts = job.location.split(' - ');
-                        const cityPart = parts[0];
-                        const country = parts[1] ? parts[1].trim() : '';
-                        if (country) {
-                            job.cleanCountries.push(country);
-
-                            const cities = cityPart.split(/[\/,]/).map(c => {
-                                let clean = c.trim();
-                                // Nettoyage basique type Python
-                                clean = clean.replace(/\(.*\)/g, '').trim();
-                                clean = clean.replace(/\d{5,6}/g, '').trim();
-                                // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
-                                if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
-                                    const words = clean.split(' ');
-                                    const lastWord = words[words.length - 1].toLowerCase();
-                                    if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
-                                }
-                                return clean;
-                            }).filter(c => c && c.length > 0);
-
-                            if (cities.length === 0) {
-                                job.cleanRegions.push(getCityRegion('', country));
-                            } else {
-                                cities.forEach(city => {
-                                    job.cleanRegions.push(getCityRegion(city, country));
-                                });
+                    try {
+                        // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
+                        if (job && job.contract_type && typeof job.contract_type === 'string') {
+                            const contractLower = job.contract_type.toLowerCase();
+                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
+                                job.contract_type = 'Alternance / Apprentissage';
                             }
-                            job.cleanCountries = [...new Set(job.cleanCountries)];
-                            job.cleanRegions = [...new Set(job.cleanRegions)];
                         }
+                        
+                        // Harmonisation des niveaux d'études
+                        if (job && job.education_level && typeof job.education_level === 'string') {
+                            if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
+                                job.education_level = 'Certificat Fédéral de Capacité (CFC)';
+                            }
+                        }
+
+                        job.cleanRegions = [];
+                        job.cleanCountries = [];
+
+                        if (job && job.location && typeof job.location === 'string' && job.location.includes(' - ')) {
+                            try {
+                                const parts = job.location.split(' - ');
+                                const cityPart = parts[0] || '';
+                                const country = parts[1] ? String(parts[1]).trim() : '';
+                                
+                                if (country && country.length > 0) {
+                                    job.cleanCountries.push(country);
+
+                                    // Traiter les villes avec try/catch pour éviter les erreurs
+                                    let cities = [];
+                                    try {
+                                        const cityParts = cityPart.split(/[\/,]/);
+                                        cities = cityParts
+                                            .map(c => {
+                                                try {
+                                                    let clean = String(c).trim();
+                                                    if (!clean) return null;
+                                                    
+                                                    // Nettoyage basique type Python
+                                                    clean = clean.replace(/\(.*?\)/g, '').trim();
+                                                    clean = clean.replace(/\d{5,6}/g, '').trim();
+                                                    
+                                                    // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
+                                                    if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
+                                                        const words = clean.split(' ');
+                                                        if (words.length > 0) {
+                                                            const lastWord = words[words.length - 1].toLowerCase();
+                                                            if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                                                        }
+                                                    }
+                                                    return clean && clean.length > 0 ? clean : null;
+                                                } catch (e) {
+                                                    console.warn(`Erreur lors du traitement de la ville "${c}":`, e);
+                                                    return null;
+                                                }
+                                            })
+                                            .filter(c => c !== null && c.length > 0);
+                                    } catch (e) {
+                                        console.warn(`Erreur lors du split des villes pour "${cityPart}":`, e);
+                                        cities = [];
+                                    }
+
+                                    if (cities.length === 0) {
+                                        const region = getCityRegion('', country);
+                                        if (region) job.cleanRegions.push(region);
+                                    } else {
+                                        cities.forEach(city => {
+                                            try {
+                                                const region = getCityRegion(city, country);
+                                                if (region) job.cleanRegions.push(region);
+                                            } catch (e) {
+                                                console.warn(`Erreur getCityRegion pour "${city}", "${country}":`, e);
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Utiliser Array.from(new Set(...)) au lieu de [...new Set(...)] pour éviter les problèmes de stack
+                                    try {
+                                        job.cleanCountries = Array.from(new Set(job.cleanCountries));
+                                        job.cleanRegions = Array.from(new Set(job.cleanRegions));
+                                    } catch (e) {
+                                        console.warn(`Erreur lors de la déduplication pour job ${job.job_id}:`, e);
+                                        // Fallback : utiliser un simple filtre
+                                        const seenCountries = {};
+                                        job.cleanCountries = job.cleanCountries.filter(c => {
+                                            if (seenCountries[c]) return false;
+                                            seenCountries[c] = true;
+                                            return true;
+                                        });
+                                        const seenRegions = {};
+                                        job.cleanRegions = job.cleanRegions.filter(r => {
+                                            if (seenRegions[r]) return false;
+                                            seenRegions[r] = true;
+                                            return true;
+                                        });
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn(`Erreur lors du traitement de la location "${job.location}":`, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Erreur critique lors du traitement du job:`, e, job);
+                        // Initialiser au minimum pour éviter les erreurs suivantes
+                        job.cleanRegions = job.cleanRegions || [];
+                        job.cleanCountries = job.cleanCountries || [];
                     }
                     return job;
                 };
 
-                // Traiter par batch de 50 pour éviter le débordement de stack
-                const batchSize = 50;
-                for (let start = 0; start < data.length; start += batchSize) {
-                    const end = Math.min(start + batchSize, data.length);
-                    for (let i = start; i < end; i++) {
-                        try {
-                            const processedJob = processJob(data[i]);
-                            allJobs.push(processedJob);
-                        } catch (error) {
-                            console.error(`Erreur lors du traitement du job ${i}:`, error, data[i]);
-                            // Continuer avec le job suivant même en cas d'erreur
-                        }
-                    }
-                    
-                    // Mettre à jour le message de progression périodiquement
-                    if (start % 500 === 0 && jobsContainer) {
-                        const progress = Math.floor((start / data.length) * 100);
-                        jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + start + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
-                    }
-                    
-                    // Laisser le navigateur respirer entre les batches pour éviter de bloquer l'UI
-                    if (start % 100 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 0));
-                    }
-                }
+                // Traiter par batch de 25 avec requestAnimationFrame pour vraiment éviter le débordement
+                const batchSize = 25;
+                let currentIndex = 0;
+                
+                const processBatch = () => {
+                    return new Promise((resolve) => {
+                        requestAnimationFrame(() => {
+                            const end = Math.min(currentIndex + batchSize, data.length);
+                            
+                            for (let i = currentIndex; i < end; i++) {
+                                try {
+                                    const processedJob = processJob(data[i]);
+                                    allJobs.push(processedJob);
+                                } catch (error) {
+                                    console.error(`Erreur lors du traitement du job ${i}:`, error);
+                                    // Ajouter quand même le job avec des valeurs par défaut
+                                    if (data[i]) {
+                                        data[i].cleanRegions = data[i].cleanRegions || [];
+                                        data[i].cleanCountries = data[i].cleanCountries || [];
+                                        allJobs.push(data[i]);
+                                    }
+                                }
+                            }
+                            
+                            currentIndex = end;
+                            
+                            // Mettre à jour le message de progression
+                            if (currentIndex % 500 === 0 && jobsContainer) {
+                                const progress = Math.floor((currentIndex / data.length) * 100);
+                                jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + currentIndex + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
+                            }
+                            
+                            if (currentIndex < data.length) {
+                                // Continuer avec le batch suivant
+                                setTimeout(() => resolve(processBatch()), 0);
+                            } else {
+                                // Terminé
+                                resolve();
+                            }
+                        });
+                    });
+                };
+                
+                // Démarrer le traitement par batch
+                await processBatch();
 
                 console.log(`✅ Traitement terminé : ${allJobs.length} offres normalisées`);
 
