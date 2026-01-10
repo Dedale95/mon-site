@@ -858,8 +858,10 @@
                 .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
                 // Ne pas supprimer "societe_" pour "Société Générale" (fichier = societe_generale.png)
                 // Supprimer seulement les préfixes juridiques simples (sa_, sas_, sarl_) mais garder societe_
-                .replace(/^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques (mais garder societe_)
-                .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, '') // Supprimer les suffixes juridiques restants
+                .replace(/^sa_|^sas_|^sarl_/g, '') // Supprimer les préfixes juridiques simples (mais garder societe_)
+                .replace(/_sa$|_sas$|_sarl$/g, '') // Supprimer les suffixes juridiques simples
+                .replace(/^group_|^groupe_/g, '') // Supprimer les préfixes "group" seulement
+                .replace(/_group$|_groupe$/g, '') // Supprimer les suffixes "group" seulement
                 .replace(/^bbforbank$/, 'bforbank'); // Correction spéciale pour BforBank (fichier = bforbank.png)
             
             if (!normalized) return null;
