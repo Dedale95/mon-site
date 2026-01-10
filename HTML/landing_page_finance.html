@@ -1100,52 +1100,60 @@
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
-            // Vérifier à la fois localStorage et Firebase auth
-            const token = localStorage.getItem('authToken');
-            let isAuthenticated = !!token;
+            if (!profileLink || !authLink || !logoutBtn) {
+                console.warn('Éléments de navigation non trouvés');
+                return;
+            }
             
-            // Si Firebase est disponible, vérifier aussi l'état Firebase
+            let isAuthenticated = false;
+            
+            // Vérifier Firebase auth d'abord (source de vérité principale)
             if (typeof firebase !== 'undefined' && firebase.auth) {
                 try {
                     const auth = firebase.auth();
                     const currentUser = auth.currentUser;
                     if (currentUser) {
                         isAuthenticated = true;
-                    } else if (!token) {
-                        isAuthenticated = false;
+                        // Synchroniser avec localStorage si nécessaire
+                        if (!localStorage.getItem('authToken')) {
+                            currentUser.getIdToken().then(token => {
+                                localStorage.setItem('authToken', token);
+                            });
+                        }
                     }
                 } catch (e) {
-                    // Firebase non disponible, utiliser seulement localStorage
+                    console.warn('Erreur Firebase auth:', e);
                 }
             }
             
+            // Fallback: vérifier localStorage si Firebase n'est pas disponible ou n'a pas encore vérifié
+            if (!isAuthenticated) {
+                const token = localStorage.getItem('authToken');
+                const userEmail = localStorage.getItem('userEmail');
+                if (token || userEmail) {
+                    // Si on a un token mais Firebase n'a pas encore vérifié, considérer comme authentifié
+                    // Firebase vérifiera via onAuthStateChanged
+                    isAuthenticated = true;
+                }
+            }
+            
+            console.log('État authentification:', isAuthenticated ? 'connecté' : 'non connecté');
+            
             if (isAuthenticated) {
                 // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'block';
-                    profileLink.classList.remove('nav-link-primary');
-                }
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'block';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
-                if (authLink) {
-                    authLink.style.display = 'none';
-                }
+                profileLink.style.display = 'block';
+                profileLink.classList.remove('nav-link-primary');
+                logoutBtn.style.display = 'block';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'none';
             } else {
                 // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'none';
-                    profileLink.classList.remove('nav-link-primary');
-                }
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'none';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
-                if (authLink) {
-                    authLink.style.display = 'block';
-                    authLink.classList.remove('nav-link-primary');
-                }
+                profileLink.style.display = 'none';
+                profileLink.classList.remove('nav-link-primary');
+                logoutBtn.style.display = 'none';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'block';
+                authLink.classList.remove('nav-link-primary');
             }
             
             // Remettre en surbrillance la page actuelle après avoir mis à jour la visibilité
@@ -1154,9 +1162,19 @@
             }, 50);
         }
         
-        // Initialiser Firebase (si pas déjà initialisé) - DOIT ÊTRE AVANT les fonctions qui l'utilisent
-        if (typeof firebase !== 'undefined') {
+        // Initialiser Firebase et vérifier l'authentification
+        function initAuth() {
+            if (typeof firebase === 'undefined') {
+                console.warn('Firebase non disponible');
+                // Vérifier quand même avec localStorage
+                checkAuthAndUpdateNav();
+                return;
+            }
+            
             try {
+                let auth;
+                
+                // Initialiser Firebase si nécessaire
                 if (!firebase.apps || firebase.apps.length === 0) {
                     const firebaseConfig = {
                         apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
@@ -1170,23 +1188,24 @@
                     firebase.initializeApp(firebaseConfig);
                     console.log('✅ Firebase initialisé');
                 }
-                // Écouter les changements d'état Firebase APRÈS l'initialisation
-                const auth = firebase.auth();
+                
+                // Obtenir l'instance auth
+                auth = firebase.auth();
+                
+                // Écouter les changements d'état Firebase (se déclenche immédiatement aussi)
                 auth.onAuthStateChanged((user) => {
+                    console.log('onAuthStateChanged:', user ? 'utilisateur connecté' : 'utilisateur déconnecté');
                     // Mettre à jour la navigation quand l'état d'authentification change
                     checkAuthAndUpdateNav();
                 });
+                
+                // Vérifier immédiatement aussi (au cas où onAuthStateChanged ne se déclenche pas immédiatement)
+                checkAuthAndUpdateNav();
+                
             } catch (e) {
-                console.log('ℹ️ Firebase déjà initialisé ou erreur:', e.message);
-                // Si déjà initialisé, essayer d'écouter quand même
-                try {
-                    const auth = firebase.auth();
-                    auth.onAuthStateChanged((user) => {
-                        checkAuthAndUpdateNav();
-                    });
-                } catch (e2) {
-                    console.log('Impossible d\'écouter Firebase:', e2);
-                }
+                console.error('Erreur lors de l\'initialisation Firebase:', e);
+                // Essayer quand même avec localStorage
+                checkAuthAndUpdateNav();
             }
         }
 
@@ -1198,7 +1217,7 @@
                     const auth = firebase.auth();
                     await auth.signOut();
                 }
-                // Nettoyer localStorage (mais garder le profil pour la reconnexion)
+                // Nettoyer localStorage
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userEmail');
                 // Rediriger vers la page de connexion
@@ -1212,17 +1231,36 @@
             }
         }
 
-        // Mettre à jour la navigation au chargement et après un délai pour garantir l'affichage
-        highlightCurrentPage();
-        checkAuthAndUpdateNav();
-        setTimeout(() => {
+        // Initialiser l'authentification quand le DOM est prêt
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser Firebase et vérifier l'authentification
+            initAuth();
+            
+            // Mettre en surbrillance la page actuelle
             highlightCurrentPage();
-            checkAuthAndUpdateNav();
-        }, 100);
-        setTimeout(() => {
+            
+            // Vérifier à nouveau après un court délai (pour Firebase qui peut être asynchrone)
+            setTimeout(() => {
+                checkAuthAndUpdateNav();
+                highlightCurrentPage();
+            }, 300);
+            
+            // Vérifier une dernière fois après un délai plus long
+            setTimeout(() => {
+                checkAuthAndUpdateNav();
+                highlightCurrentPage();
+            }, 1000);
+        });
+        
+        // Si le DOM est déjà chargé, initialiser immédiatement
+        if (document.readyState !== 'loading') {
+            initAuth();
             highlightCurrentPage();
-            checkAuthAndUpdateNav();
-        }, 500);
+            setTimeout(() => {
+                checkAuthAndUpdateNav();
+                highlightCurrentPage();
+            }, 300);
+        }
     </script>
 </body>
 
