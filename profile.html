@@ -206,6 +206,26 @@
             opacity: 1;
         }
 
+        .form-group input[type="number"] {
+            padding: 12px 14px;
+            height: 44px;
+            line-height: 1.4;
+        }
+
+        .form-group input[type="number"]::-webkit-inner-spin-button,
+        .form-group input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #666;
+            font-size: 0.85rem;
+            font-weight: 400;
+        }
+
         .form-group select:focus,
         .form-group input:focus {
             outline: none;
@@ -1284,6 +1304,51 @@
                     </div>
                 </div>
 
+                <!-- Section Formation -->
+                <div class="form-section">
+                    <h2>Formation</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Renseignez vos informations de formation et de diplômes.</p>
+                    
+                    <div class="form-group">
+                        <label for="educationLevel">Niveau d'étude</label>
+                        <select id="educationLevel" name="educationLevel">
+                            <option value="">Sélectionnez...</option>
+                            <option value="Bac">Bac</option>
+                            <option value="Bac + 3 / L3">Bac + 3 / L3</option>
+                            <option value="Bac + 5 / M2 et plus">Bac + 5 / M2 et plus</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="institutionType">Type d'établissement</label>
+                        <select id="institutionType" name="institutionType">
+                            <option value="">Sélectionnez...</option>
+                            <option value="CFA">CFA</option>
+                            <option value="Ecole de commerce">Ecole de commerce</option>
+                            <option value="Ecole d'ingénieurs">Ecole d'ingénieurs</option>
+                            <option value="Etablissement superieur specialisé">Etablissement superieur specialisé</option>
+                            <option value="Lycée">Lycée</option>
+                            <option value="Université">Université</option>
+                            <option value="Autre établissement">Autre établissement</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="diplomaStatus">Statut du diplôme</label>
+                        <select id="diplomaStatus" name="diplomaStatus">
+                            <option value="">Sélectionnez...</option>
+                            <option value="En cours">En cours</option>
+                            <option value="Obtenu">Obtenu</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="graduationYear">Année d'obtention</label>
+                        <input type="number" id="graduationYear" name="graduationYear" placeholder="AAAA" min="1900" max="2099" pattern="[0-9]{4}">
+                        <small style="display: block; margin-top: 6px; color: #666; font-size: 0.85rem;">Format : AAAA (exemple : 2024)</small>
+                    </div>
+                </div>
+
                 <!-- Section Documents -->
                 <div class="form-section">
                     <h2>Documents</h2>
@@ -1565,6 +1630,7 @@
                         loadPreferredCountries(profile);
                         loadRegions(profile);
                         loadExperienceLevel(profile);
+                        loadEducationInfo(profile);
                         
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
@@ -1612,6 +1678,7 @@
                         loadPreferredCountries(profile);
                         loadRegions(profile);
                         loadExperienceLevel(profile);
+                        loadEducationInfo(profile);
                         
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
@@ -1756,6 +1823,37 @@
                 const experienceSelect = document.getElementById('experienceLevel');
                 if (experienceSelect) {
                     experienceSelect.value = profile.experience_level;
+                }
+            }
+        }
+
+        // Fonction pour charger les informations de formation
+        function loadEducationInfo(profile) {
+            if (profile.education_level) {
+                const educationSelect = document.getElementById('educationLevel');
+                if (educationSelect) {
+                    educationSelect.value = profile.education_level;
+                }
+            }
+            
+            if (profile.institution_type) {
+                const institutionSelect = document.getElementById('institutionType');
+                if (institutionSelect) {
+                    institutionSelect.value = profile.institution_type;
+                }
+            }
+            
+            if (profile.diploma_status) {
+                const diplomaStatusSelect = document.getElementById('diplomaStatus');
+                if (diplomaStatusSelect) {
+                    diplomaStatusSelect.value = profile.diploma_status;
+                }
+            }
+            
+            if (profile.graduation_year) {
+                const graduationYearInput = document.getElementById('graduationYear');
+                if (graduationYearInput) {
+                    graduationYearInput.value = profile.graduation_year;
                 }
             }
         }
@@ -2133,6 +2231,10 @@
                 preferred_countries: selectedCountries, // Array des pays sélectionnés
                 regions: selectedRegions, // Array des régions sélectionnées
                 experience_level: document.getElementById('experienceLevel').value,
+                education_level: document.getElementById('educationLevel').value,
+                institution_type: document.getElementById('institutionType').value,
+                diploma_status: document.getElementById('diplomaStatus').value,
+                graduation_year: document.getElementById('graduationYear').value ? parseInt(document.getElementById('graduationYear').value) : null,
                 email: userEmail || '',
                 updated_at: new Date().toISOString(),
                 created_at: null // Sera défini lors de la première création
