@@ -309,6 +309,31 @@
     </style>
 </head>
 <body>
+    <!-- Script d'initialisation immédiate pour éviter le flash -->
+    <script>
+        // Vérifier immédiatement l'authentification depuis localStorage AVANT le rendu
+        // Cela évite le flash de "Inscription / Connexion" quand l'utilisateur est connecté
+        (function() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                const isAuthenticated = !!(token && email);
+                
+                // Injecter le style pour masquer/afficher les éléments avant le rendu
+                if (!document.getElementById('initialNavState')) {
+                    const style = document.createElement('style');
+                    style.id = 'initialNavState';
+                    style.textContent = isAuthenticated 
+                        ? '#authLink { display: none !important; } #profileLink { display: block !important; } #logoutBtn { display: block !important; }'
+                        : '#authLink { display: block !important; } #profileLink { display: none !important; } #logoutBtn { display: none !important; }';
+                    document.head.appendChild(style);
+                }
+            } catch (e) {
+                console.warn('Erreur lors de l\'initialisation immédiate:', e);
+            }
+        })();
+    </script>
+    
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
@@ -509,6 +534,47 @@
         // Variable pour stocker l'utilisateur connecté
         let currentUser = null;
         let authReady = false;
+        
+        // Fonction pour mettre à jour la navigation immédiatement
+        function checkAuthAndUpdateNavImmediate() {
+            const profileLink = document.getElementById('profileLink');
+            const authLink = document.getElementById('authLink');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (!profileLink || !authLink || !logoutBtn) {
+                return;
+            }
+            
+            // Vérifier localStorage immédiatement
+            const token = localStorage.getItem('authToken');
+            const email = localStorage.getItem('userEmail');
+            const isAuthenticated = !!(token && email);
+            
+            if (isAuthenticated) {
+                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
+                profileLink.style.display = 'block';
+                profileLink.classList.remove('nav-link-primary');
+                if (window.location.pathname.includes('profile.html')) {
+                    profileLink.classList.add('nav-link-primary');
+                }
+                logoutBtn.style.display = 'block';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'none';
+            } else {
+                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
+                profileLink.style.display = 'none';
+                profileLink.classList.remove('nav-link-primary');
+                logoutBtn.style.display = 'none';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'block';
+                authLink.classList.remove('nav-link-primary');
+            }
+            
+            highlightCurrentPage();
+        }
+        
+        // Mettre à jour la navigation IMMÉDIATEMENT au chargement (avant Firebase)
+        checkAuthAndUpdateNavImmediate();
         
         // Écouter les changements d'état d'authentification
         // Cette fonction est appelée automatiquement quand Firebase est prêt
@@ -843,39 +909,47 @@
 
         // Vérifier l'authentification et mettre à jour la navigation
         function checkAuthAndUpdateNav() {
-            const token = localStorage.getItem('authToken');
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
-            if (token || currentUser) {
-                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'block';
-                    // Ne pas enlever nav-link-primary si on est sur profile.html
-                    if (window.location.pathname.includes('profile.html')) {
-                        profileLink.classList.add('nav-link-primary');
-                    }
-                }
-                if (authLink) authLink.style.display = 'none';
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'block';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
+            if (!profileLink || !authLink || !logoutBtn) {
+                return;
+            }
+            
+            // Vérifier l'état d'authentification (Firebase en priorité, sinon localStorage)
+            let isAuthenticated = false;
+            
+            if (currentUser && currentUser.uid) {
+                isAuthenticated = true;
+            } else if (auth && auth.currentUser && auth.currentUser.uid) {
+                isAuthenticated = true;
+                currentUser = auth.currentUser;
             } else {
-                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
-                if (profileLink) {
-                    profileLink.style.display = 'none';
+                const token = localStorage.getItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                isAuthenticated = !!(token && email);
+            }
+            
+            if (isAuthenticated) {
+                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
+                profileLink.style.display = 'block';
+                if (window.location.pathname.includes('profile.html')) {
+                    profileLink.classList.add('nav-link-primary');
+                } else {
                     profileLink.classList.remove('nav-link-primary');
                 }
-                if (authLink) {
-                    authLink.style.display = 'block';
-                    authLink.classList.remove('nav-link-primary');
-                }
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'none';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
+                logoutBtn.style.display = 'block';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'none';
+            } else {
+                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
+                profileLink.style.display = 'none';
+                profileLink.classList.remove('nav-link-primary');
+                logoutBtn.style.display = 'none';
+                logoutBtn.classList.remove('nav-link-primary');
+                authLink.style.display = 'block';
+                authLink.classList.remove('nav-link-primary');
             }
             
             setTimeout(() => highlightCurrentPage(), 50);
