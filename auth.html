@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription / Connexion - Taleos</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -460,22 +463,41 @@
     </footer>
 
     <script>
-        // Détecter automatiquement l'URL de l'API selon l'environnement
-        const API_BASE = (() => {
-            // En production (GitHub Pages), utiliser l'URL de l'API déployée
-            // Remplacez cette URL par celle de votre déploiement (Railway, Render, etc.)
-            const PRODUCTION_API = 'https://VOTRE-APP.railway.app/api'; // À MODIFIER après déploiement
-            
-            // En développement local, utiliser localhost
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                return 'http://localhost:5000/api';
-            } else {
-                // En production, utiliser l'URL déployée
-                return PRODUCTION_API;
-            }
-        })();
+        // ============================================
+        // CONFIGURATION FIREBASE
+        // ============================================
+        // REMPLACEZ ces valeurs par celles de votre projet Firebase
+        // (Vous les trouverez dans Firebase Console → Project Settings → General)
+        const firebaseConfig = {
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "VOTRE_AUTH_DOMAIN",
+            projectId: "VOTRE_PROJECT_ID",
+            storageBucket: "VOTRE_STORAGE_BUCKET",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
+        };
+
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
         
-        console.log('API Base URL:', API_BASE);
+        console.log('Firebase initialisé');
+        
+        // Écouter les changements d'état d'authentification
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                console.log('Utilisateur connecté:', user.email);
+                // Si l'utilisateur est connecté et vérifié, rediriger vers les offres
+                if (user.emailVerified) {
+                    localStorage.setItem('authToken', user.uid);
+                    localStorage.setItem('userEmail', user.email);
+                }
+            } else {
+                console.log('Utilisateur déconnecté');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
+            }
+        });
 
         // Fonction pour afficher/masquer le mot de passe
         function togglePassword(inputId, button) {
@@ -536,8 +558,9 @@
 
         function validatePassword() {
             const password = document.getElementById('signupPassword').value;
+            // Firebase nécessite au moins 6 caractères, mais on garde nos critères plus stricts
             const requirements = {
-                length: password.length >= 8,
+                length: password.length >= 6, // Minimum Firebase
                 upper: /[A-Z]/.test(password),
                 lower: /[a-z]/.test(password),
                 number: /[0-9]/.test(password)
@@ -576,6 +599,11 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             // Validation côté client
+            if (password.length < 6) {
+                showError('signupPasswordError', 'Le mot de passe doit contenir au moins 6 caractères');
+                return;
+            }
+
             if (!validatePassword()) {
                 showError('signupPasswordError', 'Le mot de passe ne respecte pas tous les critères');
                 return;
@@ -590,33 +618,44 @@
             btn.textContent = 'Inscription en cours...';
 
             try {
-                const response = await fetch(`${API_BASE}/signup`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                // Créer l'utilisateur avec Firebase
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
 
-                const data = await response.json();
+                // Envoyer l'email de vérification
+                await user.sendEmailVerification();
 
-                if (response.ok) {
-                    showSuccess('signupSuccess', 
-                        'Inscription réussie ! Un email de vérification a été envoyé à ' + email + '. Veuillez vérifier votre boîte mail.');
-                    document.getElementById('signupForm').reset();
-                    document.querySelectorAll('.password-requirements li').forEach(li => li.classList.remove('valid'));
-                } else {
-                    showError('signupError', data.error || 'Une erreur est survenue lors de l\'inscription');
-                }
+                showSuccess('signupSuccess', 
+                    'Inscription réussie ! Un email de vérification a été envoyé à ' + email + '. Veuillez vérifier votre boîte mail et cliquer sur le lien pour activer votre compte.');
+                
+                document.getElementById('signupForm').reset();
+                document.querySelectorAll('.password-requirements li').forEach(li => li.classList.remove('valid'));
+
+                // Déconnecter l'utilisateur jusqu'à ce qu'il vérifie son email
+                await auth.signOut();
+                
             } catch (error) {
-                console.error('Erreur complète:', error);
-                let errorMessage = 'Erreur de connexion au serveur. ';
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    errorMessage += 'Le serveur d\'authentification n\'est pas accessible. ';
-                    errorMessage += 'Assurez-vous que le serveur Flask est démarré (python auth_server.py).';
-                } else {
-                    errorMessage += error.message;
+                console.error('Erreur d\'inscription:', error);
+                let errorMessage = 'Une erreur est survenue lors de l\'inscription. ';
+                
+                // Gérer les erreurs Firebase
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'Cet email est déjà utilisé. Utilisez la connexion ou réinitialisez votre mot de passe.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'L\'adresse email n\'est pas valide.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Le mot de passe est trop faible. Utilisez au moins 6 caractères.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = 'L\'authentification par email/mot de passe n\'est pas activée. Vérifiez la configuration Firebase.';
+                        break;
+                    default:
+                        errorMessage += error.message;
                 }
+                
                 showError('signupError', errorMessage);
             } finally {
                 btn.disabled = false;
@@ -636,30 +675,60 @@
             btn.textContent = 'Connexion...';
 
             try {
-                const response = await fetch(`${API_BASE}/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                // Se connecter avec Firebase
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    // Stocker le token
-                    localStorage.setItem('authToken', data.token);
-                    localStorage.setItem('userEmail', email);
-                    showSuccess('loginSuccess', 'Connexion réussie ! Redirection...');
-                    setTimeout(() => {
-                        window.location.href = 'offres.html';
-                    }, 1500);
-                } else {
-                    showError('loginError', data.error || 'Email ou mot de passe incorrect');
+                // Vérifier si l'email est vérifié
+                if (!user.emailVerified) {
+                    await auth.signOut();
+                    showError('loginError', 'Veuillez vérifier votre email avant de vous connecter. Un email de vérification a été envoyé lors de l\'inscription.');
+                    
+                    // Optionnel : renvoyer l'email de vérification
+                    try {
+                        await user.sendEmailVerification();
+                        showError('loginError', 'Veuillez vérifier votre email. Un nouvel email de vérification vient d\'être envoyé.');
+                    } catch (verificationError) {
+                        console.error('Erreur envoi email:', verificationError);
+                    }
+                    return;
                 }
+
+                // Stocker les informations de session
+                localStorage.setItem('authToken', user.uid);
+                localStorage.setItem('userEmail', user.email);
+                
+                showSuccess('loginSuccess', 'Connexion réussie ! Redirection...');
+                setTimeout(() => {
+                    window.location.href = 'offres.html';
+                }, 1500);
+                
             } catch (error) {
-                showError('loginError', 'Erreur de connexion au serveur. Veuillez réessayer.');
-                console.error('Error:', error);
+                console.error('Erreur de connexion:', error);
+                let errorMessage = 'Erreur de connexion. ';
+                
+                // Gérer les erreurs Firebase
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'Aucun compte trouvé avec cet email.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Mot de passe incorrect.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'L\'adresse email n\'est pas valide.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'Ce compte a été désactivé.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                showError('loginError', errorMessage);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Se connecter';
