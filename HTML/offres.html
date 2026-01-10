@@ -1437,56 +1437,44 @@
                     return job;
                 };
 
-                // Traiter par batch de 25 avec requestAnimationFrame pour vraiment éviter le débordement
-                const batchSize = 25;
-                let currentIndex = 0;
+                // Traiter par batch de 10 avec setTimeout pour vraiment éviter le débordement de stack
+                const batchSize = 10; // Réduire à 10 pour plus de sécurité
                 
-                const processBatch = () => {
-                    return new Promise((resolve) => {
-                        requestAnimationFrame(() => {
-                            const end = Math.min(currentIndex + batchSize, data.length);
-                            
-                            for (let i = currentIndex; i < end; i++) {
-                                try {
-                                    const processedJob = processJob(data[i]);
-                                    allJobs.push(processedJob);
-                                } catch (error) {
-                                    console.error(`Erreur lors du traitement du job ${i}:`, error);
-                                    // Ajouter quand même le job avec des valeurs par défaut
-                                    if (data[i]) {
-                                        data[i].cleanRegions = data[i].cleanRegions || [];
-                                        data[i].cleanCountries = data[i].cleanCountries || [];
-                                        allJobs.push(data[i]);
-                                    }
+                const processAllBatches = async () => {
+                    for (let start = 0; start < data.length; start += batchSize) {
+                        const end = Math.min(start + batchSize, data.length);
+                        
+                        // Traiter le batch
+                        for (let i = start; i < end; i++) {
+                            try {
+                                const processedJob = processJob(data[i]);
+                                allJobs.push(processedJob);
+                            } catch (error) {
+                                console.error(`Erreur lors du traitement du job ${i}:`, error);
+                                // Ajouter quand même le job avec des valeurs par défaut
+                                if (data[i]) {
+                                    data[i].cleanRegions = data[i].cleanRegions || [];
+                                    data[i].cleanCountries = data[i].cleanCountries || [];
+                                    allJobs.push(data[i]);
                                 }
                             }
-                            
-                            currentIndex = end;
-                            
-                            // Mettre à jour le message de progression
-                            if (currentIndex % 500 === 0 && jobsContainer) {
-                                const progress = Math.floor((currentIndex / data.length) * 100);
-                                jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + currentIndex + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
-                            }
-                            
-                            if (currentIndex < data.length) {
-                                // Continuer avec le batch suivant de manière asynchrone
-                                setTimeout(() => {
-                                    processBatch().then(() => resolve()).catch(err => {
-                                        console.error('Erreur dans processBatch:', err);
-                                        resolve(); // Continuer même en cas d'erreur
-                                    });
-                                }, 0);
-                            } else {
-                                // Terminé
-                                resolve();
-                            }
-                        });
-                    });
+                        }
+                        
+                        // Mettre à jour le message de progression
+                        if (start % 500 === 0 && jobsContainer) {
+                            const progress = Math.floor((start / data.length) * 100);
+                            jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + start + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
+                        }
+                        
+                        // Laisser le navigateur respirer entre chaque batch (même les petits)
+                        if (start + batchSize < data.length) {
+                            await new Promise(resolve => setTimeout(resolve, 1)); // 1ms entre chaque batch
+                        }
+                    }
                 };
                 
                 // Démarrer le traitement par batch
-                await processBatch();
+                await processAllBatches();
 
                 console.log(`✅ Traitement terminé : ${allJobs.length} offres normalisées`);
 
