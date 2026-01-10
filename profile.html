@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -162,13 +163,24 @@
         .form-group select,
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border: 2px solid #e5e7eb;
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s;
             background: white;
             font-family: inherit;
+            height: 44px;
+        }
+
+        .form-group select {
+            padding: 12px 14px;
+            height: 44px;
+        }
+
+        .form-group input {
+            padding: 12px 14px;
+            height: 44px;
         }
 
         .form-group select:focus,
@@ -367,6 +379,135 @@
             border-color: #d1d5db;
         }
 
+        /* File Upload Styles */
+        .file-upload-container {
+            margin-top: 8px;
+        }
+
+        .file-upload-btn {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px dashed #d1d5db;
+            border-radius: 10px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            color: #666;
+            font-weight: 500;
+            min-height: 44px;
+        }
+
+        .file-upload-btn:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+        }
+
+        .file-upload-btn:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .upload-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .upload-status {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            flex-shrink: 0;
+        }
+
+        .file-upload-btn.uploading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .file-upload-btn.uploading .upload-status {
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .file-upload-btn.uploading .upload-status::before {
+            content: '';
+            width: 14px;
+            height: 14px;
+            border: 2px solid #667eea;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .file-info {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .file-name {
+            flex: 1;
+            color: #1e40af;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            word-break: break-all;
+        }
+
+        .file-name::before {
+            content: '✓';
+            color: #10b981;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .file-remove {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .file-remove:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Footer */
         footer {
             background: #1a1a1a;
@@ -469,8 +610,8 @@
     <div class="container">
         <div class="profile-card">
             <div class="profile-header">
-                <h1>Mon Profil</h1>
-                <p>Complétez votre profil pour personnaliser votre expérience</p>
+                <h1>Informations requises</h1>
+                <p>Ces informations sont essentielles pour automatiser vos candidatures. Elles permettent à notre IA de personnaliser vos lettres de motivation et de postuler en votre nom.</p>
             </div>
 
             <form id="profileForm" onsubmit="handleSaveProfile(event)">
@@ -583,7 +724,49 @@
                     </div>
                 </div>
 
-                <!-- Les notifications toast seront créées dynamiquement -->
+                <!-- Section Documents -->
+                <div class="form-section">
+                    <h2>Documents</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Téléchargez votre CV et votre lettre de motivation au format PDF. Ces documents seront utilisés par notre IA pour personnaliser vos candidatures automatiques.</p>
+                    
+                    <!-- Upload CV -->
+                    <div class="form-group">
+                        <label for="cvUpload">Curriculum Vitae (PDF)</label>
+                        <div class="file-upload-container">
+                            <input type="file" id="cvUpload" name="cv" accept=".pdf" style="display: none;" onchange="handleFileSelect(event, 'cv')">
+                            <button type="button" class="file-upload-btn" onclick="document.getElementById('cvUpload').click()">
+                                <span class="upload-icon">📄</span>
+                                <span class="upload-text" id="cvUploadText">Télécharger votre CV</span>
+                                <span class="upload-status" id="cvUploadStatus"></span>
+                            </button>
+                            <div class="file-info" id="cvFileInfo" style="display: none;">
+                                <span class="file-name" id="cvFileName"></span>
+                                <button type="button" class="file-remove" onclick="removeFile('cv')" title="Supprimer">×</button>
+                            </div>
+                        </div>
+                        <div class="error-message" id="cvUploadError"></div>
+                        <div class="success-message" id="cvUploadSuccess"></div>
+                    </div>
+
+                    <!-- Upload Lettre de motivation -->
+                    <div class="form-group">
+                        <label for="letterUpload">Lettre de motivation (PDF)</label>
+                        <div class="file-upload-container">
+                            <input type="file" id="letterUpload" name="letter" accept=".pdf" style="display: none;" onchange="handleFileSelect(event, 'letter')">
+                            <button type="button" class="file-upload-btn" onclick="document.getElementById('letterUpload').click()">
+                                <span class="upload-icon">✉️</span>
+                                <span class="upload-text" id="letterUploadText">Télécharger votre lettre de motivation</span>
+                                <span class="upload-status" id="letterUploadStatus"></span>
+                            </button>
+                            <div class="file-info" id="letterFileInfo" style="display: none;">
+                                <span class="file-name" id="letterFileName"></span>
+                                <button type="button" class="file-remove" onclick="removeFile('letter')" title="Supprimer">×</button>
+                            </div>
+                        </div>
+                        <div class="error-message" id="letterUploadError"></div>
+                        <div class="success-message" id="letterUploadSuccess"></div>
+                    </div>
+                </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
                     <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
@@ -618,7 +801,7 @@
         };
 
         // Initialiser Firebase (vérifier qu'il n'est pas déjà initialisé)
-        let auth, db;
+        let auth, db, storage;
         try {
             if (typeof firebase !== 'undefined') {
                 // Vérifier si Firebase est déjà initialisé
@@ -635,6 +818,13 @@
                     console.log('✅ Firestore initialisé avec succès');
                 } else {
                     console.warn('⚠️ Firestore SDK non disponible');
+                }
+                // Initialiser Firebase Storage
+                if (typeof firebase.storage !== 'undefined') {
+                    storage = firebase.storage();
+                    console.log('✅ Firebase Storage initialisé avec succès');
+                } else {
+                    console.warn('⚠️ Firebase Storage SDK non disponible');
                 }
             } else {
                 console.error('❌ Firebase SDK non chargé');
@@ -806,6 +996,10 @@
                         if (profile.country) document.getElementById('country').value = profile.country;
                         console.log('✅ Profil chargé depuis Firestore');
                         
+                        // Charger les fichiers existants (CV et lettre de motivation)
+                        loadFileInfo('cv', profile);
+                        loadFileInfo('letter', profile);
+                        
                         // Synchroniser avec localStorage comme cache
                         if (userEmail) {
                             const profileKey = `profile_${userEmail}`;
@@ -839,6 +1033,10 @@
                         if (profile.country) document.getElementById('country').value = profile.country;
                         console.log('✅ Profil chargé depuis localStorage');
                         
+                        // Charger les fichiers existants (CV et lettre de motivation)
+                        loadFileInfo('cv', profile);
+                        loadFileInfo('letter', profile);
+                        
                         // Si Firestore est disponible, synchroniser les données vers Firestore
                         if (db && userId && currentUser) {
                             try {
@@ -854,6 +1052,246 @@
                 } else {
                     console.log('ℹ️ Aucun profil sauvegardé trouvé pour cet utilisateur');
                 }
+            }
+        }
+
+        // Fonction pour charger et afficher les informations d'un fichier existant
+        function loadFileInfo(fileType, profile) {
+            const fileUrl = profile[`${fileType}_url`];
+            const fileName = profile[`${fileType}_filename`];
+            const storagePath = profile[`${fileType}_storage_path`];
+            
+            if (fileUrl && fileName) {
+                const fileInput = document.getElementById(`${fileType}Upload`);
+                const fileInfo = document.getElementById(`${fileType}FileInfo`);
+                const fileNameEl = document.getElementById(`${fileType}FileName`);
+                const uploadBtn = fileInput ? fileInput.nextElementSibling : null;
+                const uploadText = document.getElementById(`${fileType}UploadText`);
+                
+                if (!fileInput) return;
+                
+                // Mettre à jour les attributs
+                fileInput.setAttribute('data-url', fileUrl);
+                if (storagePath) {
+                    fileInput.setAttribute('data-storage-path', storagePath);
+                }
+                
+                // Afficher les informations du fichier
+                if (fileInfo) fileInfo.style.display = 'flex';
+                if (fileNameEl) fileNameEl.textContent = fileName;
+                if (uploadText) uploadText.textContent = fileName;
+                
+                console.log(`✅ ${fileType} chargé:`, fileName);
+            }
+        }
+
+        // Fonction pour gérer la sélection de fichier
+        async function handleFileSelect(event, fileType) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Vérifier que c'est un PDF
+            if (file.type !== 'application/pdf') {
+                showToast('error', 'Format invalide', 'Veuillez sélectionner un fichier PDF.');
+                event.target.value = '';
+                return;
+            }
+            
+            // Vérifier la taille du fichier (max 10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                showToast('error', 'Fichier trop volumineux', 'Le fichier ne doit pas dépasser 10MB.');
+                event.target.value = '';
+                return;
+            }
+            
+            // Vérifier l'utilisateur
+            let userId = null;
+            if (currentUser && currentUser.uid) {
+                userId = currentUser.uid;
+            } else if (auth && auth.currentUser && auth.currentUser.uid) {
+                userId = auth.currentUser.uid;
+                currentUser = auth.currentUser;
+            } else {
+                userId = localStorage.getItem('authToken');
+            }
+            
+            if (!userId) {
+                showToast('error', 'Erreur', 'Vous devez être connecté pour télécharger des fichiers.');
+                return;
+            }
+            
+            // Uploader le fichier
+            await uploadFile(file, fileType, userId);
+        }
+
+        // Fonction pour uploader un fichier vers Firebase Storage
+        async function uploadFile(file, fileType, userId) {
+            const fileInput = document.getElementById(`${fileType}Upload`);
+            const uploadBtn = fileInput ? fileInput.nextElementSibling : null;
+            const uploadText = document.getElementById(`${fileType}UploadText`);
+            const uploadStatus = document.getElementById(`${fileType}UploadStatus`);
+            const fileInfo = document.getElementById(`${fileType}FileInfo`);
+            const fileName = document.getElementById(`${fileType}FileName`);
+            
+            try {
+                if (!storage) {
+                    throw new Error('Firebase Storage n\'est pas disponible. Veuillez recharger la page.');
+                }
+                
+                if (!uploadBtn) return;
+                
+                // Mettre à jour l'UI
+                uploadBtn.classList.add('uploading');
+                uploadBtn.disabled = true;
+                if (uploadText) uploadText.textContent = 'Téléchargement en cours...';
+                if (uploadStatus) uploadStatus.textContent = '0%';
+                
+                // Créer une référence dans Firebase Storage
+                const timestamp = Date.now();
+                const fileName_storage = `${fileType}_${userId}_${timestamp}.pdf`;
+                const storageRef = storage.ref();
+                const fileRef = storageRef.child(`users/${userId}/${fileName_storage}`);
+                
+                // Uploader le fichier avec suivi de progression (méthode compat)
+                const uploadTask = fileRef.put(file);
+                
+                // Suivre la progression de l'upload
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        // Progression de l'upload
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        if (uploadStatus) {
+                            uploadStatus.textContent = Math.round(progress) + '%';
+                        }
+                    },
+                    (error) => {
+                        // Erreur lors de l'upload
+                        console.error('Erreur upload:', error);
+                        uploadBtn.classList.remove('uploading');
+                        uploadBtn.disabled = false;
+                        if (uploadText) uploadText.textContent = fileType === 'cv' ? 'Télécharger votre CV' : 'Télécharger votre lettre de motivation';
+                        if (uploadStatus) uploadStatus.textContent = '';
+                        showToast('error', 'Erreur de téléchargement', 'Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
+                    },
+                    async () => {
+                        // Upload réussi
+                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                        
+                        // Sauvegarder l'URL dans Firestore
+                        if (db && userId) {
+                            try {
+                                const profileRef = db.collection('profiles').doc(userId);
+                                await profileRef.set({
+                                    [`${fileType}_url`]: downloadURL,
+                                    [`${fileType}_filename`]: file.name,
+                                    [`${fileType}_uploaded_at`]: new Date().toISOString(),
+                                    [`${fileType}_storage_path`]: `users/${userId}/${fileName_storage}`
+                                }, { merge: true });
+                                
+                                console.log(`✅ ${fileType} sauvegardé dans Firestore`);
+                            } catch (firestoreError) {
+                                console.error('Erreur sauvegarde Firestore:', firestoreError);
+                            }
+                        }
+                        
+                        // Mettre à jour l'UI
+                        uploadBtn.classList.remove('uploading');
+                        uploadBtn.disabled = false;
+                        if (uploadText) uploadText.textContent = file.name;
+                        if (uploadStatus) uploadStatus.textContent = '';
+                        if (fileInfo) fileInfo.style.display = 'flex';
+                        if (fileName) fileName.textContent = file.name;
+                        
+                        // Stocker l'URL dans les data attributes pour référence future
+                        if (fileInput) {
+                            fileInput.setAttribute('data-url', downloadURL);
+                            fileInput.setAttribute('data-storage-path', `users/${userId}/${fileName_storage}`);
+                        }
+                        
+                        showToast('success', 'Fichier téléchargé', `${fileType === 'cv' ? 'CV' : 'Lettre de motivation'} téléchargé avec succès.`);
+                    }
+                );
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'upload:', error);
+                if (uploadBtn) {
+                    uploadBtn.classList.remove('uploading');
+                    uploadBtn.disabled = false;
+                }
+                if (uploadText) uploadText.textContent = fileType === 'cv' ? 'Télécharger votre CV' : 'Télécharger votre lettre de motivation';
+                if (uploadStatus) uploadStatus.textContent = '';
+                showToast('error', 'Erreur', 'Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
+            }
+        }
+
+        // Fonction pour supprimer un fichier
+        async function removeFile(fileType) {
+            if (!confirm(`Êtes-vous sûr de vouloir supprimer votre ${fileType === 'cv' ? 'CV' : 'lettre de motivation'} ?`)) {
+                return;
+            }
+            
+            const fileInput = document.getElementById(`${fileType}Upload`);
+            const fileInfo = document.getElementById(`${fileType}FileInfo`);
+            const uploadBtn = fileInput ? fileInput.nextElementSibling : null;
+            const uploadText = document.getElementById(`${fileType}UploadText`);
+            
+            // Vérifier l'utilisateur
+            let userId = null;
+            if (currentUser && currentUser.uid) {
+                userId = currentUser.uid;
+            } else if (auth && auth.currentUser && auth.currentUser.uid) {
+                userId = auth.currentUser.uid;
+            } else {
+                userId = localStorage.getItem('authToken');
+            }
+            
+            if (!userId || !fileInput) return;
+            
+            const storagePath = fileInput.getAttribute('data-storage-path');
+            
+            try {
+                // Supprimer le fichier de Firebase Storage
+                if (storage && storagePath) {
+                    try {
+                        const fileRef = storage.ref(storagePath);
+                        await fileRef.delete();
+                        console.log(`✅ ${fileType} supprimé de Storage`);
+                    } catch (storageError) {
+                        console.warn(`⚠️ Erreur suppression Storage (fichier peut-être déjà supprimé):`, storageError);
+                    }
+                }
+                
+                // Supprimer les références dans Firestore
+                if (db && userId) {
+                    try {
+                        const profileRef = db.collection('profiles').doc(userId);
+                        const updates = {};
+                        updates[`${fileType}_url`] = firebase.firestore.FieldValue.delete();
+                        updates[`${fileType}_filename`] = firebase.firestore.FieldValue.delete();
+                        updates[`${fileType}_uploaded_at`] = firebase.firestore.FieldValue.delete();
+                        updates[`${fileType}_storage_path`] = firebase.firestore.FieldValue.delete();
+                        await profileRef.update(updates);
+                        console.log(`✅ Références ${fileType} supprimées de Firestore`);
+                    } catch (firestoreError) {
+                        console.error('Erreur suppression Firestore:', firestoreError);
+                    }
+                }
+                
+                // Réinitialiser l'UI
+                fileInput.value = '';
+                fileInput.removeAttribute('data-url');
+                fileInput.removeAttribute('data-storage-path');
+                if (fileInfo) fileInfo.style.display = 'none';
+                if (uploadText) {
+                    uploadText.textContent = fileType === 'cv' ? 'Télécharger votre CV' : 'Télécharger votre lettre de motivation';
+                }
+                
+                showToast('success', 'Fichier supprimé', `${fileType === 'cv' ? 'CV' : 'Lettre de motivation'} supprimé avec succès.`);
+                
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                showToast('error', 'Erreur', 'Une erreur est survenue lors de la suppression. Veuillez réessayer.');
             }
         }
 
