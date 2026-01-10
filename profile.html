@@ -19,6 +19,8 @@
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Navigation */
@@ -232,14 +234,51 @@
         }
 
         .logout-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: transparent;
             margin-left: 10px;
-            color: white !important;
+            color: #666 !important;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-family: inherit;
         }
 
         .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: #f3f4f6;
+            color: #374151 !important;
+            border-color: #d1d5db;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: auto;
+        }
+
+        footer p {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+        }
+
+        .footer-love {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .footer-love span {
+            display: inline-block;
         }
 
         @media (max-width: 768px) {
@@ -414,6 +453,16 @@
             </form>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
+        <div class="footer-love">
+            <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
+            <span>•</span>
+            <span>🇫🇷 Fièrement Made in France</span>
+        </div>
+    </footer>
 
     <script>
         // ============================================

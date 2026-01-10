@@ -109,23 +109,23 @@
         }
 
         .logout-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: transparent;
             margin-left: 10px;
-            color: white !important;
-            border: none;
+            color: #666 !important;
+            border: 1px solid #e5e7eb;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 500;
             font-size: 0.95rem;
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
             font-family: inherit;
         }
 
         .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: #f3f4f6;
+            color: #374151 !important;
+            border-color: #d1d5db;
         }
 
         /* Container principal */
@@ -596,12 +596,30 @@
 
         // Vérifier l'authentification et mettre à jour la navigation
         function checkAuthAndUpdateNav() {
-            const token = localStorage.getItem('authToken');
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
-            if (token) {
+            // Vérifier à la fois localStorage et Firebase auth
+            const token = localStorage.getItem('authToken');
+            let isAuthenticated = !!token;
+            
+            // Si Firebase est disponible, vérifier aussi l'état Firebase
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                try {
+                    const auth = firebase.auth();
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        isAuthenticated = true;
+                    } else if (!token) {
+                        isAuthenticated = false;
+                    }
+                } catch (e) {
+                    // Firebase non disponible, utiliser seulement localStorage
+                }
+            }
+            
+            if (isAuthenticated) {
                 if (profileLink) {
                     profileLink.style.display = 'block';
                     profileLink.classList.remove('nav-link-primary');
@@ -627,6 +645,18 @@
             }
             
             setTimeout(() => highlightCurrentPage(), 50);
+        }
+        
+        // Écouter les changements d'état Firebase si disponible
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            try {
+                const auth = firebase.auth();
+                auth.onAuthStateChanged((user) => {
+                    checkAuthAndUpdateNav();
+                });
+            } catch (e) {
+                // Firebase non disponible
+            }
         }
 
         // Initialiser Firebase (si pas déjà initialisé)
