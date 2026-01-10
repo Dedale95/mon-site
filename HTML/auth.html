@@ -694,6 +694,11 @@
             btn.textContent = 'Inscription en cours...';
 
             try {
+                // Vérifier que Firebase Auth est disponible
+                if (!auth) {
+                    throw new Error('Firebase Auth n\'est pas initialisé. Veuillez recharger la page.');
+                }
+                
                 // Créer l'utilisateur avec Firebase
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                 const user = userCredential.user;
@@ -755,6 +760,11 @@
             let loginSuccess = false;
 
             try {
+                // Vérifier que Firebase Auth est disponible
+                if (!auth) {
+                    throw new Error('Firebase Auth n\'est pas initialisé. Veuillez recharger la page.');
+                }
+                
                 // Se connecter avec Firebase
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
