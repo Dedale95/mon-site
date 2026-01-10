@@ -846,9 +846,18 @@
                 .replace(/[ùúûü]/g, 'u')
                 .replace(/[ç]/g, 'c')
                 .replace(/[ñ]/g, 'n')
-                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux
+                // Supprimer les suffixes juridiques courants AVANT de remplacer les caractères spéciaux
+                .replace(/\s*\(s\.a\.?\)\s*/gi, '')
+                .replace(/\s*s\.a\.?\s*$/gi, '')
+                .replace(/\s*sas\s*$/gi, '')
+                .replace(/\s*sarl\s*$/gi, '')
+                .replace(/\s*sa\s*$/gi, '')
+                .replace(/\s*group\s*$/gi, '')
+                .replace(/\s*groupe\s*$/gi, '')
+                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
                 .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
-                .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|_sa$|_sas$|_sarl$|_group$|_groupe$/g, ''); // Supprimer les préfixes/suffixes juridiques
+                .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques
+                .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, ''); // Supprimer les suffixes juridiques restants
             
             if (!normalized) return null;
             
@@ -858,27 +867,74 @@
             return normalized;
         }
 
+        // Fonction pour obtenir plusieurs variantes possibles du nom de fichier
+        function getCompanyLogoFileNameVariants(companyName) {
+            if (!companyName) return [];
+            
+            const base = getCompanyLogoFileName(companyName);
+            if (!base) return [];
+            
+            const variants = [base];
+            
+            // Ajouter des variantes courantes pour les entreprises connues
+            const companyVariants = {
+                'credit_agricole': ['credit_agricole'],
+                'credit_agricole_cib': ['credit_agricole', 'credit_agricole_cib'],
+                'credit_agricole_assurances': ['credit_agricole', 'credit_agricole_assurances'],
+                'credit_agricole_immobilier': ['credit_agricole', 'credit_agricole_immobilier'],
+                'credit_agricole_leasing_factoring_calf': ['credit_agricole', 'credit_agricole_leasing_factoring'],
+                'credit_agricole_payment_services': ['credit_agricole', 'credit_agricole_payment_services'],
+                'credit_agricole_personal_finance_mobility_capfm': ['credit_agricole', 'credit_agricole_personal_finance'],
+                'credit_agricole_group_infrastructure_platform': ['credit_agricole', 'credit_agricole_group'],
+                'deloitte': ['deloitte', 'deloitte_france'],
+                'societe_generale': ['societe_generale'],
+                'caceis': ['caceis'],
+                'lcl': ['lcl', 'credit_lyonnais'],
+                'indosuez_wealth_management': ['indosuez_wealth_management', 'indosuez'],
+                'amundi': ['amundi'],
+                'bbforbank': ['bbforbank', 'bforbank'],
+                'gruppo_bancario_credit_agricole_italia': ['credit_agricole', 'credit_agricole_italia'],
+                'idia_capital_investissement': ['idia_capital_investissement', 'idia'],
+                'uptevia': ['uptevia']
+            };
+            
+            if (companyVariants[base]) {
+                return companyVariants[base];
+            }
+            
+            return variants;
+        }
+
         // Fonction pour obtenir les URLs du logo d'une entreprise (local en priorité, puis Clearbit)
         function getCompanyLogoUrls(companyName) {
             if (!companyName) return [];
             
             const urls = [];
             
-            // Essayer d'abord le logo local
-            const localFileName = getCompanyLogoFileName(companyName);
-            if (localFileName) {
-                // Ajouter les chemins locaux possibles (PNG, JPG, SVG)
-                // Le chemin dépend de la structure du projet
-                // Si le fichier HTML est dans HTML/, le logo sera dans HTML/images/logos/
-                // Si le fichier HTML est à la racine, le logo sera dans images/logos/
+            // Essayer d'abord le logo local avec toutes les variantes possibles
+            const fileNameVariants = getCompanyLogoFileNameVariants(companyName);
+            
+            if (fileNameVariants.length > 0) {
+                // Déterminer le chemin de base selon où se trouve le fichier HTML
                 const currentPath = window.location.pathname;
-                const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/');
+                const currentHref = window.location.href;
+                const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
+                                       currentHref.includes('/HTML/') || currentHref.includes('HTML/');
                 
-                const basePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
-                urls.push(`${basePath}${localFileName}.png`);
-                urls.push(`${basePath}${localFileName}.jpg`);
-                urls.push(`${basePath}${localFileName}.jpeg`);
-                urls.push(`${basePath}${localFileName}.svg`);
+                // Utiliser le chemin le plus probable en premier
+                const primaryBasePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
+                const secondaryBasePath = isInHTMLFolder ? './images/logos/' : './HTML/images/logos/';
+                
+                // Pour chaque variante de nom de fichier (dans l'ordre de priorité)
+                fileNameVariants.forEach(fileName => {
+                    // Pour chaque format d'image (PNG en premier car le plus commun)
+                    ['png', 'jpg', 'jpeg', 'svg'].forEach(ext => {
+                        // Chemin principal
+                        urls.push(`${primaryBasePath}${fileName}.${ext}`);
+                        // Chemin secondaire
+                        urls.push(`${secondaryBasePath}${fileName}.${ext}`);
+                    });
+                });
             }
             
             // Ajouter Clearbit comme fallback
