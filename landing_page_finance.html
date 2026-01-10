@@ -523,13 +523,15 @@
             padding: 0 25px;
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease, padding 0.3s ease;
+            transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.3s ease;
+            opacity: 0;
             color: #666;
         }
 
         .faq-item.active .faq-answer {
             padding: 0 25px 25px;
-            max-height: 500px;
+            max-height: 1000px;
+            opacity: 1;
         }
 
         .faq-toggle {
@@ -918,71 +920,122 @@
     </footer>
 
     <script>
-        // Form submission - AJAX to Formspree
-        document.getElementById('betaForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const form = this;
-            const status = document.getElementById('successMessage');
-            const data = new FormData(form);
+        // Attendre que le DOM soit complètement chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form submission - AJAX to Formspree (seulement si le formulaire existe)
+            const betaForm = document.getElementById('betaForm');
+            if (betaForm) {
+                betaForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const form = this;
+                    const status = document.getElementById('successMessage');
+                    if (!status) return;
+                    
+                    const data = new FormData(form);
 
-            fetch(form.action, {
-                method: form.method,
-                body: data,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        status.innerHTML = "✓ Parfait ! Vous recevrez un email dès l'ouverture de la plateforme.";
-                        status.style.display = 'block';
-                        status.style.color = '#10b981';
-                        status.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-                        status.style.borderColor = '#10b981';
-                        form.reset();
-                        setTimeout(() => {
-                            status.style.display = 'none';
-                        }, 5000);
-                    } else {
-                        response.json().then(data => {
-                            if (data.errors) {
-                                status.innerHTML = "❌ " + data.errors.map(error => error.message).join(", ");
+                    fetch(form.action, {
+                        method: form.method,
+                        body: data,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                status.innerHTML = "✓ Parfait ! Vous recevrez un email dès l'ouverture de la plateforme.";
+                                status.style.display = 'block';
+                                status.style.color = '#10b981';
+                                status.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                                status.style.borderColor = '#10b981';
+                                form.reset();
+                                setTimeout(() => {
+                                    status.style.display = 'none';
+                                }, 5000);
                             } else {
-                                status.innerHTML = "❌ Une erreur est survenue. Veuillez réessayer.";
+                                response.json().then(data => {
+                                    if (data.errors) {
+                                        status.innerHTML = "❌ " + data.errors.map(error => error.message).join(", ");
+                                    } else {
+                                        status.innerHTML = "❌ Une erreur est survenue. Veuillez réessayer.";
+                                    }
+                                    status.style.display = 'block';
+                                    status.style.color = '#ef4444';
+                                    status.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                    status.style.borderColor = '#ef4444';
+                                });
                             }
-                            status.style.display = 'block';
-                            status.style.color = '#ef4444';
-                            status.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                            status.style.borderColor = '#ef4444';
+                        })
+                        .catch(error => {
+                            if (status) {
+                                status.innerHTML = "❌ Une erreur de connexion est survenue. Vérifiez votre internet.";
+                                status.style.display = 'block';
+                                status.style.color = '#ef4444';
+                                status.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                                status.style.borderColor = '#ef4444';
+                            }
                         });
-                    }
-                })
-                .catch(error => {
-                    status.innerHTML = "❌ Une erreur de connexion est survenue. Vérifiez votre internet.";
-                    status.style.display = 'block';
-                    status.style.color = '#ef4444';
-                    status.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                    status.style.borderColor = '#ef4444';
                 });
+            }
+
+            // FAQ Accordion - Code corrigé et optimisé
+            initFAQAccordion();
         });
 
-        // FAQ Accordion
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.addEventListener('click', function () {
-                const item = this.parentElement;
-                const isActive = item.classList.contains('active');
-
-                // Close all items
-                document.querySelectorAll('.faq-item').forEach(faqItem => {
-                    faqItem.classList.remove('active');
-                });
-
-                // Open clicked item if it wasn't active
-                if (!isActive) {
-                    item.classList.add('active');
+        // Fonction pour initialiser l'accordéon FAQ
+        function initFAQAccordion() {
+            try {
+                const faqQuestions = document.querySelectorAll('.faq-question');
+                if (faqQuestions.length === 0) {
+                    console.warn('⚠️ Aucune question FAQ trouvée dans le DOM');
+                    return;
                 }
-            });
-        });
+                
+                faqQuestions.forEach(question => {
+                    // Vérifier si un listener existe déjà pour éviter les doubles listeners
+                    if (question.dataset.faqInitialized === 'true') {
+                        return;
+                    }
+                    question.dataset.faqInitialized = 'true';
+                    
+                    question.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        try {
+                            // Trouver l'élément parent .faq-item (qui est directement le parent)
+                            const item = this.parentElement;
+                            if (!item || !item.classList.contains('faq-item')) {
+                                console.error('Impossible de trouver le parent .faq-item pour', this);
+                                return;
+                            }
+                            
+                            const isActive = item.classList.contains('active');
+
+                            // Close all items
+                            document.querySelectorAll('.faq-item').forEach(faqItem => {
+                                faqItem.classList.remove('active');
+                            });
+
+                            // Open clicked item if it wasn't active
+                            if (!isActive) {
+                                item.classList.add('active');
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors du clic sur la question FAQ:', error);
+                        }
+                    });
+                });
+                
+                console.log('✅ FAQ Accordion initialisé avec', faqQuestions.length, 'questions');
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'initialisation du FAQ Accordion:', error);
+            }
+        }
+
+        // Si le DOM est déjà chargé, initialiser immédiatement (fallback)
+        if (document.readyState !== 'loading') {
+            setTimeout(initFAQAccordion, 100);
+        }
 
         // Smooth scroll for CTA button
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
