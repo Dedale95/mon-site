@@ -1177,18 +1177,30 @@
                                 }
                                 
                                 console.log(`📥 Téléchargement du JSON depuis ${path}...`);
-                                data = await response.json();
-                                console.log(`✅ JSON téléchargé et parsé avec succès`);
+                                const jsonText = await response.text();
+                                console.log(`📦 JSON téléchargé (${(jsonText.length / 1024 / 1024).toFixed(2)}MB), parsing en cours...`);
                                 
-                                if (data && Array.isArray(data) && data.length > 0) {
-                                    loadedPath = path;
-                                    console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
-                                    break;
-                                } else {
-                                    console.log(`⚠️ Fichier JSON vide ou invalide pour : ${path}`);
+                                try {
+                                    data = JSON.parse(jsonText);
+                                    console.log(`✅ JSON parsé avec succès : ${Array.isArray(data) ? 'tableau' : 'objet'}`);
+                                    
+                                    if (data && Array.isArray(data) && data.length > 0) {
+                                        loadedPath = path;
+                                        console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
+                                        break;
+                                    } else {
+                                        console.warn(`⚠️ Fichier JSON vide ou invalide pour : ${path}`, {
+                                            isArray: Array.isArray(data),
+                                            length: data ? data.length : 0,
+                                            type: typeof data
+                                        });
+                                    }
+                                } catch (parseError) {
+                                    console.error(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError);
+                                    console.error(`Premiers caractères du JSON:`, jsonText.substring(0, 500));
                                 }
                             } catch (parseError) {
-                                console.error(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError.message);
+                                console.error(`⚠️ Erreur lors du traitement de ${path}:`, parseError);
                             }
                         } else {
                             console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
