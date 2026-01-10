@@ -64,7 +64,7 @@ COMPANY_LOGOS_TO_DOWNLOAD = [
 
 def download_logo(domain: str, filename: str, size: int = 128) -> bool:
     """
-    Télécharge un logo depuis Clearbit Logo API
+    Télécharge un logo depuis Clearbit Logo API avec plusieurs tentatives et méthodes alternatives
     
     Args:
         domain: Le domaine de l'entreprise (ex: "credit-agricole.fr")
@@ -74,47 +74,84 @@ def download_logo(domain: str, filename: str, size: int = 128) -> bool:
     Returns:
         True si le téléchargement a réussi, False sinon
     """
-    url = f"https://logo.clearbit.com/{domain}"
+    # Essayer plusieurs URLs possibles
+    urls_to_try = [
+        f"https://logo.clearbit.com/{domain}?size={size}",
+        f"https://logo.clearbit.com/{domain}",
+        f"http://logo.clearbit.com/{domain}?size={size}",
+    ]
     
-    try:
-        print(f"📥 Téléchargement de {domain}...", end=" ", flush=True)
-        
-        # Télécharger avec une taille spécifique
-        response = requests.get(url, params={"size": size}, timeout=10)
-        
-        if response.status_code == 200 and response.content:
-            # Vérifier que c'est bien une image
-            content_type = response.headers.get('content-type', '')
-            if 'image' in content_type:
-                # Sauvegarder en PNG
-                output_path = LOGOS_DIR / f"{filename}.png"
-                with open(output_path, 'wb') as f:
-                    f.write(response.content)
-                
-                # Vérifier que le fichier n'est pas vide
-                if output_path.stat().st_size > 0:
-                    print(f"✅ Sauvegardé : {output_path.name} ({output_path.stat().st_size} bytes)")
-                    return True
-                else:
-                    print(f"❌ Fichier vide")
-                    output_path.unlink()
-                    return False
-            else:
-                print(f"❌ Pas une image (content-type: {content_type})")
-                return False
-        else:
-            print(f"❌ Erreur HTTP {response.status_code}")
-            return False
+    for url in urls_to_try:
+        try:
+            print(f"📥 Tentative {domain} ({url[:50]}...)...", end=" ", flush=True)
             
-    except requests.exceptions.Timeout:
-        print(f"❌ Timeout")
-        return False
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Erreur : {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Erreur inattendue : {e}")
-        return False
+            # Configuration avec retry automatique
+            session = requests.Session()
+            adapter = requests.adapters.HTTPAdapter(max_retries=3)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            
+            # Télécharger avec timeout plus long et retry
+            response = session.get(url, timeout=15, allow_redirects=True)
+            
+            if response.status_code == 200 and response.content:
+                # Vérifier que c'est bien une image
+                content_type = response.headers.get('content-type', '')
+                # Accepter les types image ou SVG
+                if 'image' in content_type or 'svg' in content_type or len(response.content) > 100:
+                    # Vérifier la signature du fichier (magic bytes)
+                    is_image = (
+                        response.content.startswith(b'\x89PNG') or  # PNG
+                        response.content.startswith(b'\xff\xd8\xff') or  # JPEG
+                        response.content.startswith(b'GIF') or  # GIF
+                        response.content.startswith(b'<svg') or  # SVG
+                        b'<?xml' in response.content[:100]  # XML/SVG
+                    )
+                    
+                    if is_image:
+                        # Sauvegarder en PNG (ou conserver le format original)
+                        output_path = LOGOS_DIR / f"{filename}.png"
+                        with open(output_path, 'wb') as f:
+                            f.write(response.content)
+                        
+                        # Vérifier que le fichier n'est pas vide
+                        file_size = output_path.stat().st_size
+                        if file_size > 100:  # Au moins 100 bytes
+                            print(f"✅ Sauvegardé : {output_path.name} ({file_size} bytes)")
+                            return True
+                        else:
+                            print(f"❌ Fichier trop petit ({file_size} bytes)")
+                            if output_path.exists():
+                                output_path.unlink()
+                            continue
+                    else:
+                        print(f"⚠️ Pas une image valide")
+                        continue
+                else:
+                    print(f"⚠️ Content-type: {content_type}")
+                    continue
+            elif response.status_code == 404:
+                print(f"⚠️ Logo non trouvé (404)")
+                continue
+            else:
+                print(f"⚠️ HTTP {response.status_code}")
+                continue
+                
+        except requests.exceptions.Timeout:
+            print(f"⏱️ Timeout")
+            continue
+        except requests.exceptions.ConnectionError as e:
+            print(f"🔌 Erreur connexion : {str(e)[:50]}")
+            continue
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Erreur : {str(e)[:50]}")
+            continue
+        except Exception as e:
+            print(f"❌ Erreur inattendue : {str(e)[:50]}")
+            continue
+    
+    print(f"❌ Toutes les tentatives ont échoué")
+    return False
 
 
 def normalize_company_name(name: str) -> str:
