@@ -727,9 +727,13 @@
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
-            const btn = event.target.querySelector('button[type="submit"]');
+            const btn = document.getElementById('loginBtn');
+            if (!btn) return;
+            
             btn.disabled = true;
             btn.textContent = 'Connexion...';
+            
+            let loginSuccess = false;
 
             try {
                 // Se connecter avec Firebase
@@ -751,16 +755,18 @@
                     return;
                 }
 
+                // Connexion réussie
+                loginSuccess = true;
+                
                 // Stocker les informations de session
                 localStorage.setItem('authToken', user.uid);
                 localStorage.setItem('userEmail', user.email);
                 
                 // Masquer le bouton de connexion et afficher le loader élégant
-                const loginBtn = document.getElementById('loginBtn');
                 const loader = document.getElementById('loginLoader');
                 const loginForm = document.getElementById('loginForm');
                 
-                if (loginBtn) loginBtn.style.display = 'none';
+                btn.style.display = 'none';
                 if (loader) {
                     loader.classList.add('show');
                 }
@@ -798,8 +804,12 @@
                 
                 showError('loginError', errorMessage);
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Se connecter';
+                // Ne réactiver le bouton que si la connexion a échoué
+                if (!loginSuccess && btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Se connecter';
+                    btn.style.display = 'block';
+                }
             }
         }
     </script>
