@@ -352,6 +352,222 @@
             color: #10b981;
         }
 
+        /* Bouton mot de passe oublié */
+        .forgot-password-link {
+            background: none !important;
+            border: none !important;
+            color: #667eea !important;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .forgot-password-link:hover {
+            color: #764ba2 !important;
+            background: rgba(102, 126, 234, 0.1) !important;
+        }
+
+        /* Modal Mot de passe oublié */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            overflow: hidden;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px 28px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .modal-body {
+            padding: 28px;
+        }
+
+        .modal-body p {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .modal-footer {
+            padding: 20px 28px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            background: #f9fafb;
+        }
+
+        .btn-secondary {
+            padding: 12px 24px;
+            background: white;
+            color: #666;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #374151;
+        }
+
+        .btn-primary {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 20px;
+        }
+
+        .email-sent-state {
+            text-align: center;
+            display: none;
+        }
+
+        .email-sent-state.show {
+            display: block;
+        }
+
+        .email-form-state {
+            display: block;
+        }
+
+        .email-form-state.hide {
+            display: none;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 24px;
+            animation: iconBounce 0.6s ease-out;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes iconBounce {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         /* Footer */
         footer {
             background: #1a1a1a;
@@ -435,7 +651,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="loginPassword">Mot de passe</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label for="loginPassword" style="margin-bottom: 0;">Mot de passe</label>
+                        <button type="button" class="forgot-password-link" onclick="openForgotPasswordModal()" style="background: none; border: none; color: #667eea; font-size: 0.9rem; font-weight: 600; cursor: pointer; padding: 4px 0; text-decoration: none; transition: all 0.2s;">
+                            Mot de passe oublié ?
+                        </button>
+                    </div>
                     <div class="password-input-wrapper">
                         <input type="password" id="loginPassword" name="password" required>
                         <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Afficher/Masquer le mot de passe">
@@ -504,6 +725,46 @@
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Modal Mot de passe oublié -->
+    <div id="forgotPasswordModal" class="modal-overlay" onclick="closeForgotPasswordModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Mot de passe oublié</h2>
+                <button class="modal-close" onclick="closeForgotPasswordModal()" aria-label="Fermer">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- État formulaire email -->
+                <div id="emailFormState" class="email-form-state">
+                    <div class="modal-icon">🔐</div>
+                    <p>Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.</p>
+                    
+                    <div class="form-group">
+                        <label for="resetEmail">Adresse email</label>
+                        <input type="email" id="resetEmail" placeholder="votre@email.com" required>
+                        <div class="error-message" id="resetEmailError"></div>
+                    </div>
+                    
+                    <div class="success-message" id="resetSuccess"></div>
+                    <div class="error-message" id="resetError"></div>
+                </div>
+                
+                <!-- État email envoyé -->
+                <div id="emailSentState" class="email-sent-state">
+                    <div class="success-icon">✓</div>
+                    <h3 style="font-size: 1.3rem; color: #1a1a1a; margin-bottom: 12px;">Email envoyé !</h3>
+                    <p style="color: #666; margin-bottom: 8px;">Un email de réinitialisation a été envoyé à :</p>
+                    <p style="color: #667eea; font-weight: 600; margin-bottom: 20px;" id="sentEmail"></p>
+                    <p style="color: #666; font-size: 0.9rem;">Vérifiez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe.</p>
+                    <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 12px;">Vous ne voyez pas l'email ? Vérifiez votre dossier spam.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeForgotPasswordModal()" id="cancelBtn">Annuler</button>
+                <button class="btn-primary" onclick="handlePasswordReset()" id="resetBtn">Envoyer l'email</button>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -602,6 +863,202 @@
             // Réinitialiser les messages
             clearMessages();
         }
+
+        // Fonctions pour le modal Mot de passe oublié
+        function openForgotPasswordModal() {
+            const modal = document.getElementById('forgotPasswordModal');
+            const emailForm = document.getElementById('emailFormState');
+            const emailSent = document.getElementById('emailSentState');
+            
+            // Réinitialiser le formulaire
+            document.getElementById('resetEmail').value = '';
+            clearResetMessages();
+            
+            // Réinitialiser les états
+            emailForm.classList.remove('hide');
+            emailForm.classList.add('email-form-state');
+            emailSent.classList.remove('show');
+            
+            // Pré-remplir avec l'email de connexion si disponible
+            const loginEmail = document.getElementById('loginEmail').value;
+            if (loginEmail) {
+                document.getElementById('resetEmail').value = loginEmail;
+            }
+            
+            // Afficher le modal
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            
+            // Focus sur le champ email
+            setTimeout(() => {
+                document.getElementById('resetEmail').focus();
+            }, 100);
+        }
+
+        function closeForgotPasswordModal(event) {
+            // Fermer seulement si on clique sur l'overlay ou le bouton fermer
+            // Si event est undefined (appelé depuis HTML onclick sans paramètre), on ferme quand même
+            if (!event || !event.target || event.target.id === 'forgotPasswordModal' || 
+                (event.target.classList && event.target.classList.contains('modal-close')) || 
+                event.target.id === 'cancelBtn') {
+                const modal = document.getElementById('forgotPasswordModal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    document.body.style.overflow = '';
+                    
+                    // Réinitialiser le formulaire
+                    setTimeout(() => {
+                        const resetEmail = document.getElementById('resetEmail');
+                        if (resetEmail) resetEmail.value = '';
+                        clearResetMessages();
+                        const emailForm = document.getElementById('emailFormState');
+                        const emailSent = document.getElementById('emailSentState');
+                        const resetBtn = document.getElementById('resetBtn');
+                        const cancelBtn = document.getElementById('cancelBtn');
+                        
+                        if (emailForm) {
+                            emailForm.classList.remove('hide');
+                            emailForm.classList.add('email-form-state');
+                        }
+                        if (emailSent) {
+                            emailSent.classList.remove('show');
+                        }
+                        if (resetBtn) {
+                            resetBtn.style.display = 'block';
+                            resetBtn.textContent = 'Envoyer l\'email';
+                        }
+                        if (cancelBtn) {
+                            cancelBtn.textContent = 'Annuler';
+                            cancelBtn.setAttribute('onclick', 'closeForgotPasswordModal()');
+                        }
+                    }, 300);
+                }
+            }
+        }
+
+        function clearResetMessages() {
+            const resetError = document.getElementById('resetError');
+            const resetSuccess = document.getElementById('resetSuccess');
+            const resetEmailError = document.getElementById('resetEmailError');
+            const resetEmail = document.getElementById('resetEmail');
+            
+            if (resetError) {
+                resetError.classList.remove('show');
+                resetError.textContent = '';
+            }
+            if (resetSuccess) {
+                resetSuccess.classList.remove('show');
+                resetSuccess.textContent = '';
+            }
+            if (resetEmailError) {
+                resetEmailError.classList.remove('show');
+                resetEmailError.textContent = '';
+            }
+            if (resetEmail) {
+                resetEmail.classList.remove('error');
+            }
+        }
+
+        async function handlePasswordReset() {
+            clearResetMessages();
+            
+            const email = document.getElementById('resetEmail').value.trim();
+            const resetBtn = document.getElementById('resetBtn');
+            const resetEmailError = document.getElementById('resetEmailError');
+            const resetError = document.getElementById('resetError');
+            const resetEmailInput = document.getElementById('resetEmail');
+            
+            // Validation
+            if (!email) {
+                resetEmailInput.classList.add('error');
+                resetEmailError.textContent = 'Veuillez entrer votre adresse email';
+                resetEmailError.classList.add('show');
+                return;
+            }
+            
+            // Validation email basique
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                resetEmailInput.classList.add('error');
+                resetEmailError.textContent = 'Veuillez entrer une adresse email valide';
+                resetEmailError.classList.add('show');
+                return;
+            }
+            
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Envoi...';
+            
+            try {
+                // Vérifier que Firebase Auth est disponible
+                if (!auth) {
+                    throw new Error('Firebase Auth n\'est pas initialisé. Veuillez recharger la page.');
+                }
+                
+                // Envoyer l'email de réinitialisation
+                await auth.sendPasswordResetEmail(email, {
+                    url: window.location.origin + '/auth.html',
+                    handleCodeInApp: false
+                });
+                
+                // Afficher l'état de succès
+                const emailForm = document.getElementById('emailFormState');
+                const emailSent = document.getElementById('emailSentState');
+                const sentEmail = document.getElementById('sentEmail');
+                
+                emailForm.classList.remove('email-form-state');
+                emailForm.classList.add('hide');
+                emailSent.classList.add('show');
+                sentEmail.textContent = email;
+                
+                // Masquer le bouton annuler et modifier le bouton principal
+                const cancelBtn = document.getElementById('cancelBtn');
+                if (cancelBtn) {
+                    cancelBtn.textContent = 'Fermer';
+                    cancelBtn.setAttribute('onclick', 'closeForgotPasswordModal()');
+                }
+                resetBtn.style.display = 'none';
+                
+                console.log('✅ Email de réinitialisation envoyé à:', email);
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi de l\'email de réinitialisation:', error);
+                
+                resetEmailInput.classList.add('error');
+                let errorMessage = 'Une erreur est survenue. ';
+                
+                // Gérer les erreurs Firebase
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'Aucun compte trouvé avec cet email. Vérifiez l\'adresse email.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'L\'adresse email n\'est pas valide.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                resetError.textContent = errorMessage;
+                resetError.classList.add('show');
+                
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Envoyer l\'email';
+            }
+        }
+        
+        // Fermer le modal avec la touche Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('forgotPasswordModal');
+                if (modal && modal.classList.contains('show')) {
+                    closeForgotPasswordModal();
+                }
+            }
+        });
 
         function clearMessages() {
             document.querySelectorAll('.error-message').forEach(el => {
