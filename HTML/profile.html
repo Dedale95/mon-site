@@ -431,36 +431,40 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
-        // Vérifier si l'utilisateur est connecté
-        function checkAuth() {
-            const user = auth.currentUser;
-            
-            if (!user) {
-                // Rediriger vers la page de connexion
-                window.location.href = 'auth.html';
-                return false;
-            }
-            
-            return true;
-        }
+        // Variable pour stocker l'utilisateur connecté
+        let currentUser = null;
         
         // Écouter les changements d'état d'authentification
         auth.onAuthStateChanged((user) => {
-            if (!user) {
+            if (user) {
+                // Utilisateur connecté
+                currentUser = user;
+                console.log('Utilisateur connecté:', user.email);
+                // Mettre à jour localStorage pour la navigation
+                localStorage.setItem('authToken', user.uid);
+                localStorage.setItem('userEmail', user.email);
+                // Charger le profil
+                loadProfile();
+                // Mettre à jour la navigation
+                checkAuthAndUpdateNav();
+            } else {
+                // Utilisateur non connecté - rediriger vers la connexion
+                console.log('Utilisateur non connecté, redirection...');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userEmail');
                 window.location.href = 'auth.html';
             }
         });
 
         // Charger le profil depuis localStorage
         function loadProfile() {
-            const user = auth.currentUser;
-            if (!user) {
-                window.location.href = 'auth.html';
+            if (!currentUser) {
+                console.log('Pas d\'utilisateur connecté');
                 return;
             }
             
             // Charger le profil depuis localStorage (clé basée sur l'email de l'utilisateur)
-            const profileKey = `profile_${user.email}`;
+            const profileKey = `profile_${currentUser.email}`;
             const savedProfile = localStorage.getItem(profileKey);
             
             if (savedProfile) {
@@ -474,9 +478,12 @@
                     if (profile.postal_code) document.getElementById('postalCode').value = profile.postal_code;
                     if (profile.city) document.getElementById('city').value = profile.city;
                     if (profile.country) document.getElementById('country').value = profile.country;
+                    console.log('Profil chargé depuis localStorage');
                 } catch (error) {
                     console.error('Erreur lors du chargement du profil:', error);
                 }
+            } else {
+                console.log('Aucun profil sauvegardé trouvé');
             }
         }
 
@@ -484,11 +491,11 @@
         async function handleSaveProfile(event) {
             event.preventDefault();
             
-            const user = auth.currentUser;
-            if (!user) {
+            if (!currentUser) {
                 window.location.href = 'auth.html';
                 return;
             }
+            
             const formData = {
                 civility: document.getElementById('civility').value,
                 first_name: document.getElementById('firstName').value.trim(),
@@ -512,11 +519,16 @@
 
             try {
                 // Sauvegarder le profil dans localStorage (clé basée sur l'email)
-                const profileKey = `profile_${user.email}`;
+                const profileKey = `profile_${currentUser.email}`;
                 localStorage.setItem(profileKey, JSON.stringify(formData));
                 
                 successMsg.textContent = 'Profil enregistré avec succès !';
                 successMsg.classList.add('show');
+                
+                // Faire défiler vers le message de succès
+                successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                console.log('Profil sauvegardé:', formData);
             } catch (error) {
                 errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement.';
                 errorMsg.classList.add('show');
@@ -566,11 +578,9 @@
             }
         }
 
-        // Initialisation
-        checkAuthAndUpdateNav();
-        if (checkAuth()) {
-            loadProfile();
-        }
+        // Initialisation - attendre que Firebase soit prêt
+        // La fonction onAuthStateChanged sera appelée automatiquement
+        // et gérera le chargement du profil et la mise à jour de la navigation
     </script>
 </body>
 </html>
