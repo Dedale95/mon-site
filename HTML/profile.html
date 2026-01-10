@@ -497,7 +497,8 @@
                 address: document.getElementById('address').value.trim(),
                 postal_code: document.getElementById('postalCode').value.trim(),
                 city: document.getElementById('city').value.trim(),
-                country: document.getElementById('country').value
+                country: document.getElementById('country').value,
+                updated_at: new Date().toISOString()
             };
 
             const btn = document.getElementById('saveBtn');
@@ -510,35 +511,14 @@
             errorMsg.classList.remove('show');
 
             try {
-                const response = await fetch(`${API_BASE}/profile`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    successMsg.textContent = 'Profil enregistré avec succès !';
-                    successMsg.classList.add('show');
-                } else {
-                    errorMsg.textContent = data.error || 'Une erreur est survenue lors de l\'enregistrement';
-                    errorMsg.classList.add('show');
-                    
-                    if (response.status === 401) {
-                        // Token invalide
-                        localStorage.removeItem('authToken');
-                        localStorage.removeItem('userEmail');
-                        setTimeout(() => {
-                            window.location.href = 'auth.html';
-                        }, 2000);
-                    }
-                }
+                // Sauvegarder le profil dans localStorage (clé basée sur l'email)
+                const profileKey = `profile_${user.email}`;
+                localStorage.setItem(profileKey, JSON.stringify(formData));
+                
+                successMsg.textContent = 'Profil enregistré avec succès !';
+                successMsg.classList.add('show');
             } catch (error) {
-                errorMsg.textContent = 'Erreur de connexion au serveur. Veuillez réessayer.';
+                errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement.';
                 errorMsg.classList.add('show');
                 console.error('Error:', error);
             } finally {
