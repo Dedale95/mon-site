@@ -1100,17 +1100,28 @@
             // Essayer plusieurs chemins possibles pour le fichier JSON
             // On essaie d'abord la version allégée (seulement les offres Live)
             // On essaie aussi via raw.githubusercontent.com comme fallback
+            // Priorité : chemin relatif selon l'emplacement du fichier HTML
+            const currentPath = window.location.pathname;
+            const currentHref = window.location.href;
+            const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
+                                   currentHref.includes('/HTML/') || currentHref.includes('HTML/');
+            
+            // Construire les chemins selon l'emplacement du fichier HTML
             const possiblePaths = [
-                'HTML/scraped_jobs_live.json',
+                // Priorité 1 : Si HTML est dans HTML/, essayer d'abord le chemin relatif simple (le plus probable)
                 'scraped_jobs_live.json',
-                './HTML/scraped_jobs_live.json',
                 './scraped_jobs_live.json',
+                // Priorité 2 : Si HTML est à la racine, essayer avec préfixe HTML/
+                'HTML/scraped_jobs_live.json',
+                './HTML/scraped_jobs_live.json',
+                // Fallback : Si scraped_jobs_live.json ne fonctionne pas, essayer scraped_jobs.json
+                'scraped_jobs.json',
+                './scraped_jobs.json',
+                'HTML/scraped_jobs.json',
+                './HTML/scraped_jobs.json',
+                // Fallback GitHub (si déployé sur GitHub Pages)
                 'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
                 'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
-                'HTML/scraped_jobs.json',
-                'scraped_jobs.json',
-                './HTML/scraped_jobs.json',
-                './scraped_jobs.json',
                 'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
                 'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json'
             ];
@@ -1146,6 +1157,26 @@
             }
             
             if (!data) {
+                console.error('❌ Impossible de charger le fichier JSON depuis aucun des chemins testés');
+                const container = document.getElementById('jobsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="no-results">
+                            <h3>😕 Erreur</h3>
+                            <p>Impossible de charger les offres.</p>
+                            <p><strong>Note :</strong> Assurez-vous d'avoir exécuté <code>export_sqlite_to_json.py</code> pour générer le fichier JSON depuis les bases SQLite.</p>
+                            <details style="margin-top: 20px; text-align: left;">
+                                <summary style="cursor: pointer; font-weight: bold; margin-bottom: 10px;">Chemins testés :</summary>
+                                <ul style="margin-left: 20px; margin-top: 10px;">
+                                    ${possiblePaths.map(p => `<li>${p}</li>`).join('')}
+                                </ul>
+                            </details>
+                            <p style="margin-top: 20px; font-size: 0.9rem; color: #666;">
+                                Si vous venez de mettre à jour le fichier sur GitHub, attendez quelques minutes que GitHub Pages se mette à jour.
+                            </p>
+                        </div>
+                    `;
+                }
                 throw new Error(`Impossible de charger le fichier JSON depuis aucun des chemins : ${possiblePaths.join(', ')}`);
             }
             
