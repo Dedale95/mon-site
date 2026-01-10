@@ -1001,31 +1001,36 @@
 
         // Mettre en surbrillance uniquement la page actuelle
         function highlightCurrentPage() {
-            const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
-            const navLinks = document.querySelectorAll('.nav-link');
+            // Obtenir le nom de la page actuelle
+            let currentPage = window.location.pathname.split('/').pop();
+            if (!currentPage || currentPage === '') {
+                currentPage = window.location.href.split('/').pop();
+            }
+            // Si toujours vide, c'est probablement la page d'accueil
+            if (!currentPage || currentPage === '' || currentPage.includes('index') || currentPage.includes('mon-site')) {
+                currentPage = 'landing_page_finance.html';
+            }
+            
+            const navLinks = document.querySelectorAll('.nav-link:not(#logoutBtn)');
             
             navLinks.forEach(link => {
-                // Enlever la surbrillance de tous les liens
                 link.classList.remove('nav-link-primary');
-                
-                // Ajouter la surbrillance uniquement si c'est la page actuelle
                 const linkHref = link.getAttribute('href');
-                if (linkHref && (linkHref === currentPage || (currentPage === '' && linkHref === 'landing_page_finance.html'))) {
-                    // Ne pas mettre en surbrillance "Mon Profil", "Déconnexion" ou "Inscription / Connexion"
-                    const linkText = link.textContent.trim();
-                    if (linkText !== 'Mon Profil' && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
+                const linkText = link.textContent.trim();
+                
+                // Ignorer les liens spéciaux
+                if (linkText === 'Mon Profil' || linkText === 'Déconnexion' || linkText === 'Inscription / Connexion') {
+                    return;
+                }
+                
+                // Comparer les noms de fichiers
+                if (linkHref) {
+                    const linkPage = linkHref.split('/').pop();
+                    if (linkPage === currentPage || (currentPage === 'landing_page_finance.html' && linkPage === 'landing_page_finance.html')) {
                         link.classList.add('nav-link-primary');
                     }
                 }
             });
-            
-            // Cas spécial pour la page d'accueil
-            if (currentPage === '' || currentPage === 'landing_page_finance.html' || currentPage === 'index.html') {
-                const presentationLink = document.querySelector('a[href="landing_page_finance.html"]');
-                if (presentationLink && !presentationLink.classList.contains('nav-link-primary')) {
-                    presentationLink.classList.add('nav-link-primary');
-                }
-            }
         }
 
         // Vérifier l'authentification et mettre à jour la navigation

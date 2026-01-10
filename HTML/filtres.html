@@ -569,15 +569,25 @@
 
         // Mettre en surbrillance uniquement la page actuelle
         function highlightCurrentPage() {
-            const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
-            const navLinks = document.querySelectorAll('.nav-link');
+            let currentPage = window.location.pathname.split('/').pop();
+            if (!currentPage || currentPage === '') {
+                currentPage = window.location.href.split('/').pop();
+            }
+            
+            const navLinks = document.querySelectorAll('.nav-link:not(#logoutBtn)');
             
             navLinks.forEach(link => {
                 link.classList.remove('nav-link-primary');
                 const linkHref = link.getAttribute('href');
-                if (linkHref && linkHref === currentPage) {
-                    const linkText = link.textContent.trim();
-                    if (linkText !== 'Mon Profil' && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
+                const linkText = link.textContent.trim();
+                
+                if (linkText === 'Mon Profil' || linkText === 'Déconnexion' || linkText === 'Inscription / Connexion') {
+                    return;
+                }
+                
+                if (linkHref) {
+                    const linkPage = linkHref.split('/').pop();
+                    if (linkPage === currentPage) {
                         link.classList.add('nav-link-primary');
                     }
                 }
