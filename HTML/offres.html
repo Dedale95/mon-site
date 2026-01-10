@@ -1376,7 +1376,7 @@
 
                 initializeFilters();
                 filteredJobs = [...allJobs];
-                renderJobs();
+                await renderJobs();
                 updateStats();
                 
                 console.log(`✅ Affichage terminé : ${filteredJobs.length} offres affichées`);
@@ -1625,8 +1625,10 @@
             populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
                 new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))));
 
-            renderJobs();
-            updateStats();
+            (async () => {
+                await renderJobs();
+                updateStats();
+            })();
         }
 
         function getCheckedValues(containerId) {
@@ -1634,7 +1636,7 @@
             return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
         }
 
-        function renderJobs() {
+        async function renderJobs() {
             const container = document.getElementById('jobsContainer');
             if (filteredJobs.length === 0) {
                 container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
@@ -1648,8 +1650,8 @@
                 companyLogoCache.set(companyName, getCompanyLogoUrl(companyName));
             });
             
-            container.innerHTML = filteredJobs.map(job => {
-                // Utiliser le cache pour éviter de recalculer la même URL plusieurs fois
+            // Fonction pour générer le HTML d'une carte d'offre
+            function renderJobCard(job) {
                 const logoUrl = job.company_name ? companyLogoCache.get(job.company_name) : null;
                 const logoPlaceholder = job.company_name ? getCompanyLogoPlaceholder(job.company_name) : '';
                 const companyNameForAttr = job.company_name ? job.company_name.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : '';
@@ -1691,7 +1693,22 @@
             </div>
         </div>
     `;
-            }).join('');
+            }
+            
+            // Rendre par batch pour éviter le débordement de stack
+            const batchSize = 50; // Réduire la taille du batch pour éviter les problèmes
+            container.innerHTML = ''; // Vider le conteneur
+            
+            for (let i = 0; i < filteredJobs.length; i += batchSize) {
+                const batch = filteredJobs.slice(i, i + batchSize);
+                const batchHTML = batch.map(renderJobCard).join('');
+                container.innerHTML += batchHTML;
+                
+                // Laisser le navigateur respirer entre les batches pour éviter de bloquer l'UI
+                if (i + batchSize < filteredJobs.length) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
         }
 
         function updateStats() {
