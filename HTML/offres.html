@@ -1282,73 +1282,110 @@
 
                 if (!data || data.length === 0) {
                     console.warn('Aucune donnée trouvée dans le JSON');
+                    const jobsContainer = document.getElementById('jobsContainer');
+                    if (jobsContainer) {
+                        jobsContainer.innerHTML = '<div class="no-results"><h3>⚠️ Aucune donnée</h3><p>Le fichier JSON est vide ou invalide.</p></div>';
+                    }
                     return;
+                }
+
+                console.log(`📊 Traitement de ${data.length} offres en cours...`);
+                
+                // Mettre à jour le message de progression
+                const jobsContainer = document.getElementById('jobsContainer');
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>Normalisation des ' + data.length + ' offres, veuillez patienter...</p></div>';
                 }
 
                 allJobs = [];
 
-                for (let i = 0; i < data.length; i++) {
-                    const job = data[i];
-                    
-                    // Harmonisation des types de contrat
-                    if (job.contract_type) {
-                        const contractLower = job.contract_type.toLowerCase();
-                        if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
-                            job.contract_type = 'Alternance / Apprentissage';
-                        }
-                    }
-                    
-                    // Harmonisation des niveaux d'études
-                    if (job.education_level) {
-                        if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
-                            job.education_level = 'Certificat Fédéral de Capacité (CFC)';
-                        }
-                    }
-
-                    job.cleanRegions = [];
-                    job.cleanCountries = [];
-
-                    if (job.location && job.location.includes(' - ')) {
-                        const parts = job.location.split(' - ');
-                        const cityPart = parts[0];
-                        const country = parts[1].trim();
-                        job.cleanCountries.push(country);
-
-                        const cities = cityPart.split(/[\/,]/).map(c => {
-                            let clean = c.trim();
-                            // Nettoyage basique type Python
-                            clean = clean.replace(/\(.*\)/g, '').trim();
-                            clean = clean.replace(/\d{5,6}/g, '').trim();
-                            // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
-                            if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
-                                const words = clean.split(' ');
-                                const lastWord = words[words.length - 1].toLowerCase();
-                                if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                // Traitement optimisé par batch pour ne pas bloquer l'UI
+                const processBatch = (start, batchSize) => {
+                    const end = Math.min(start + batchSize, data.length);
+                    for (let i = start; i < end; i++) {
+                        const job = data[i];
+                        
+                        // Harmonisation des types de contrat
+                        if (job.contract_type) {
+                            const contractLower = job.contract_type.toLowerCase();
+                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
+                                job.contract_type = 'Alternance / Apprentissage';
                             }
-                            return clean;
-                        }).filter(c => c);
-
-                        if (cities.length === 0) {
-                            job.cleanRegions.push(getCityRegion('', country));
-                        } else {
-                            cities.forEach(city => {
-                                job.cleanRegions.push(getCityRegion(city, country));
-                            });
                         }
-                        job.cleanCountries = [...new Set(job.cleanCountries)];
-                        job.cleanRegions = [...new Set(job.cleanRegions)];
+                        
+                        // Harmonisation des niveaux d'études
+                        if (job.education_level) {
+                            if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
+                                job.education_level = 'Certificat Fédéral de Capacité (CFC)';
+                            }
+                        }
+
+                        job.cleanRegions = [];
+                        job.cleanCountries = [];
+
+                        if (job.location && job.location.includes(' - ')) {
+                            const parts = job.location.split(' - ');
+                            const cityPart = parts[0];
+                            const country = parts[1].trim();
+                            job.cleanCountries.push(country);
+
+                            const cities = cityPart.split(/[\/,]/).map(c => {
+                                let clean = c.trim();
+                                // Nettoyage basique type Python
+                                clean = clean.replace(/\(.*\)/g, '').trim();
+                                clean = clean.replace(/\d{5,6}/g, '').trim();
+                                // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
+                                if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
+                                    const words = clean.split(' ');
+                                    const lastWord = words[words.length - 1].toLowerCase();
+                                    if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                                }
+                                return clean;
+                            }).filter(c => c);
+
+                            if (cities.length === 0) {
+                                job.cleanRegions.push(getCityRegion('', country));
+                            } else {
+                                cities.forEach(city => {
+                                    job.cleanRegions.push(getCityRegion(city, country));
+                                });
+                            }
+                            job.cleanCountries = [...new Set(job.cleanCountries)];
+                            job.cleanRegions = [...new Set(job.cleanRegions)];
+                        }
+                        allJobs.push(job);
                     }
-                    allJobs.push(job);
+                };
+
+                // Traiter par batch de 100 pour ne pas bloquer l'UI
+                const batchSize = 100;
+                for (let start = 0; start < data.length; start += batchSize) {
+                    processBatch(start, batchSize);
+                    // Mettre à jour le message de progression périodiquement
+                    if (start % 500 === 0 && jobsContainer) {
+                        const progress = Math.floor((start / data.length) * 100);
+                        jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + start + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
+                    }
+                    // Laisser le navigateur respirer entre les batches
+                    if (start % 500 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
                 }
+
+                console.log(`✅ Traitement terminé : ${allJobs.length} offres normalisées`);
 
                 initializeFilters();
                 filteredJobs = [...allJobs];
                 renderJobs();
                 updateStats();
+                
+                console.log(`✅ Affichage terminé : ${filteredJobs.length} offres affichées`);
             } catch (error) {
-                console.error('Erreur:', error);
-                // Le message d'erreur est déjà géré dans le bloc if (!data) ci-dessus
-                // Cette partie du catch ne devrait normalement pas être atteinte
+                console.error('Erreur lors du traitement:', error);
+                const jobsContainer = document.getElementById('jobsContainer');
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = `<div class="no-results"><h3>❌ Erreur de traitement</h3><p>Erreur : ${error.message}</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Vérifiez la console pour plus de détails (F12).</p></div>`;
+                }
             }
         }
 
