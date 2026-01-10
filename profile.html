@@ -189,6 +189,23 @@
             line-height: 1.4;
         }
 
+        .form-group input[type="date"] {
+            padding: 11px 14px 12px 14px;
+            height: 44px;
+            line-height: 1.5;
+            color: #1a1a1a;
+        }
+
+        .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .form-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
         .form-group select:focus,
         .form-group input:focus {
             outline: none;
@@ -704,6 +721,7 @@
                 <!-- Section Informations personnelles -->
                 <div class="form-section">
                     <h2>Informations personnelles</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Renseignez vos informations personnelles de base.</p>
                     
                     <div class="form-group">
                         <label for="civility">Civilité</label>
@@ -734,6 +752,7 @@
                 <!-- Section Adresse -->
                 <div class="form-section">
                     <h2>Adresse</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Indiquez votre adresse de résidence actuelle.</p>
                     
                     <div class="form-group">
                         <label for="address">Adresse</label>
@@ -908,6 +927,360 @@
                             <input type="checkbox" name="jobs" value="RSE / ESG" id="job_rse">
                             <span class="checkbox-text">RSE / ESG</span>
                         </label>
+                    </div>
+                </div>
+
+                <!-- Section Contrat et disponibilité -->
+                <div class="form-section">
+                    <h2>Contrat et disponibilité</h2>
+                    
+                    <div class="form-group">
+                        <label for="contractType">Le contrat qui m'intéresse</label>
+                        <select id="contractType" name="contractType">
+                            <option value="">Sélectionnez...</option>
+                            <option value="Stage">Stage</option>
+                            <option value="Alternance / Apprentissage">Alternance / Apprentissage</option>
+                            <option value="VIE">VIE</option>
+                            <option value="CDD">CDD</option>
+                            <option value="CDI">CDI</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="availableFrom">Disponible à partir de</label>
+                        <input type="date" id="availableFrom" name="availableFrom" placeholder="jj/mm/yyyy">
+                    </div>
+                </div>
+
+                <!-- Section Préférences géographiques -->
+                <div class="form-section">
+                    <h2>Préférences géographiques</h2>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Sélectionnez vos préférences géographiques pour vos recherches de postes.</p>
+                    
+                    <div class="form-group">
+                        <label>Je souhaite travailler à - Sélectionnez le(s) continent(s)</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="continents" value="Afrique" id="continent_afrique">
+                                <span class="checkbox-text">Afrique</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="continents" value="Amérique" id="continent_amerique">
+                                <span class="checkbox-text">Amérique</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="continents" value="Asie" id="continent_asie">
+                                <span class="checkbox-text">Asie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="continents" value="Europe" id="continent_europe">
+                                <span class="checkbox-text">Europe</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="continents" value="Océanie" id="continent_oceanie">
+                                <span class="checkbox-text">Océanie</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sélectionnez le(s) pays</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Albanie" id="country_albanie">
+                                <span class="checkbox-text">Albanie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Algérie" id="country_algerie">
+                                <span class="checkbox-text">Algérie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Allemagne" id="country_allemagne">
+                                <span class="checkbox-text">Allemagne</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Argentine" id="country_argentine">
+                                <span class="checkbox-text">Argentine</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Australie" id="country_australie">
+                                <span class="checkbox-text">Australie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Autre" id="country_autre">
+                                <span class="checkbox-text">Autre</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Autriche" id="country_autriche">
+                                <span class="checkbox-text">Autriche</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Belgique" id="country_belgique">
+                                <span class="checkbox-text">Belgique</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Brunei" id="country_brunei">
+                                <span class="checkbox-text">Brunei</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Brésil" id="country_bresil">
+                                <span class="checkbox-text">Brésil</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Canada" id="country_canada">
+                                <span class="checkbox-text">Canada</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Chili" id="country_chili">
+                                <span class="checkbox-text">Chili</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Chine" id="country_chine">
+                                <span class="checkbox-text">Chine</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Corée" id="country_coree">
+                                <span class="checkbox-text">Corée</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Danemark" id="country_danemark">
+                                <span class="checkbox-text">Danemark</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Egypte" id="country_egypte">
+                                <span class="checkbox-text">Egypte</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Emirats Arabes Unis" id="country_emirats">
+                                <span class="checkbox-text">Emirats Arabes Unis</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Espagne" id="country_espagne">
+                                <span class="checkbox-text">Espagne</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Etats-Unis d'Amérique" id="country_etatsunis">
+                                <span class="checkbox-text">Etats-Unis d'Amérique</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Finlande" id="country_finlande">
+                                <span class="checkbox-text">Finlande</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="France" id="country_france">
+                                <span class="checkbox-text">France</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Grèce" id="country_grece">
+                                <span class="checkbox-text">Grèce</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Hong-Kong" id="country_hongkong">
+                                <span class="checkbox-text">Hong-Kong</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Ile Maurice" id="country_ilemaurice">
+                                <span class="checkbox-text">Ile Maurice</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Inde" id="country_inde">
+                                <span class="checkbox-text">Inde</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Irlande" id="country_irlande">
+                                <span class="checkbox-text">Irlande</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Italie" id="country_italie">
+                                <span class="checkbox-text">Italie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Japon" id="country_japon">
+                                <span class="checkbox-text">Japon</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Jersey" id="country_jersey">
+                                <span class="checkbox-text">Jersey</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Liban" id="country_liban">
+                                <span class="checkbox-text">Liban</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Luxembourg" id="country_luxembourg">
+                                <span class="checkbox-text">Luxembourg</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Madagascar" id="country_madagascar">
+                                <span class="checkbox-text">Madagascar</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Malaisie" id="country_malaisie">
+                                <span class="checkbox-text">Malaisie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Maroc" id="country_maroc">
+                                <span class="checkbox-text">Maroc</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Mexique" id="country_mexique">
+                                <span class="checkbox-text">Mexique</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Monaco" id="country_monaco">
+                                <span class="checkbox-text">Monaco</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Norvège" id="country_norvege">
+                                <span class="checkbox-text">Norvège</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Pays-Bas" id="country_paysbas">
+                                <span class="checkbox-text">Pays-Bas</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Pologne" id="country_pologne">
+                                <span class="checkbox-text">Pologne</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Portugal" id="country_portugal">
+                                <span class="checkbox-text">Portugal</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Roumanie" id="country_roumanie">
+                                <span class="checkbox-text">Roumanie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Royaume-Uni" id="country_royaumeuni">
+                                <span class="checkbox-text">Royaume-Uni</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Russie" id="country_russie">
+                                <span class="checkbox-text">Russie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="République Tchèque" id="country_republiquetchèque">
+                                <span class="checkbox-text">République Tchèque</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Serbie" id="country_serbie">
+                                <span class="checkbox-text">Serbie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Singapour" id="country_singapour">
+                                <span class="checkbox-text">Singapour</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Suisse" id="country_suisse">
+                                <span class="checkbox-text">Suisse</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Suède" id="country_suede">
+                                <span class="checkbox-text">Suède</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Taiwan" id="country_taiwan">
+                                <span class="checkbox-text">Taiwan</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Thailande" id="country_thailande">
+                                <span class="checkbox-text">Thailande</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Ukraine" id="country_ukraine">
+                                <span class="checkbox-text">Ukraine</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="preferredCountries" value="Uruguay" id="country_uruguay">
+                                <span class="checkbox-text">Uruguay</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sélectionnez la(es) région(s)</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Antilles" id="region_antilles">
+                                <span class="checkbox-text">Antilles</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Auvergne-Rhône-Alpes" id="region_auvergne">
+                                <span class="checkbox-text">Auvergne-Rhône-Alpes</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Bourgogne-Franche-Comté" id="region_bourgogne">
+                                <span class="checkbox-text">Bourgogne-Franche-Comté</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Bretagne" id="region_bretagne">
+                                <span class="checkbox-text">Bretagne</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Centre-Val de Loire" id="region_centre">
+                                <span class="checkbox-text">Centre-Val de Loire</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Corse" id="region_corse">
+                                <span class="checkbox-text">Corse</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Grand Est" id="region_grandest">
+                                <span class="checkbox-text">Grand Est</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Guyane" id="region_guyane">
+                                <span class="checkbox-text">Guyane</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Hauts-de-France" id="region_hautsdefrance">
+                                <span class="checkbox-text">Hauts-de-France</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Ile-de-France" id="region_iledefrance">
+                                <span class="checkbox-text">Ile-de-France</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Normandie" id="region_normandie">
+                                <span class="checkbox-text">Normandie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Nouvelle-Aquitaine" id="region_nouvelleaquitaine">
+                                <span class="checkbox-text">Nouvelle-Aquitaine</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Occitanie" id="region_occitanie">
+                                <span class="checkbox-text">Occitanie</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Pays de la Loire" id="region_paysdelaloire">
+                                <span class="checkbox-text">Pays de la Loire</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Provence-Alpes-Côte d'Azur" id="region_paca">
+                                <span class="checkbox-text">Provence-Alpes-Côte d'Azur</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="regions" value="Réunion" id="region_reunion">
+                                <span class="checkbox-text">Réunion</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Niveau d'expérience -->
+                <div class="form-section">
+                    <h2>Niveau d'expérience</h2>
+                    
+                    <div class="form-group">
+                        <label for="experienceLevel">Mon niveau d'expérience</label>
+                        <select id="experienceLevel" name="experienceLevel">
+                            <option value="">Sélectionnez...</option>
+                            <option value="0 - 2 ans">0 - 2 ans</option>
+                            <option value="3 - 5 ans">3 - 5 ans</option>
+                            <option value="6 - 10 ans">6 - 10 ans</option>
+                            <option value="11 ans et plus">11 ans et plus</option>
+                        </select>
                     </div>
                 </div>
 
@@ -1186,6 +1559,13 @@
                         // Charger les métiers sélectionnés
                         loadJobs(profile);
                         
+                        // Charger les autres champs
+                        loadContractAndAvailability(profile);
+                        loadContinents(profile);
+                        loadPreferredCountries(profile);
+                        loadRegions(profile);
+                        loadExperienceLevel(profile);
+                        
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
                         loadFileInfo('letter', profile);
@@ -1225,6 +1605,13 @@
                         
                         // Charger les métiers sélectionnés
                         loadJobs(profile);
+                        
+                        // Charger les autres champs
+                        loadContractAndAvailability(profile);
+                        loadContinents(profile);
+                        loadPreferredCountries(profile);
+                        loadRegions(profile);
+                        loadExperienceLevel(profile);
                         
                         // Charger les fichiers existants (CV et lettre de motivation)
                         loadFileInfo('cv', profile);
@@ -1267,6 +1654,110 @@
             });
             
             console.log(`✅ Métiers chargés: ${jobs.length} métier(s) sélectionné(s)`);
+        }
+
+        // Fonction pour charger le contrat et la disponibilité
+        function loadContractAndAvailability(profile) {
+            if (profile.contract_type) {
+                const contractSelect = document.getElementById('contractType');
+                if (contractSelect) {
+                    contractSelect.value = profile.contract_type;
+                }
+            }
+            
+            // Charger la date de disponibilité
+            if (profile.available_from_raw) {
+                // Utiliser le format YYYY-MM-DD pour l'input date
+                const availableFromInput = document.getElementById('availableFrom');
+                if (availableFromInput) {
+                    availableFromInput.value = profile.available_from_raw;
+                }
+            } else if (profile.available_from) {
+                // Convertir depuis le format jj/mm/yyyy vers YYYY-MM-DD
+                const dateParts = profile.available_from.split('/');
+                if (dateParts.length === 3) {
+                    const day = dateParts[0];
+                    const month = dateParts[1];
+                    const year = dateParts[2];
+                    const availableFromInput = document.getElementById('availableFrom');
+                    if (availableFromInput) {
+                        availableFromInput.value = `${year}-${month}-${day}`;
+                    }
+                }
+            }
+        }
+
+        // Fonction pour charger les continents sélectionnés
+        function loadContinents(profile) {
+            const continents = profile.continents || [];
+            
+            // Décocher tous les checkboxes d'abord
+            const allCheckboxes = document.querySelectorAll('input[name="continents"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Cocher les continents sauvegardés
+            continents.forEach(continentValue => {
+                const checkbox = document.querySelector(`input[name="continents"][value="${continentValue}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            console.log(`✅ Continents chargés: ${continents.length} continent(s) sélectionné(s)`);
+        }
+
+        // Fonction pour charger les pays sélectionnés
+        function loadPreferredCountries(profile) {
+            const countries = profile.preferred_countries || [];
+            
+            // Décocher tous les checkboxes d'abord
+            const allCheckboxes = document.querySelectorAll('input[name="preferredCountries"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Cocher les pays sauvegardés
+            countries.forEach(countryValue => {
+                const checkbox = document.querySelector(`input[name="preferredCountries"][value="${countryValue}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            console.log(`✅ Pays chargés: ${countries.length} pays sélectionné(s)`);
+        }
+
+        // Fonction pour charger les régions sélectionnées
+        function loadRegions(profile) {
+            const regions = profile.regions || [];
+            
+            // Décocher tous les checkboxes d'abord
+            const allCheckboxes = document.querySelectorAll('input[name="regions"]');
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Cocher les régions sauvegardées
+            regions.forEach(regionValue => {
+                const checkbox = document.querySelector(`input[name="regions"][value="${regionValue}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            console.log(`✅ Régions chargées: ${regions.length} région(s) sélectionnée(s)`);
+        }
+
+        // Fonction pour charger le niveau d'expérience
+        function loadExperienceLevel(profile) {
+            if (profile.experience_level) {
+                const experienceSelect = document.getElementById('experienceLevel');
+                if (experienceSelect) {
+                    experienceSelect.value = profile.experience_level;
+                }
+            }
         }
 
         // Fonction pour charger et afficher les informations d'un fichier existant
@@ -1590,6 +2081,41 @@
                 selectedJobs.push(checkbox.value);
             });
 
+            // Collecter les continents sélectionnés
+            const selectedContinents = [];
+            const continentCheckboxes = document.querySelectorAll('input[name="continents"]:checked');
+            continentCheckboxes.forEach(checkbox => {
+                selectedContinents.push(checkbox.value);
+            });
+
+            // Collecter les pays sélectionnés
+            const selectedCountries = [];
+            const countryCheckboxes = document.querySelectorAll('input[name="preferredCountries"]:checked');
+            countryCheckboxes.forEach(checkbox => {
+                selectedCountries.push(checkbox.value);
+            });
+
+            // Collecter les régions sélectionnées
+            const selectedRegions = [];
+            const regionCheckboxes = document.querySelectorAll('input[name="regions"]:checked');
+            regionCheckboxes.forEach(checkbox => {
+                selectedRegions.push(checkbox.value);
+            });
+
+            // Récupérer la date de disponibilité
+            const availableFromInput = document.getElementById('availableFrom');
+            let availableFrom = '';
+            if (availableFromInput && availableFromInput.value) {
+                // Convertir de YYYY-MM-DD (format HTML5 date) vers DD/MM/YYYY pour l'affichage
+                const date = new Date(availableFromInput.value);
+                if (!isNaN(date.getTime())) {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    availableFrom = `${day}/${month}/${year}`;
+                }
+            }
+
             const formData = {
                 civility: document.getElementById('civility').value,
                 first_name: document.getElementById('firstName').value.trim(),
@@ -1600,6 +2126,13 @@
                 city: document.getElementById('city').value.trim(),
                 country: document.getElementById('country').value,
                 jobs: selectedJobs, // Array des métiers sélectionnés
+                contract_type: document.getElementById('contractType').value,
+                available_from: availableFrom, // Format jj/mm/yyyy
+                available_from_raw: availableFromInput ? availableFromInput.value : '', // Format YYYY-MM-DD pour le stockage
+                continents: selectedContinents, // Array des continents sélectionnés
+                preferred_countries: selectedCountries, // Array des pays sélectionnés
+                regions: selectedRegions, // Array des régions sélectionnées
+                experience_level: document.getElementById('experienceLevel').value,
                 email: userEmail || '',
                 updated_at: new Date().toISOString(),
                 created_at: null // Sera défini lors de la première création
