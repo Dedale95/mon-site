@@ -206,32 +206,145 @@
             transform: none;
         }
 
-        .success-message {
-            color: #10b981;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            padding: 12px;
-            background: #d1fae5;
-            border-radius: 8px;
-            display: none;
+        /* Notification Toast Moderne */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
+            pointer-events: none;
         }
 
-        .success-message.show {
-            display: block;
+        .toast {
+            min-width: 320px;
+            max-width: 420px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            pointer-events: auto;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-left: 4px solid transparent;
         }
 
-        .error-message {
-            color: #ef4444;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            padding: 12px;
-            background: #fee2e2;
-            border-radius: 8px;
-            display: none;
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
         }
 
-        .error-message.show {
-            display: block;
+        .toast.success {
+            border-left-color: #10b981;
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            animation: iconBounce 0.6s ease-out;
+        }
+
+        .toast.success .toast-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .toast.error .toast-icon {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        @keyframes iconBounce {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideOut {
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: none;
+                width: 100%;
+            }
         }
 
         .logout-btn {
@@ -470,8 +583,7 @@
                     </div>
                 </div>
 
-                <div class="success-message" id="successMessage"></div>
-                <div class="error-message" id="errorMessage"></div>
+                <!-- Les notifications toast seront créées dynamiquement -->
 
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
                     <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
@@ -745,6 +857,52 @@
             }
         }
 
+        // Fonction pour afficher une notification toast moderne
+        function showToast(type, title, message) {
+            // Créer le conteneur s'il n'existe pas
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            
+            // Créer le toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Icône selon le type
+            const icon = type === 'success' ? '✓' : '✕';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            // Ajouter au conteneur
+            container.appendChild(toast);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-fermeture après 5 secondes
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
         // Sauvegarder le profil dans Firestore (avec fallback localStorage)
         async function handleSaveProfile(event) {
             event.preventDefault();
@@ -788,13 +946,9 @@
             };
 
             const btn = document.getElementById('saveBtn');
-            const successMsg = document.getElementById('successMessage');
-            const errorMsg = document.getElementById('errorMessage');
             
             btn.disabled = true;
             btn.textContent = 'Enregistrement...';
-            successMsg.classList.remove('show');
-            errorMsg.classList.remove('show');
 
             try {
                 let savedToFirestore = false;
@@ -828,33 +982,17 @@
                     console.log('✅ Profil sauvegardé dans localStorage pour:', userEmail);
                 }
                 
+                // Afficher une notification toast moderne
                 if (savedToFirestore) {
-                    successMsg.textContent = '✅ Profil enregistré avec succès dans le cloud !';
+                    showToast('success', 'Profil mis à jour', 'Toutes vos informations ont été sauvegardées et synchronisées dans le cloud.');
                 } else {
-                    successMsg.textContent = '✅ Profil enregistré localement. Synchronisation avec le cloud disponible à la prochaine connexion.';
+                    showToast('success', 'Profil enregistré', 'Vos informations ont été sauvegardées localement et seront synchronisées à la prochaine connexion.');
                 }
-                successMsg.classList.add('show');
-                
-                // Faire défiler vers le message de succès
-                setTimeout(() => {
-                    successMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
-                
-                // Masquer le message après 5 secondes
-                setTimeout(() => {
-                    successMsg.classList.remove('show');
-                }, 5000);
                 
                 console.log('✅ Profil sauvegardé:', { userId, userEmail, formData });
             } catch (error) {
-                errorMsg.textContent = 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.';
-                errorMsg.classList.add('show');
+                showToast('error', 'Erreur', 'Une erreur est survenue lors de l\'enregistrement. Veuillez réessayer.');
                 console.error('❌ Erreur lors de la sauvegarde:', error);
-                
-                // Masquer le message d'erreur après 5 secondes
-                setTimeout(() => {
-                    errorMsg.classList.remove('show');
-                }, 5000);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Enregistrer';
