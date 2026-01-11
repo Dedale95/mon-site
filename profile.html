@@ -794,6 +794,7 @@
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
+                <a href="mes-candidatures.html" class="nav-link" id="applicationsLink" style="display: none;">Mes candidatures</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link nav-link-primary" id="profileLink" style="display: none;">Mon Profil</a>
                 <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
@@ -1594,6 +1595,7 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
+            const applicationsLink = document.getElementById('applicationsLink');
             
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
@@ -1605,7 +1607,7 @@
             const isAuthenticated = !!(token && email);
             
             if (isAuthenticated) {
-                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
+                // Utilisateur connecté - afficher le profil, mes candidatures et le bouton déconnexion, masquer l'auth
                 profileLink.style.display = 'block';
                 profileLink.classList.remove('nav-link-primary');
                 if (window.location.pathname.includes('profile.html')) {
@@ -1614,14 +1616,16 @@
                 logoutBtn.style.display = 'block';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'none';
+                if (applicationsLink) applicationsLink.style.display = 'block';
             } else {
-                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
+                // Utilisateur non connecté - masquer le profil, mes candidatures et le bouton déconnexion, afficher l'auth
                 profileLink.style.display = 'none';
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
                 authLink.classList.remove('nav-link-primary');
+                if (applicationsLink) applicationsLink.style.display = 'none';
             }
             
             highlightCurrentPage();
@@ -2472,6 +2476,7 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
+            const applicationsLink = document.getElementById('applicationsLink');
             
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
@@ -2492,7 +2497,7 @@
             }
             
             if (isAuthenticated) {
-                // Utilisateur connecté - afficher le profil et le bouton déconnexion, masquer l'auth
+                // Utilisateur connecté - afficher le profil, mes candidatures et le bouton déconnexion, masquer l'auth
                 profileLink.style.display = 'block';
                 if (window.location.pathname.includes('profile.html')) {
                     profileLink.classList.add('nav-link-primary');
@@ -2502,11 +2507,13 @@
                 logoutBtn.style.display = 'block';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'none';
+                if (applicationsLink) applicationsLink.style.display = 'block';
             } else {
-                // Utilisateur non connecté - masquer le profil et le bouton déconnexion, afficher l'auth
+                // Utilisateur non connecté - masquer le profil, mes candidatures et le bouton déconnexion, afficher l'auth
                 profileLink.style.display = 'none';
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
+                if (applicationsLink) applicationsLink.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
                 authLink.classList.remove('nav-link-primary');
