@@ -591,6 +591,44 @@
             animation: slideOutRight 0.3s ease-in forwards;
         }
 
+        .toast.confirm {
+            border-left-color: #f59e0b;
+        }
+
+        .toast-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .toast-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .toast-btn-confirm {
+            background: #ef4444;
+            color: white;
+        }
+
+        .toast-btn-confirm:hover {
+            background: #dc2626;
+        }
+
+        .toast-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .toast-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
         .loading,
         .no-results {
             text-align: center;
@@ -1598,7 +1636,7 @@
         let userApplications = new Set();
 
         // Fonction pour afficher un toast notification
-        function showToast(title, message, type = 'success') {
+        function showToast(title, message, type = 'success', duration = 4000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -1607,7 +1645,8 @@
                 success: '✅',
                 error: '❌',
                 warning: '⚠️',
-                info: 'ℹ️'
+                info: 'ℹ️',
+                confirm: '⚠️'
             };
             
             toast.innerHTML = `
@@ -1620,13 +1659,67 @@
             
             container.appendChild(toast);
             
-            // Auto-remove after 4 seconds
-            setTimeout(() => {
+            // Auto-remove after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.classList.add('removing');
+                        setTimeout(() => {
+                            if (toast.parentNode) {
+                                container.removeChild(toast);
+                            }
+                        }, 300);
+                    }
+                }, duration);
+            }
+            
+            return toast;
+        }
+
+        // Fonction pour afficher un toast de confirmation avec actions
+        function showConfirmToast(title, message, onConfirm, onCancel) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast confirm';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'toast-content';
+            contentDiv.innerHTML = `
+                <div class="toast-icon">⚠️</div>
+                <div style="flex: 1;">
+                    <div class="toast-title">${title}</div>
+                    ${message ? `<div class="toast-message">${message}</div>` : ''}
+                    <div class="toast-actions">
+                        <button class="toast-btn toast-btn-confirm">Confirmer</button>
+                        <button class="toast-btn toast-btn-cancel">Annuler</button>
+                    </div>
+                </div>
+            `;
+            
+            toast.appendChild(contentDiv);
+            container.appendChild(toast);
+            
+            // Bouton confirmer
+            const confirmBtn = toast.querySelector('.toast-btn-confirm');
+            confirmBtn.addEventListener('click', () => {
                 toast.classList.add('removing');
                 setTimeout(() => {
-                    container.removeChild(toast);
-                }, 300); // Match animation duration
-            }, 4000);
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 300);
+                if (onConfirm) onConfirm();
+            });
+            
+            // Bouton annuler
+            const cancelBtn = toast.querySelector('.toast-btn-cancel');
+            cancelBtn.addEventListener('click', () => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 300);
+                if (onCancel) onCancel();
+            });
+            
+            return toast;
         }
 
         // Charger les candidatures de l'utilisateur depuis Firestore
@@ -1727,10 +1820,10 @@
                 const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
                 
                 if (!existingApp.empty) {
-                    showToast('Déjà candidaté', 'Vous avez déjà postulé à cette offre.', 'info');
+                    showToast('Déjà candidaté', 'Vous avez déjà postulé à cette offre.', 'info', 3000);
                     userApplications.add(jobId);
-                    // Re-render pour mettre à jour le bouton
-                    await renderJobs();
+                    // Mettre à jour uniquement cette carte
+                    updateJobCardButtons(jobId);
                     return;
                 }
 
@@ -1760,12 +1853,13 @@
                 // Message de confirmation avec toast
                 showToast(
                     'Candidature envoyée !',
-                    `${cleanJobTitle(job.job_title).substring(0, 60)}...`,
-                    'success'
+                    cleanJobTitle(job.job_title).substring(0, 50) + '...',
+                    'success',
+                    3000 // 3 secondes seulement pour ne pas encombrer
                 );
                 
-                // Re-render pour mettre à jour le bouton
-                await renderJobs();
+                // Mettre à jour uniquement cette carte (beaucoup plus rapide)
+                updateJobCardButtons(jobId);
                 
             } catch (error) {
                 console.error('❌ Erreur lors de la candidature:', error);
@@ -1780,78 +1874,110 @@
         }
 
         // Retirer une candidature
-        async function withdrawApplication(jobId, jobTitle, buttonElement) {
+        function withdrawApplication(jobId, jobTitle, buttonElement) {
             const btn = buttonElement || event.target;
             
-            // Demander confirmation
-            if (!confirm(`Êtes-vous sûr de vouloir retirer votre candidature pour :\n\n${jobTitle} ?`)) {
-                return;
-            }
-            
-            // Désactiver le bouton immédiatement
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = '⏳ Retrait...';
-            }
+            // Afficher toast de confirmation (non-bloquant)
+            showConfirmToast(
+                'Retirer votre candidature ?',
+                jobTitle,
+                async () => {
+                    // Confirmation - on retire
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = '⏳ Retrait...';
+                    }
 
-            try {
-                // Vérifier Firebase
-                if (!firebase.auth || !firebase.firestore) {
-                    showToast('Erreur', 'Firebase non initialisé. Veuillez rafraîchir la page.', 'error');
-                    return;
+                    try {
+                        // Vérifier Firebase
+                        if (!firebase.auth || !firebase.firestore) {
+                            showToast('Erreur', 'Firebase non initialisé. Veuillez rafraîchir la page.', 'error');
+                            return;
+                        }
+
+                        const auth = firebase.auth();
+                        const db = firebase.firestore();
+                        const currentUser = auth.currentUser;
+
+                        if (!currentUser) {
+                            showToast('Non connecté', 'Vous devez être connecté.', 'warning');
+                            return;
+                        }
+
+                        const userId = currentUser.uid;
+
+                        // Trouver et supprimer la candidature dans Firestore
+                        const applicationsRef = db.collection('profiles').doc(userId).collection('job_applications');
+                        const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
+                        
+                        if (existingApp.empty) {
+                            showToast('Introuvable', 'Cette candidature n\'existe pas.', 'warning');
+                            userApplications.delete(jobId);
+                            updateJobCardButtons(jobId);
+                            return;
+                        }
+
+                        // Supprimer le document
+                        const docId = existingApp.docs[0].id;
+                        await applicationsRef.doc(docId).delete();
+                        
+                        console.log('✅ Candidature retirée de Firestore');
+                        
+                        // Retirer de la liste locale
+                        userApplications.delete(jobId);
+                        
+                        // Message de confirmation
+                        showToast(
+                            'Candidature retirée',
+                            jobTitle.substring(0, 50) + '...',
+                            'info'
+                        );
+                        
+                        // Mettre à jour uniquement cette carte (pas de re-render complet)
+                        updateJobCardButtons(jobId);
+                        
+                    } catch (error) {
+                        console.error('❌ Erreur lors du retrait:', error);
+                        showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
+                        
+                        // Restaurer le bouton en cas d'erreur
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = '✕ Retirer';
+                        }
+                    }
+                },
+                () => {
+                    // Annulation - ne rien faire
+                    console.log('❌ Retrait annulé');
                 }
+            );
+        }
 
-                const auth = firebase.auth();
-                const db = firebase.firestore();
-                const currentUser = auth.currentUser;
-
-                if (!currentUser) {
-                    showToast('Non connecté', 'Vous devez être connecté.', 'warning');
-                    return;
+        // Fonction pour mettre à jour les boutons d'une carte spécifique (sans re-render complet)
+        function updateJobCardButtons(jobId) {
+            const cards = document.querySelectorAll('.job-card');
+            cards.forEach(card => {
+                const cardJobId = card.querySelector('.job-id')?.textContent;
+                if (cardJobId === jobId) {
+                    const actionsDiv = card.querySelector('.job-actions');
+                    if (actionsDiv) {
+                        const isApplied = userApplications.has(jobId);
+                        const job = filteredJobs.find(j => j.job_id === jobId);
+                        if (job) {
+                            const jobTitle = cleanJobTitle(job.job_title);
+                            actionsDiv.innerHTML = `
+                                ${isApplied 
+                                    ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
+                                       <button class="job-withdraw-btn" onclick="event.stopPropagation(); withdrawApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Retirer</button>` 
+                                    : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
+                                }
+                                <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+                            `;
+                        }
+                    }
                 }
-
-                const userId = currentUser.uid;
-
-                // Trouver et supprimer la candidature dans Firestore
-                const applicationsRef = db.collection('profiles').doc(userId).collection('job_applications');
-                const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
-                
-                if (existingApp.empty) {
-                    showToast('Introuvable', 'Cette candidature n\'existe pas.', 'warning');
-                    userApplications.delete(jobId);
-                    await renderJobs();
-                    return;
-                }
-
-                // Supprimer le document
-                const docId = existingApp.docs[0].id;
-                await applicationsRef.doc(docId).delete();
-                
-                console.log('✅ Candidature retirée de Firestore');
-                
-                // Retirer de la liste locale
-                userApplications.delete(jobId);
-                
-                // Message de confirmation
-                showToast(
-                    'Candidature retirée',
-                    `${jobTitle.substring(0, 60)}...`,
-                    'info'
-                );
-                
-                // Re-render pour mettre à jour le bouton
-                await renderJobs();
-                
-            } catch (error) {
-                console.error('❌ Erreur lors du retrait:', error);
-                showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
-                
-                // Restaurer le bouton en cas d'erreur
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '✕ Retirer';
-                }
-            }
+            });
         }
 
         async function renderJobs() {

@@ -427,6 +427,44 @@
             animation: slideOutRight 0.3s ease-in forwards;
         }
 
+        .toast.confirm {
+            border-left-color: #f59e0b;
+        }
+
+        .toast-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .toast-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .toast-btn-confirm {
+            background: #ef4444;
+            color: white;
+        }
+
+        .toast-btn-confirm:hover {
+            background: #dc2626;
+        }
+
+        .toast-btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .toast-btn-cancel:hover {
+            background: #e5e7eb;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8rem;
@@ -549,18 +587,19 @@
         let chart = null;
 
         // Toast notification function
-        function showToast(title, message, type = 'success') {
+        function showToast(title, message, type = 'success', duration = 4000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
+
             const icons = {
                 success: '✅',
                 error: '❌',
                 warning: '⚠️',
-                info: 'ℹ️'
+                info: 'ℹ️',
+                confirm: '⚠️'
             };
-            
+
             toast.innerHTML = `
                 <div class="toast-icon">${icons[type] || icons.info}</div>
                 <div class="toast-content">
@@ -568,15 +607,69 @@
                     ${message ? `<div class="toast-message">${message}</div>` : ''}
                 </div>
             `;
+
+            container.appendChild(toast);
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.classList.add('removing');
+                        setTimeout(() => {
+                            if (toast.parentNode) {
+                                container.removeChild(toast);
+                            }
+                        }, 300);
+                    }
+                }, duration);
+            }
+
+            return toast;
+        }
+
+        // Fonction pour afficher un toast de confirmation avec actions
+        function showConfirmToast(title, message, onConfirm, onCancel) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast confirm';
             
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'toast-content';
+            contentDiv.innerHTML = `
+                <div class="toast-icon">⚠️</div>
+                <div style="flex: 1;">
+                    <div class="toast-title">${title}</div>
+                    ${message ? `<div class="toast-message">${message}</div>` : ''}
+                    <div class="toast-actions">
+                        <button class="toast-btn toast-btn-confirm">Confirmer</button>
+                        <button class="toast-btn toast-btn-cancel">Annuler</button>
+                    </div>
+                </div>
+            `;
+            
+            toast.appendChild(contentDiv);
             container.appendChild(toast);
             
-            setTimeout(() => {
+            // Bouton confirmer
+            const confirmBtn = toast.querySelector('.toast-btn-confirm');
+            confirmBtn.addEventListener('click', () => {
                 toast.classList.add('removing');
                 setTimeout(() => {
-                    container.removeChild(toast);
+                    if (toast.parentNode) container.removeChild(toast);
                 }, 300);
-            }, 4000);
+                if (onConfirm) onConfirm();
+            });
+            
+            // Bouton annuler
+            const cancelBtn = toast.querySelector('.toast-btn-cancel');
+            cancelBtn.addEventListener('click', () => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    if (toast.parentNode) container.removeChild(toast);
+                }, 300);
+                if (onCancel) onCancel();
+            });
+            
+            return toast;
         }
 
         // Load applications from Firestore
@@ -802,32 +895,37 @@
         });
 
         // Withdraw application
-        async function withdrawApplication(appId, jobTitle) {
-            if (!confirm(`Êtes-vous sûr de vouloir retirer votre candidature pour :\n\n${jobTitle} ?`)) {
-                return;
-            }
+        function withdrawApplication(appId, jobTitle) {
+            showConfirmToast(
+                'Retirer votre candidature ?',
+                jobTitle,
+                async () => {
+                    try {
+                        const auth = firebase.auth();
+                        const currentUser = auth.currentUser;
 
-            try {
-                const auth = firebase.auth();
-                const currentUser = auth.currentUser;
+                        if (!currentUser) {
+                            showToast('Non connecté', 'Vous devez être connecté.', 'warning');
+                            return;
+                        }
 
-                if (!currentUser) {
-                    showToast('Non connecté', 'Vous devez être connecté.', 'warning');
-                    return;
+                        const db = firebase.firestore();
+                        await db.collection('profiles').doc(currentUser.uid).collection('job_applications').doc(appId).delete();
+
+                        showToast('Candidature retirée', jobTitle.substring(0, 50) + '...', 'info');
+
+                        // Reload applications
+                        await loadApplications();
+
+                    } catch (error) {
+                        console.error('❌ Erreur:', error);
+                        showToast('Erreur', 'Une erreur est survenue.', 'error');
+                    }
+                },
+                () => {
+                    console.log('❌ Retrait annulé');
                 }
-
-                const db = firebase.firestore();
-                await db.collection('profiles').doc(currentUser.uid).collection('job_applications').doc(appId).delete();
-
-                showToast('Candidature retirée', jobTitle.substring(0, 60) + '...', 'info');
-
-                // Reload applications
-                await loadApplications();
-
-            } catch (error) {
-                console.error('❌ Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue.', 'error');
-            }
+            );
         }
 
         // Change status
