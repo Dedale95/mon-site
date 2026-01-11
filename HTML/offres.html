@@ -310,11 +310,16 @@
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
             cursor: pointer;
             border: 2px solid transparent;
             position: relative;
             overflow: hidden;
+        }
+        
+        /* Empêcher le tremblement quand on clique sur les boutons */
+        .job-card:active {
+            transition: none;
         }
 
         .job-card::before {
@@ -334,9 +339,13 @@
         }
 
         .job-card:hover {
-            transform: translateY(-4px);
             box-shadow: 0 12px 40px rgba(102, 126, 234, 0.15);
             border-color: rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Effet de survol seulement si on ne survole pas les boutons d'action */
+        .job-card:hover:not(:has(.job-actions:hover)) {
+            transform: translateY(-4px);
         }
 
         .job-title {
@@ -1969,10 +1978,10 @@
                             actionsDiv.innerHTML = `
                                 ${isApplied 
                                     ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                                       <button class="job-cancel-btn" onclick="event.stopPropagation(); cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
-                                    : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
+                                       <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
+                                    : `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                                 }
-                                <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+                                <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
                             `;
                         }
                     }
@@ -1993,7 +2002,7 @@
             // Fonction pour générer le HTML d'une carte d'offre (sans logos pour stabilité)
             function renderJobCard(job) {
                 return `
-        <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
+        <div class="job-card" data-job-url="${job.job_url}">
             <div class="job-title">${cleanJobTitle(job.job_title)}</div>
             <div class="job-id">${job.job_id}</div>
             <div class="job-tags">
@@ -2015,10 +2024,10 @@
                     ${isAuthenticated ? (
                         userApplications.has(job.job_id) 
                             ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                               <button class="job-cancel-btn" onclick="event.stopPropagation(); cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
-                            : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
+                               <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
+                            : `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                     ) : ''}
-                    <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+                    <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
                 </div>
             </div>
         </div>
@@ -2039,6 +2048,27 @@
                     await new Promise(resolve => setTimeout(resolve, 0));
                 }
             }
+            
+            // Ajouter les event listeners pour les clics sur les cartes
+            attachJobCardListeners();
+        }
+
+        // Fonction pour attacher les event listeners aux cartes d'offres
+        function attachJobCardListeners() {
+            const cards = document.querySelectorAll('.job-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // Ne pas ouvrir l'offre si on clique sur un bouton ou un lien
+                    if (e.target.closest('button') || e.target.closest('a') || e.target.closest('.job-actions')) {
+                        return;
+                    }
+                    // Ouvrir l'offre dans un nouvel onglet
+                    const url = this.dataset.jobUrl;
+                    if (url) {
+                        window.open(url, '_blank');
+                    }
+                });
+            });
         }
 
         function updateStats() {
