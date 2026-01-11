@@ -394,6 +394,17 @@ class JobDetailScraper:
             if len(parts) >= 2:
                 city_raw = parts[0]
                 country_raw = parts[-1]
+                # Nettoyer city_raw : supprimer les noms d'entreprises au début (ex: "Crédit Agricole Leasing & Factoring, ")
+                # Pattern : nom entreprise suivi d'une virgule et d'une adresse
+                # Ex: "Crédit Agricole Leasing & Factoring, Einsteinring 30, 85609 Aschheim"
+                # -> "Einsteinring 30, 85609 Aschheim"
+                company_patterns = [
+                    r'^[^,]+(?:Leasing|Factoring|Gmbh|Co\.|S\.A\.)[^,]*,\s*',  # Nom entreprise avec virgule
+                    r'^[^,]+(?:Leasing|Factoring)[^,]*,\s*',  # Juste Leasing/Factoring
+                ]
+                for pattern in company_patterns:
+                    city_raw = re.sub(pattern, '', city_raw, flags=re.IGNORECASE)
+                city_raw = city_raw.strip()
             else:
                 city_raw = parts[0]
         else:

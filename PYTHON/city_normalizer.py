@@ -100,6 +100,8 @@ CITY_MAPPING = {
     'melbourne': 'Melbourne',
     'kuala lumpur': 'Kuala Lumpur',
     'putrajaya': 'Kuala Lumpur',
+    'aschheim': 'Aschheim',
+    'aschheim bei münchen': 'Aschheim',
 }
 
 def normalize_city(city_raw):
@@ -227,7 +229,17 @@ def normalize_city(city_raw):
     # Supprimer les parenthèses et leur contenu (ex: "Casablanca (Maroc)")
     city_clean = re.sub(r'\(.*?\)', '', city_clean).strip()
     
-    # Supprimer les codes postaux à la fin ou au début (ex: "75001 Paris" ou "Paris 75001")
+    # Extraire la ville depuis un format "Code postal + Ville" (ex: "85609 Aschheim", "1010 Lausanne")
+    # Pattern pour codes postaux suivis d'une ville (allemand: 5 chiffres, suisse: 4 chiffres, français: 5-6 chiffres)
+    postal_city_pattern = r'\b(\d{4,6})\s+([A-Za-zäöüÄÖÜß\-]+(?:\s+[A-Za-zäöüÄÖÜß\-]+)?)\s*$'
+    postal_match = re.search(postal_city_pattern, city_clean)
+    if postal_match:
+        # Si on trouve un code postal suivi d'une ville, prendre la ville
+        extracted_city = postal_match.group(2).strip()
+        if extracted_city:
+            city_clean = extracted_city.lower()
+    
+    # Supprimer les codes postaux restants (si pas déjà extrait par le pattern ci-dessus)
     city_clean = re.sub(r'\b\d{5,6}\b', '', city_clean).strip()
     
     # Supprimer les caractères spéciaux d'adresses restants
