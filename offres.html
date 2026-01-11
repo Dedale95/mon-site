@@ -396,50 +396,11 @@
             padding: 8px 0;
         }
 
-        .company-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            object-fit: contain;
-            background: white;
-            border: 1px solid #e5e7eb;
-            padding: 4px;
-            flex-shrink: 0;
-            transition: all 0.3s;
-        }
-
-        .company-logo:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .company-logo-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            border: 1px solid #d1d5db;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #9ca3af;
-            font-weight: 600;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-        }
-
         .company-name-wrapper {
             display: flex;
             align-items: center;
             gap: 12px;
             flex: 1;
-        }
-
-        .company-logo-container {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
         }
 
         .job-footer {
@@ -831,261 +792,6 @@
                 .trim();
         }
 
-        // Fonction pour générer le nom de fichier à partir du nom d'une entreprise
-        function getCompanyLogoFileName(companyName) {
-            if (!companyName) return null;
-            
-            // Normaliser le nom de l'entreprise pour créer un nom de fichier
-            let normalized = companyName
-                .toLowerCase()
-                .trim()
-                .replace(/[àáâãäå]/g, 'a')
-                .replace(/[èéêë]/g, 'e')
-                .replace(/[ìíîï]/g, 'i')
-                .replace(/[òóôõö]/g, 'o')
-                .replace(/[ùúûü]/g, 'u')
-                .replace(/[ç]/g, 'c')
-                .replace(/[ñ]/g, 'n')
-                // Supprimer les suffixes juridiques courants AVANT de remplacer les caractères spéciaux
-                .replace(/\s*\(s\.a\.?\)\s*/gi, '')
-                .replace(/\s*s\.a\.?\s*$/gi, '')
-                .replace(/\s*sas\s*$/gi, '')
-                .replace(/\s*sarl\s*$/gi, '')
-                .replace(/\s*sa\s*$/gi, '')
-                .replace(/\s*group\s*$/gi, '')
-                .replace(/\s*groupe\s*$/gi, '')
-                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
-                .replace(/\s+/g, '_') // Remplacer les espaces par des underscores
-                .replace(/^société_|^societe_|^sa_|^sas_|^sarl_|^group_|^groupe_/g, '') // Supprimer les préfixes juridiques
-                .replace(/_sa$|_sas$|_sarl$|_group$|_groupe$/g, '') // Supprimer les suffixes juridiques restants
-                .replace(/^bbforbank$/, 'bforbank'); // Correction spéciale pour BforBank (fichier = bforbank.png)
-            
-            if (!normalized) return null;
-            
-            // Nettoyer les underscores multiples et en début/fin
-            normalized = normalized.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
-            
-            return normalized;
-        }
-
-        // Fonction pour obtenir plusieurs variantes possibles du nom de fichier
-        function getCompanyLogoFileNameVariants(companyName) {
-            if (!companyName) return [];
-            
-            const base = getCompanyLogoFileName(companyName);
-            if (!base) return [];
-            
-            const variants = [base];
-            
-            // Ajouter des variantes courantes pour les entreprises connues
-            const companyVariants = {
-                'credit_agricole': ['credit_agricole'],
-                'credit_agricole_cib': ['credit_agricole', 'credit_agricole_cib'],
-                'credit_agricole_assurances': ['credit_agricole', 'credit_agricole_assurances'],
-                'credit_agricole_immobilier': ['credit_agricole', 'credit_agricole_immobilier'],
-                'credit_agricole_leasing_factoring_calf': ['credit_agricole', 'credit_agricole_leasing_factoring'],
-                'credit_agricole_payment_services': ['credit_agricole', 'credit_agricole_payment_services'],
-                'credit_agricole_personal_finance_mobility_capfm': ['credit_agricole', 'credit_agricole_personal_finance'],
-                'credit_agricole_group_infrastructure_platform': ['credit_agricole', 'credit_agricole_group'],
-                'deloitte': ['deloitte', 'deloitte_france'],
-                'societe_generale': ['societe_generale'],
-                'caceis': ['caceis'],
-                'lcl': ['lcl', 'credit_lyonnais'],
-                'indosuez_wealth_management': ['indosuez_wealth_management', 'indosuez'],
-                'amundi': ['amundi'],
-                'bbforbank': ['bforbank'], // Correction : fichier s'appelle bforbank.png (avec 1 b)
-                'bforbank': ['bforbank'],
-                'gruppo_bancario_credit_agricole_italia': ['credit_agricole', 'credit_agricole_italia'],
-                'idia_capital_investissement': ['idia_capital_investissement', 'idia'],
-                'uptevia': ['uptevia']
-            };
-            
-            if (companyVariants[base]) {
-                return companyVariants[base];
-            }
-            
-            return variants;
-        }
-
-        // Fonction optimisée pour obtenir l'URL principale du logo (une seule URL pour performance)
-        function getCompanyLogoUrl(companyName) {
-            if (!companyName) return null;
-            
-            // Déterminer le chemin de base selon où se trouve le fichier HTML
-            const currentPath = window.location.pathname;
-            const currentHref = window.location.href;
-            const isInHTMLFolder = currentPath.includes('/HTML/') || currentPath.includes('HTML/') || 
-                                   currentHref.includes('/HTML/') || currentHref.includes('HTML/');
-            
-            // Chemin de base optimisé (une seule tentative pour performance)
-            const basePath = isInHTMLFolder ? 'images/logos/' : 'HTML/images/logos/';
-            
-            // Obtenir la variante principale du nom de fichier (première de la liste)
-            const fileNameVariants = getCompanyLogoFileNameVariants(companyName);
-            if (fileNameVariants.length > 0) {
-                const primaryFileName = fileNameVariants[0];
-                // Essayer seulement PNG (le format le plus commun et optimisé)
-                return `${basePath}${primaryFileName}.png`;
-            }
-            
-            // Si aucune variante, utiliser Clearbit directement
-            return getCompanyLogoUrlClearbit(companyName);
-        }
-
-        // Fonction pour obtenir les URLs de fallback (utilisée seulement en cas d'erreur)
-        function getCompanyLogoUrls(companyName) {
-            if (!companyName) return [];
-            
-            const urls = [];
-            const primaryUrl = getCompanyLogoUrl(companyName);
-            if (primaryUrl) {
-                urls.push(primaryUrl);
-            }
-            
-            // Ajouter Clearbit comme fallback seulement si on a une URL locale
-            if (primaryUrl && primaryUrl.includes('images/logos/')) {
-                const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
-                if (clearbitUrl) {
-                    urls.push(clearbitUrl);
-                }
-            }
-            
-            return urls;
-        }
-
-        // Fonction pour obtenir l'URL principale du logo (première tentative)
-        function getCompanyLogoUrl(companyName) {
-            const urls = getCompanyLogoUrls(companyName);
-            return urls.length > 0 ? urls[0] : null;
-        }
-
-        // Fonction pour obtenir l'URL du logo Clearbit (fallback)
-        function getCompanyLogoUrlClearbit(companyName) {
-            if (!companyName) return null;
-            
-            // Normaliser le nom de l'entreprise pour créer un domaine probable
-            let normalized = companyName
-                .toLowerCase()
-                .trim()
-                .replace(/[àáâãäå]/g, 'a')
-                .replace(/[èéêë]/g, 'e')
-                .replace(/[ìíîï]/g, 'i')
-                .replace(/[òóôõö]/g, 'o')
-                .replace(/[ùúûü]/g, 'u')
-                .replace(/[ç]/g, 'c')
-                .replace(/[^a-z0-9\s-]/g, '') // Supprimer les caractères spéciaux restants
-                .replace(/\s+/g, '') // Supprimer les espaces
-                .replace(/^société|^societe|^sa$|^sas$|^sarl$|^sas|^sarl|^group$|^groupe$/g, ''); // Supprimer les préfixes juridiques
-            
-            if (!normalized) return null;
-            
-            // Mapping manuel pour les entreprises connues avec domaines spécifiques
-            const companyDomainMap = {
-                'creditagricole': 'credit-agricole.fr',
-                'créditagricole': 'credit-agricole.fr',
-                'creditagricolefrance': 'credit-agricole.fr',
-                'sociétégénérale': 'societegenerale.com',
-                'societegenerale': 'societegenerale.com',
-                'sg': 'societegenerale.com',
-                'deloitte': 'deloitte.com',
-                'deloittefrance': 'deloitte.com',
-                'bnpparibas': 'bnpparibas.com',
-                'bnpparibasfrance': 'bnpparibas.com',
-                'axa': 'axa.com',
-                'axafrance': 'axa.com',
-                'allianz': 'allianz.com',
-                'kpmg': 'kpmg.com',
-                'kpmgfrance': 'kpmg.com',
-                'ey': 'ey.com',
-                'ernstyoung': 'ey.com',
-                'ernst&young': 'ey.com',
-                'pwc': 'pwc.com',
-                'pricewaterhousecoopers': 'pwc.com',
-                'jpmorgan': 'jpmorgan.com',
-                'jpmorganchase': 'jpmorgan.com',
-                'goldmansachs': 'goldmansachs.com',
-                'morganstanley': 'morganstanley.com',
-                'ubs': 'ubs.com',
-                'creditsuisse': 'credit-suisse.com',
-                'deutschebank': 'deutsche-bank.de',
-                'hsbc': 'hsbc.com',
-                'barclays': 'barclays.com',
-                'natixis': 'natixis.com',
-                'bpce': 'bpce.fr',
-                'caisseepargne': 'caisse-epargne.fr',
-                'lcl': 'lcl.fr',
-                'creditlyonnais': 'lcl.fr',
-                'banquepopulaire': 'banquepopulaire.fr',
-                'caissedepargne': 'caisse-epargne.fr'
-            };
-            
-            // Vérifier dans le mapping (avec et sans espaces)
-            const normalizedNoSpaces = normalized.replace(/\s+/g, '');
-            const mappedDomain = companyDomainMap[normalizedNoSpaces] || 
-                                 companyDomainMap[normalized] ||
-                                 companyDomainMap[companyName.toLowerCase().trim()];
-            
-            if (mappedDomain) {
-                return `https://logo.clearbit.com/${mappedDomain}`;
-            }
-            
-            // Si pas de mapping, essayer avec le nom normalisé
-            return `https://logo.clearbit.com/${normalizedNoSpaces}.com`;
-        }
-
-        // Fonction pour générer un placeholder si le logo n'est pas disponible
-        function getCompanyLogoPlaceholder(companyName) {
-            if (!companyName) return '';
-            const initials = companyName
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase())
-                .slice(0, 2)
-                .join('');
-            return initials || companyName.charAt(0).toUpperCase();
-        }
-
-        // Fonction optimisée pour gérer les erreurs de chargement de logo (une seule tentative de fallback)
-        function handleLogoError(imgElement) {
-            if (!imgElement) return;
-            
-            // Si déjà tenté le fallback, afficher directement le placeholder
-            if (imgElement.hasAttribute('data-fallback-tried')) {
-                showLogoPlaceholder(imgElement);
-                return;
-            }
-            
-            // Marquer qu'on a tenté le fallback
-            imgElement.setAttribute('data-fallback-tried', 'true');
-            
-            // Essayer Clearbit une seule fois si l'URL était locale
-            const currentSrc = imgElement.src;
-            if (currentSrc && currentSrc.includes('images/logos/')) {
-                const companyName = imgElement.alt;
-                const clearbitUrl = getCompanyLogoUrlClearbit(companyName);
-                if (clearbitUrl && clearbitUrl !== currentSrc) {
-                    imgElement.src = clearbitUrl;
-                    // Si Clearbit échoue aussi, on affichera le placeholder au prochain onerror
-                    return;
-                }
-            }
-            
-            // Si pas de fallback possible, afficher le placeholder immédiatement
-            showLogoPlaceholder(imgElement);
-        }
-
-        // Fonction pour afficher le placeholder quand toutes les sources ont échoué
-        function showLogoPlaceholder(imgElement) {
-            if (!imgElement) return;
-            
-            imgElement.style.display = 'none';
-            const container = imgElement.parentElement;
-            if (container) {
-                const placeholder = container.querySelector('.company-logo-placeholder');
-                if (placeholder) {
-                    placeholder.style.display = 'flex';
-                }
-            }
-        }
 
         /**
          * Charge les données depuis le fichier JSON (exporté depuis SQLite)
@@ -1094,7 +800,7 @@
             // Afficher un message de chargement
             const container = document.getElementById('jobsContainer');
             if (container) {
-                container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données.</p></div>';
+                container.innerHTML = '<div class="no-results"><h3>⏳ Chargement des offres...</h3><p>Veuillez patienter pendant le chargement des données (2301 offres, ~7.2MB).</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">⏱️ Cela peut prendre 10-30 secondes selon votre connexion...</p></div>';
             }
             
             // Vérifier si on est en mode file:// (fichier ouvert directement)
@@ -1123,26 +829,26 @@
                     'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs.json',
                     'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs.json',
                     // Essayer aussi les chemins locaux (peu probable qu'ils fonctionnent avec file://)
-                    'HTML/scraped_jobs_live.json',
-                    './HTML/scraped_jobs_live.json',
                     'scraped_jobs_live.json',
                     './scraped_jobs_live.json',
-                    'HTML/scraped_jobs.json',
-                    './HTML/scraped_jobs.json',
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
                     'scraped_jobs.json',
-                    './scraped_jobs.json'
+                    './scraped_jobs.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json'
                 ];
             } else {
                 // Si HTTP/HTTPS, prioriser les chemins locaux (plus rapide)
                 possiblePaths = [
-                    'HTML/scraped_jobs_live.json',
-                    './HTML/scraped_jobs_live.json',
                     'scraped_jobs_live.json',
                     './scraped_jobs_live.json',
-                    'HTML/scraped_jobs.json',
-                    './HTML/scraped_jobs.json',
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
                     'scraped_jobs.json',
                     './scraped_jobs.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json',
                     // Fallback GitHub (si déployé sur GitHub Pages)
                     'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
                     'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json',
@@ -1158,22 +864,67 @@
             for (const path of possiblePaths) {
                 try {
                     console.log(`🔄 Tentative de chargement depuis : ${path}`);
-                    const response = await fetch(path);
-                    if (response.ok) {
-                        try {
-                            data = await response.json();
-                            if (data && Array.isArray(data) && data.length > 0) {
-                                loadedPath = path;
-                                console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
-                                break;
-                            } else {
-                                console.log(`⚠️ Fichier JSON vide ou invalide pour : ${path}`);
+                    
+                    // Créer un AbortController pour timeout (30 secondes)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000);
+                    
+                    try {
+                        const response = await fetch(path, { 
+                            signal: controller.signal,
+                            headers: {
+                                'Accept': 'application/json',
+                                'Cache-Control': 'no-cache'
                             }
-                        } catch (parseError) {
-                            console.log(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError.message);
+                        });
+                        
+                        clearTimeout(timeoutId);
+                        
+                        if (response.ok) {
+                            try {
+                                // Le fichier est volumineux (7.5MB), afficher un message de progression
+                                const jobsContainer = document.getElementById('jobsContainer');
+                                if (jobsContainer && path.includes('github')) {
+                                    jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Téléchargement en cours...</h3><p>Chargement depuis GitHub (7.2MB, 2301 offres), veuillez patienter...</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Cela peut prendre 10-30 secondes selon votre connexion.</p></div>';
+                                }
+                                
+                                console.log(`📥 Téléchargement du JSON depuis ${path}...`);
+                                const jsonText = await response.text();
+                                console.log(`📦 JSON téléchargé (${(jsonText.length / 1024 / 1024).toFixed(2)}MB), parsing en cours...`);
+                                
+                                try {
+                                    data = JSON.parse(jsonText);
+                                    console.log(`✅ JSON parsé avec succès : ${Array.isArray(data) ? 'tableau' : 'objet'}`);
+                                    
+                                    if (data && Array.isArray(data) && data.length > 0) {
+                                        loadedPath = path;
+                                        console.log(`✅ Fichier JSON chargé depuis : ${path} (${data.length} offres)`);
+                                        break;
+                                    } else {
+                                        console.warn(`⚠️ Fichier JSON vide ou invalide pour : ${path}`, {
+                                            isArray: Array.isArray(data),
+                                            length: data ? data.length : 0,
+                                            type: typeof data
+                                        });
+                                    }
+                                } catch (parseError) {
+                                    console.error(`⚠️ Erreur de parsing JSON pour ${path}:`, parseError);
+                                    console.error(`Premiers caractères du JSON:`, jsonText.substring(0, 500));
+                                }
+                            } catch (parseError) {
+                                console.error(`⚠️ Erreur lors du traitement de ${path}:`, parseError);
+                            }
+                        } else {
+                            console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
                         }
-                    } else {
-                        console.log(`⚠️ Réponse non OK (${response.status}) pour : ${path}`);
+                    } catch (fetchError) {
+                        clearTimeout(timeoutId);
+                        if (fetchError.name === 'AbortError') {
+                            console.log(`⏱️ Timeout (30s) pour : ${path}`);
+                            lastError = new Error('Timeout: Le fichier est trop volumineux ou la connexion est lente');
+                        } else {
+                            throw fetchError;
+                        }
                     }
                 } catch (error) {
                     lastError = error;
@@ -1243,73 +994,188 @@
 
                 if (!data || data.length === 0) {
                     console.warn('Aucune donnée trouvée dans le JSON');
+                    const jobsContainer = document.getElementById('jobsContainer');
+                    if (jobsContainer) {
+                        jobsContainer.innerHTML = '<div class="no-results"><h3>⚠️ Aucune donnée</h3><p>Le fichier JSON est vide ou invalide.</p></div>';
+                    }
                     return;
+                }
+
+                console.log(`📊 Traitement de ${data.length} offres en cours...`);
+                
+                // Mettre à jour le message de progression
+                const jobsContainer = document.getElementById('jobsContainer');
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>Normalisation des ' + data.length + ' offres, veuillez patienter...</p></div>';
                 }
 
                 allJobs = [];
 
-                for (let i = 0; i < data.length; i++) {
-                    const job = data[i];
-                    
-                    // Harmonisation des types de contrat
-                    if (job.contract_type) {
-                        const contractLower = job.contract_type.toLowerCase();
-                        if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
-                            job.contract_type = 'Alternance / Apprentissage';
-                        }
-                    }
-                    
-                    // Harmonisation des niveaux d'études
-                    if (job.education_level) {
-                        if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
-                            job.education_level = 'Certificat Fédéral de Capacité (CFC)';
-                        }
-                    }
-
-                    job.cleanRegions = [];
-                    job.cleanCountries = [];
-
-                    if (job.location && job.location.includes(' - ')) {
-                        const parts = job.location.split(' - ');
-                        const cityPart = parts[0];
-                        const country = parts[1].trim();
-                        job.cleanCountries.push(country);
-
-                        const cities = cityPart.split(/[\/,]/).map(c => {
-                            let clean = c.trim();
-                            // Nettoyage basique type Python
-                            clean = clean.replace(/\(.*\)/g, '').trim();
-                            clean = clean.replace(/\d{5,6}/g, '').trim();
-                            // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
-                            if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
-                                const words = clean.split(' ');
-                                const lastWord = words[words.length - 1].toLowerCase();
-                                if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                // Traitement optimisé par batch avec requestAnimationFrame pour éviter le débordement de stack
+                const processJob = (job) => {
+                    try {
+                        // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
+                        if (job && job.contract_type && typeof job.contract_type === 'string') {
+                            const contractLower = job.contract_type.toLowerCase();
+                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
+                                job.contract_type = 'Alternance / Apprentissage';
                             }
-                            return clean;
-                        }).filter(c => c);
-
-                        if (cities.length === 0) {
-                            job.cleanRegions.push(getCityRegion('', country));
-                        } else {
-                            cities.forEach(city => {
-                                job.cleanRegions.push(getCityRegion(city, country));
-                            });
                         }
-                        job.cleanCountries = [...new Set(job.cleanCountries)];
-                        job.cleanRegions = [...new Set(job.cleanRegions)];
+                        
+                        // Harmonisation des niveaux d'études
+                        if (job && job.education_level && typeof job.education_level === 'string') {
+                            if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
+                                job.education_level = 'Certificat Fédéral de Capacité (CFC)';
+                            }
+                        }
+
+                        job.cleanRegions = [];
+                        job.cleanCountries = [];
+
+                        if (job && job.location && typeof job.location === 'string' && job.location.includes(' - ')) {
+                            try {
+                                const parts = job.location.split(' - ');
+                                const cityPart = parts[0] || '';
+                                const country = parts[1] ? String(parts[1]).trim() : '';
+                                
+                                if (country && country.length > 0) {
+                                    job.cleanCountries.push(country);
+
+                                    // Traiter les villes avec try/catch pour éviter les erreurs
+                                    let cities = [];
+                                    try {
+                                        const cityParts = cityPart.split(/[\/,]/);
+                                        cities = cityParts
+                                            .map(c => {
+                                                try {
+                                                    let clean = String(c).trim();
+                                                    if (!clean) return null;
+                                                    
+                                                    // Nettoyage basique type Python
+                                                    clean = clean.replace(/\(.*?\)/g, '').trim();
+                                                    clean = clean.replace(/\d{5,6}/g, '').trim();
+                                                    
+                                                    // Si c'est une adresse (ex: Robinson Road), on essaye de garder que le dernier mot si pas de virgule
+                                                    if (clean.includes(' ') && !cityToRegion[clean.toLowerCase()]) {
+                                                        const words = clean.split(' ');
+                                                        if (words.length > 0) {
+                                                            const lastWord = words[words.length - 1].toLowerCase();
+                                                            if (cityToRegion[lastWord]) clean = cityToRegion[lastWord];
+                                                        }
+                                                    }
+                                                    return clean && clean.length > 0 ? clean : null;
+                                                } catch (e) {
+                                                    console.warn(`Erreur lors du traitement de la ville "${c}":`, e);
+                                                    return null;
+                                                }
+                                            })
+                                            .filter(c => c !== null && c.length > 0);
+                                    } catch (e) {
+                                        console.warn(`Erreur lors du split des villes pour "${cityPart}":`, e);
+                                        cities = [];
+                                    }
+
+                                    if (cities.length === 0) {
+                                        const region = getCityRegion('', country);
+                                        if (region) job.cleanRegions.push(region);
+                                    } else {
+                                        cities.forEach(city => {
+                                            try {
+                                                const region = getCityRegion(city, country);
+                                                if (region) job.cleanRegions.push(region);
+                                            } catch (e) {
+                                                console.warn(`Erreur getCityRegion pour "${city}", "${country}":`, e);
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Utiliser Array.from(new Set(...)) au lieu de [...new Set(...)] pour éviter les problèmes de stack
+                                    try {
+                                        job.cleanCountries = Array.from(new Set(job.cleanCountries));
+                                        job.cleanRegions = Array.from(new Set(job.cleanRegions));
+                                    } catch (e) {
+                                        console.warn(`Erreur lors de la déduplication pour job ${job.job_id}:`, e);
+                                        // Fallback : utiliser un simple filtre
+                                        const seenCountries = {};
+                                        job.cleanCountries = job.cleanCountries.filter(c => {
+                                            if (seenCountries[c]) return false;
+                                            seenCountries[c] = true;
+                                            return true;
+                                        });
+                                        const seenRegions = {};
+                                        job.cleanRegions = job.cleanRegions.filter(r => {
+                                            if (seenRegions[r]) return false;
+                                            seenRegions[r] = true;
+                                            return true;
+                                        });
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn(`Erreur lors du traitement de la location "${job.location}":`, e);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Erreur critique lors du traitement du job:`, e, job);
+                        // Initialiser au minimum pour éviter les erreurs suivantes
+                        job.cleanRegions = job.cleanRegions || [];
+                        job.cleanCountries = job.cleanCountries || [];
                     }
-                    allJobs.push(job);
-                }
+                    return job;
+                };
+
+                // Traiter par batch de 10 avec setTimeout pour vraiment éviter le débordement de stack
+                const batchSize = 10; // Réduire à 10 pour plus de sécurité
+                
+                const processAllBatches = async () => {
+                    for (let start = 0; start < data.length; start += batchSize) {
+                        const end = Math.min(start + batchSize, data.length);
+                        
+                        // Traiter le batch
+                        for (let i = start; i < end; i++) {
+                            try {
+                                const processedJob = processJob(data[i]);
+                                allJobs.push(processedJob);
+                            } catch (error) {
+                                console.error(`Erreur lors du traitement du job ${i}:`, error);
+                                // Ajouter quand même le job avec des valeurs par défaut
+                                if (data[i]) {
+                                    data[i].cleanRegions = data[i].cleanRegions || [];
+                                    data[i].cleanCountries = data[i].cleanCountries || [];
+                                    allJobs.push(data[i]);
+                                }
+                            }
+                        }
+                        
+                        // Mettre à jour le message de progression
+                        if (start % 500 === 0 && jobsContainer) {
+                            const progress = Math.floor((start / data.length) * 100);
+                            jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>' + start + ' / ' + data.length + ' offres traitées (' + progress + '%)</p></div>';
+                        }
+                        
+                        // Laisser le navigateur respirer entre chaque batch (même les petits)
+                        if (start + batchSize < data.length) {
+                            await new Promise(resolve => setTimeout(resolve, 1)); // 1ms entre chaque batch
+                        }
+                    }
+                };
+                
+                // Démarrer le traitement par batch
+                await processAllBatches();
+
+                console.log(`✅ Traitement terminé : ${allJobs.length} offres normalisées`);
 
                 initializeFilters();
                 filteredJobs = [...allJobs];
-                renderJobs();
+                await renderJobs();
                 updateStats();
+                
+                console.log(`✅ Affichage terminé : ${filteredJobs.length} offres affichées`);
             } catch (error) {
-                console.error('Erreur:', error);
-                // Le message d'erreur est déjà géré dans le bloc if (!data) ci-dessus
-                // Cette partie du catch ne devrait normalement pas être atteinte
+                console.error('Erreur lors du traitement:', error);
+                const jobsContainer = document.getElementById('jobsContainer');
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = `<div class="no-results"><h3>❌ Erreur de traitement</h3><p>Erreur : ${error.message}</p><p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Vérifiez la console pour plus de détails (F12).</p></div>`;
+                }
             }
         }
 
@@ -1549,8 +1415,10 @@
             populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
                 new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))));
 
-            renderJobs();
-            updateStats();
+            (async () => {
+                await renderJobs();
+                updateStats();
+            })();
         }
 
         function getCheckedValues(containerId) {
@@ -1558,26 +1426,15 @@
             return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
         }
 
-        function renderJobs() {
+        async function renderJobs() {
             const container = document.getElementById('jobsContainer');
             if (filteredJobs.length === 0) {
                 container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
                 return;
             }
 
-            // Optimisation : pré-calculer les URLs de logos une seule fois par entreprise unique
-            const companyLogoCache = new Map();
-            const uniqueCompanies = new Set(filteredJobs.map(job => job.company_name).filter(Boolean));
-            uniqueCompanies.forEach(companyName => {
-                companyLogoCache.set(companyName, getCompanyLogoUrl(companyName));
-            });
-            
-            container.innerHTML = filteredJobs.map(job => {
-                // Utiliser le cache pour éviter de recalculer la même URL plusieurs fois
-                const logoUrl = job.company_name ? companyLogoCache.get(job.company_name) : null;
-                const logoPlaceholder = job.company_name ? getCompanyLogoPlaceholder(job.company_name) : '';
-                const companyNameForAttr = job.company_name ? job.company_name.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : '';
-                
+            // Fonction pour générer le HTML d'une carte d'offre (sans logos pour stabilité)
+            function renderJobCard(job) {
                 return `
         <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
             <div class="job-title">${cleanJobTitle(job.job_title)}</div>
@@ -1591,20 +1448,6 @@
             ${job.company_name ? `
                 <div class="job-company">
                     <div class="company-name-wrapper">
-                        ${logoUrl ? `
-                            <div class="company-logo-container">
-                                <img 
-                                    src="${logoUrl}" 
-                                    alt="${companyNameForAttr}" 
-                                    class="company-logo"
-                                    onerror="handleLogoError(this)"
-                                    loading="lazy"
-                                >
-                                <div class="company-logo-placeholder" style="display: none;">${logoPlaceholder}</div>
-                            </div>
-                        ` : `
-                            <div class="company-logo-placeholder">${logoPlaceholder}</div>
-                        `}
                         <span>${job.company_name}</span>
                     </div>
                 </div>
@@ -1615,7 +1458,22 @@
             </div>
         </div>
     `;
-            }).join('');
+            }
+            
+            // Rendre par batch pour éviter le débordement de stack
+            const batchSize = 50; // Réduire la taille du batch pour éviter les problèmes
+            container.innerHTML = ''; // Vider le conteneur
+            
+            for (let i = 0; i < filteredJobs.length; i += batchSize) {
+                const batch = filteredJobs.slice(i, i + batchSize);
+                const batchHTML = batch.map(renderJobCard).join('');
+                container.innerHTML += batchHTML;
+                
+                // Laisser le navigateur respirer entre les batches pour éviter de bloquer l'UI
+                if (i + batchSize < filteredJobs.length) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
         }
 
         function updateStats() {
