@@ -129,6 +129,20 @@ def normalize_city(city_raw):
     if city_clean in known_countries_lower:
         return None
     
+    # EN PRIORITÉ : Extraire la ville depuis un format "Code postal + Ville" AVANT les autres vérifications
+    # Pattern pour codes postaux suivis d'une ville (allemand: 5 chiffres, suisse: 4 chiffres, français: 5-6 chiffres)
+    # On cherche à la fin de la chaîne pour avoir la ville finale
+    postal_city_pattern = r'\b(\d{4,6})\s+([A-Za-zäöüÄÖÜßÉéèêëàáâãäåçñ\-]+(?:\s+[A-Za-zäöüÄÖÜßÉéèêëàáâãäåçñ\-]+)?)\s*$'
+    postal_match = re.search(postal_city_pattern, city_clean)
+    postal_extracted_city = None
+    if postal_match:
+        # Si on trouve un code postal suivi d'une ville, prendre la ville
+        postal_extracted_city = postal_match.group(2).strip()
+        if postal_extracted_city:
+            city_clean = postal_extracted_city
+            # Si on a extrait une ville depuis un code postal, on peut skip les vérifications d'adresse
+            # On passe directement au mapping et nettoyage final
+    
     # Supprimer les adresses complètes (Road, Street, Av., #, Floor, etc.)
     # Détecter si c'est une adresse complète
     address_patterns = [
@@ -185,7 +199,11 @@ def normalize_city(city_raw):
     if is_italian_province:
         return None
     
-    if is_address or is_company:
+    # Si on a déjà extrait une ville depuis un code postal, skip les vérifications d'adresse
+    if postal_extracted_city:
+        # On a déjà la ville, continuer avec le nettoyage final
+        pass
+    elif is_address or is_company:
         # Extraire juste le nom de ville depuis l'adresse
         # Chercher après les mots-clés d'adresse
         # Ex: "168 Robinson Road #23-03 Capital Tower Singapore" -> "Singapore"
@@ -229,18 +247,23 @@ def normalize_city(city_raw):
     # Supprimer les parenthèses et leur contenu (ex: "Casablanca (Maroc)")
     city_clean = re.sub(r'\(.*?\)', '', city_clean).strip()
     
-    # Extraire la ville depuis un format "Code postal + Ville" (ex: "85609 Aschheim", "1010 Lausanne")
+    # EN PRIORITÉ : Extraire la ville depuis un format "Code postal + Ville" (ex: "85609 Aschheim", "1010 Lausanne")
     # Pattern pour codes postaux suivis d'une ville (allemand: 5 chiffres, suisse: 4 chiffres, français: 5-6 chiffres)
-    postal_city_pattern = r'\b(\d{4,6})\s+([A-Za-zäöüÄÖÜß\-]+(?:\s+[A-Za-zäöüÄÖÜß\-]+)?)\s*$'
+    # On cherche à la fin de la chaîne pour avoir la ville finale
+    postal_city_pattern = r'\b(\d{4,6})\s+([A-Za-zäöüÄÖÜßÉéèêëàáâãäåçñ\-]+(?:\s+[A-Za-zäöüÄÖÜßÉéèêëàáâãäåçñ\-]+)?)\s*$'
     postal_match = re.search(postal_city_pattern, city_clean)
     if postal_match:
         # Si on trouve un code postal suivi d'une ville, prendre la ville
         extracted_city = postal_match.group(2).strip()
         if extracted_city:
+            # Si on a extrait une ville depuis un code postal, on peut l'utiliser directement
             city_clean = extracted_city.lower()
+            # Ne pas continuer avec les autres vérifications d'adresse si on a trouvé un code postal + ville
+            # On passe directement au mapping et nettoyage final
     
     # Supprimer les codes postaux restants (si pas déjà extrait par le pattern ci-dessus)
-    city_clean = re.sub(r'\b\d{5,6}\b', '', city_clean).strip()
+    if not postal_match:  # Seulement si on n'a pas déjà extrait depuis un code postal
+        city_clean = re.sub(r'\b\d{5,6}\b', '', city_clean).strip()
     
     # Supprimer les caractères spéciaux d'adresses restants
     city_clean = re.sub(r'[#º]', '', city_clean).strip()
