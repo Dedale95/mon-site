@@ -213,6 +213,12 @@
             font-size: 0.95rem;
         }
 
+        .search-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .filter-group input[type="text"] {
             padding: 14px 16px;
             border: 2px solid #e5e7eb;
@@ -227,6 +233,56 @@
             border-color: #667eea;
             box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
             background: white;
+        }
+
+        .search-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 24px;
+        }
+
+        .search-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: tagAppear 0.3s ease;
+        }
+
+        @keyframes tagAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .search-tag-remove {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transition: all 0.2s;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .search-tag-remove:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
         }
 
         .filter-checkbox-container {
@@ -837,8 +893,11 @@
         <div class="filters">
             <div class="filter-row">
                 <div class="filter-group">
-                    <label for="searchInput">🔍 Recherche</label>
-                    <input type="text" id="searchInput" placeholder="Titre, description...">
+                    <label for="searchInput">🔍 Recherche par mots-clés</label>
+                    <div class="search-wrapper">
+                        <input type="text" id="searchInput" placeholder="Tapez un mot-clé et appuyez sur Entrée...">
+                        <div class="search-tags" id="searchTags"></div>
+                    </div>
                 </div>
                 <div class="filter-group">
                     <label>🌍 Pays</label>
@@ -1373,8 +1432,19 @@
 
                 console.log(`✅ Traitement terminé : ${allJobs.length} offres normalisées`);
 
+                // Afficher message de finalisation
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = '<div class="no-results"><h3>⚙️ Initialisation des filtres...</h3><p>Préparation de l\'interface...</p></div>';
+                }
+
                 initializeFilters();
                 filteredJobs = [...allJobs];
+                
+                // Message avant le rendu
+                if (jobsContainer) {
+                    jobsContainer.innerHTML = '<div class="no-results"><h3>🎨 Affichage des offres...</h3><p>Rendu de ' + filteredJobs.length + ' offres...</p></div>';
+                }
+                
                 await renderJobs();
                 updateStats();
                 
@@ -1433,7 +1503,45 @@
             populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set());
             populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set());
 
-            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            // Système de recherche par mots-clés multiples
+            const searchInput = document.getElementById('searchInput');
+            let searchKeywords = new Set();
+
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const keyword = this.value.trim().toLowerCase();
+                    if (keyword && !searchKeywords.has(keyword)) {
+                        searchKeywords.add(keyword);
+                        renderSearchTags();
+                        this.value = '';
+                        applyFilters();
+                    }
+                }
+            });
+
+            window.searchKeywords = searchKeywords; // Rendre accessible globalement
+            window.renderSearchTags = renderSearchTags;
+
+            function renderSearchTags() {
+                const tagsContainer = document.getElementById('searchTags');
+                tagsContainer.innerHTML = '';
+                searchKeywords.forEach(keyword => {
+                    const tag = document.createElement('div');
+                    tag.className = 'search-tag';
+                    tag.innerHTML = `
+                        <span>${keyword}</span>
+                        <span class="search-tag-remove" onclick="removeSearchKeyword('${keyword}')">✕</span>
+                    `;
+                    tagsContainer.appendChild(tag);
+                });
+            }
+
+            window.removeSearchKeyword = function(keyword) {
+                searchKeywords.delete(keyword);
+                renderSearchTags();
+                applyFilters();
+            };
         }
 
         function populateCheckboxFilter(id, values, disabledValues = new Set()) {
@@ -1467,7 +1575,6 @@
         }
 
         async function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
             const selectedCountries = getCheckedValues('countryFilter');
             const selectedRegions = getCheckedValues('regionFilter');
             const selectedContracts = getCheckedValues('contractFilter');
@@ -1478,9 +1585,12 @@
 
             // Filtrer les jobs selon les critères sélectionnés
             filteredJobs = allJobs.filter(job => {
-                const matchSearch = !search ||
-                    job.job_title.toLowerCase().includes(search) ||
-                    job.job_description.toLowerCase().includes(search);
+                // Vérifier que TOUS les mots-clés sont présents dans le titre OU la description
+                const matchSearch = window.searchKeywords.size === 0 || Array.from(window.searchKeywords).every(keyword => {
+                    const titleMatch = job.job_title.toLowerCase().includes(keyword);
+                    const descMatch = job.job_description.toLowerCase().includes(keyword);
+                    return titleMatch || descMatch;
+                });
                 const matchCountry = !selectedCountries.length ||
                     (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
                 const matchRegion = !selectedRegions.length ||
@@ -1505,9 +1615,11 @@
             // (pas celui qu'on évalue)
             const getJobsMatchingOtherFilters = (excludeFilterType) => {
                 return allJobs.filter(job => {
-                    const matchSearch = !search ||
-                        job.job_title.toLowerCase().includes(search) ||
-                        job.job_description.toLowerCase().includes(search);
+                    const matchSearch = window.searchKeywords.size === 0 || Array.from(window.searchKeywords).every(keyword => {
+                        const titleMatch = job.job_title.toLowerCase().includes(keyword);
+                        const descMatch = job.job_description.toLowerCase().includes(keyword);
+                        return titleMatch || descMatch;
+                    });
 
                     const matchCountry = excludeFilterType === 'country' || !selectedCountries.length ||
                         (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c)));
@@ -2083,6 +2195,8 @@
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
+            window.searchKeywords.clear();
+            window.renderSearchTags();
             document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
             applyFilters();
         }
