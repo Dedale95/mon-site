@@ -454,11 +454,115 @@
             font-size: inherit;
         }
 
-        .job-apply-btn:hover {
+        .job-apply-btn:hover:not(:disabled) {
             background: #667eea;
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .job-apply-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .job-apply-btn.applied {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+            cursor: default;
+        }
+
+        .job-apply-btn.applied:hover {
+            background: #059669;
+            border-color: #059669;
+            transform: none;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 400px;
+            pointer-events: auto;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid #667eea;
+        }
+
+        .toast.success {
+            border-left-color: #10b981;
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .toast.removing {
+            animation: slideOutRight 0.3s ease-in forwards;
         }
 
         .loading,
@@ -633,6 +737,9 @@
             </div>
         </div>
     </nav>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <div class="main-content">
     <div class="container">
@@ -1459,6 +1566,72 @@
 
         // Variable globale pour stocker l'état d'authentification
         let currentAuthState = false;
+        
+        // Variable globale pour stocker les candidatures de l'utilisateur (Set de jobIds)
+        let userApplications = new Set();
+
+        // Fonction pour afficher un toast notification
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    ${message ? `<div class="toast-message">${message}</div>` : ''}
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('removing');
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300); // Match animation duration
+            }, 4000);
+        }
+
+        // Charger les candidatures de l'utilisateur depuis Firestore
+        async function loadUserApplications() {
+            if (!firebase.auth || !firebase.firestore) return;
+            
+            const auth = firebase.auth();
+            const currentUser = auth.currentUser;
+            
+            if (!currentUser) {
+                userApplications.clear();
+                return;
+            }
+            
+            try {
+                const db = firebase.firestore();
+                const applicationsRef = db.collection('profiles').doc(currentUser.uid).collection('job_applications');
+                const snapshot = await applicationsRef.get();
+                
+                userApplications.clear();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.jobId) {
+                        userApplications.add(data.jobId);
+                    }
+                });
+                
+                console.log(`📋 ${userApplications.size} candidature(s) chargée(s)`);
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des candidatures:', error);
+            }
+        }
 
         // Vérifier si l'utilisateur est connecté
         function checkIsAuthenticated() {
@@ -1486,11 +1659,20 @@
         }
 
         // Gérer la candidature à une offre
-        async function applyToJob(jobId, jobTitle) {
+        async function applyToJob(jobId, jobTitle, buttonElement) {
+            // Trouver le bouton si pas passé en paramètre
+            const btn = buttonElement || event.target;
+            
+            // Désactiver le bouton immédiatement pour éviter les double-clics
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Envoi...';
+            }
+
             try {
                 // Vérifier Firebase
                 if (!firebase.auth || !firebase.firestore) {
-                    alert('Firebase non initialisé. Veuillez rafraîchir la page.');
+                    showToast('Erreur', 'Firebase non initialisé. Veuillez rafraîchir la page.', 'error');
                     return;
                 }
 
@@ -1499,8 +1681,8 @@
                 const currentUser = auth.currentUser;
 
                 if (!currentUser) {
-                    alert('Veuillez vous connecter pour candidater.');
-                    window.location.href = 'auth.html';
+                    showToast('Non connecté', 'Veuillez vous connecter pour candidater.', 'warning');
+                    setTimeout(() => window.location.href = 'auth.html', 1500);
                     return;
                 }
 
@@ -1509,7 +1691,7 @@
                 // Récupérer l'offre complète depuis allJobs
                 const job = allJobs.find(j => j.job_id === jobId);
                 if (!job) {
-                    alert('Offre introuvable.');
+                    showToast('Erreur', 'Offre introuvable.', 'error');
                     return;
                 }
 
@@ -1518,7 +1700,10 @@
                 const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
                 
                 if (!existingApp.empty) {
-                    alert('Vous avez déjà candidaté à cette offre !');
+                    showToast('Déjà candidaté', 'Vous avez déjà postulé à cette offre.', 'info');
+                    userApplications.add(jobId);
+                    // Re-render pour mettre à jour le bouton
+                    await renderJobs();
                     return;
                 }
 
@@ -1542,12 +1727,28 @@
                 
                 console.log('✅ Candidature enregistrée dans Firestore:', applicationData);
                 
-                // Message de confirmation
-                alert(`✅ Candidature enregistrée pour : ${cleanJobTitle(job.job_title)}\n\nVous pouvez suivre vos candidatures dans votre profil.`);
+                // Ajouter à la liste locale
+                userApplications.add(jobId);
+                
+                // Message de confirmation avec toast
+                showToast(
+                    'Candidature envoyée !',
+                    `${cleanJobTitle(job.job_title).substring(0, 60)}...`,
+                    'success'
+                );
+                
+                // Re-render pour mettre à jour le bouton
+                await renderJobs();
                 
             } catch (error) {
                 console.error('❌ Erreur lors de la candidature:', error);
-                alert('Une erreur est survenue lors de l\'enregistrement de votre candidature.\n\nDétails : ' + error.message);
+                showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
+                
+                // Restaurer le bouton en cas d'erreur
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '📝 Candidater';
+                }
             }
         }
 
@@ -1583,7 +1784,11 @@
             <div class="job-footer">
                 <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
                 <div class="job-actions">
-                    ${isAuthenticated ? `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}')">📝 Candidater</button>` : ''}
+                    ${isAuthenticated ? (
+                        userApplications.has(job.job_id) 
+                            ? `<button class="job-apply-btn applied" disabled>✓ Candidature envoyée</button>` 
+                            : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
+                    ) : ''}
                     <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
                 </div>
             </div>
@@ -1761,25 +1966,31 @@
         if (typeof firebase !== 'undefined' && firebase.auth) {
             try {
                 const auth = firebase.auth();
-                auth.onAuthStateChanged((user) => {
+                auth.onAuthStateChanged(async (user) => {
                     console.log('🔄 Auth state changed:', user ? 'Connecté (' + user.email + ')' : 'Déconnexion');
                     const wasAuthenticated = currentAuthState;
                     currentAuthState = !!user;
                     
                     checkAuthAndUpdateNav();
                     
+                    // Charger les candidatures de l'utilisateur
+                    if (user) {
+                        await loadUserApplications();
+                    } else {
+                        userApplications.clear();
+                    }
+                    
                     // Lors du premier appel (Firebase Auth est prêt), charger les jobs
                     if (!firebaseAuthReady) {
                         firebaseAuthReady = true;
                         console.log('✅ Firebase Auth prêt, chargement des jobs...');
-                        loadJobs().then(() => {
-                            jobsLoaded = true;
-                        });
+                        await loadJobs();
+                        jobsLoaded = true;
                     }
                     // Si les jobs sont déjà chargés et l'état a changé, re-render
                     else if (wasAuthenticated !== currentAuthState && jobsLoaded && filteredJobs.length > 0) {
                         console.log('🔄 Re-rendering jobs avec nouveau statut auth:', currentAuthState);
-                        renderJobs();
+                        await renderJobs();
                     }
                 });
             } catch (e) {
