@@ -467,16 +467,42 @@
         }
 
         .job-apply-btn.applied {
-            background: #10b981;
+            background: #f59e0b;
             color: white;
-            border-color: #10b981;
+            border-color: #f59e0b;
             cursor: default;
         }
 
         .job-apply-btn.applied:hover {
-            background: #059669;
-            border-color: #059669;
+            background: #d97706;
+            border-color: #d97706;
             transform: none;
+        }
+
+        .job-withdraw-btn {
+            background: white;
+            color: #ef4444;
+            padding: 10px 20px;
+            border: 2px solid #ef4444;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .job-withdraw-btn:hover:not(:disabled) {
+            background: #ef4444;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .job-withdraw-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         /* Toast notifications */
@@ -731,6 +757,7 @@
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link nav-link-primary">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
+                <a href="mes-candidatures.html" class="nav-link" id="applicationsLink" style="display: none;">Mes candidatures</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
                 <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
@@ -1752,6 +1779,81 @@
             }
         }
 
+        // Retirer une candidature
+        async function withdrawApplication(jobId, jobTitle, buttonElement) {
+            const btn = buttonElement || event.target;
+            
+            // Demander confirmation
+            if (!confirm(`Êtes-vous sûr de vouloir retirer votre candidature pour :\n\n${jobTitle} ?`)) {
+                return;
+            }
+            
+            // Désactiver le bouton immédiatement
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Retrait...';
+            }
+
+            try {
+                // Vérifier Firebase
+                if (!firebase.auth || !firebase.firestore) {
+                    showToast('Erreur', 'Firebase non initialisé. Veuillez rafraîchir la page.', 'error');
+                    return;
+                }
+
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                const currentUser = auth.currentUser;
+
+                if (!currentUser) {
+                    showToast('Non connecté', 'Vous devez être connecté.', 'warning');
+                    return;
+                }
+
+                const userId = currentUser.uid;
+
+                // Trouver et supprimer la candidature dans Firestore
+                const applicationsRef = db.collection('profiles').doc(userId).collection('job_applications');
+                const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
+                
+                if (existingApp.empty) {
+                    showToast('Introuvable', 'Cette candidature n\'existe pas.', 'warning');
+                    userApplications.delete(jobId);
+                    await renderJobs();
+                    return;
+                }
+
+                // Supprimer le document
+                const docId = existingApp.docs[0].id;
+                await applicationsRef.doc(docId).delete();
+                
+                console.log('✅ Candidature retirée de Firestore');
+                
+                // Retirer de la liste locale
+                userApplications.delete(jobId);
+                
+                // Message de confirmation
+                showToast(
+                    'Candidature retirée',
+                    `${jobTitle.substring(0, 60)}...`,
+                    'info'
+                );
+                
+                // Re-render pour mettre à jour le bouton
+                await renderJobs();
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du retrait:', error);
+                showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
+                
+                // Restaurer le bouton en cas d'erreur
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '✕ Retirer';
+                }
+            }
+        }
+
         async function renderJobs() {
             const container = document.getElementById('jobsContainer');
             if (filteredJobs.length === 0) {
@@ -1782,11 +1884,12 @@
                 </div>
             ` : ''}
             <div class="job-footer">
-                <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
+                <div class="job-date">Publiée le ${job.publication_date || 'date inconnue'}</div>
                 <div class="job-actions">
                     ${isAuthenticated ? (
                         userApplications.has(job.job_id) 
-                            ? `<button class="job-apply-btn applied" disabled>✓ Candidature envoyée</button>` 
+                            ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
+                               <button class="job-withdraw-btn" onclick="event.stopPropagation(); withdrawApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Retirer</button>` 
                             : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                     ) : ''}
                     <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
@@ -1886,6 +1989,7 @@
         // Vérifier l'authentification et mettre à jour la navigation
         function checkAuthAndUpdateNav() {
             const profileLink = document.getElementById('profileLink');
+            const applicationsLink = document.getElementById('applicationsLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
@@ -1913,6 +2017,10 @@
                     profileLink.style.display = 'block';
                     profileLink.classList.remove('nav-link-primary');
                 }
+                if (applicationsLink) {
+                    applicationsLink.style.display = 'block';
+                    applicationsLink.classList.remove('nav-link-primary');
+                }
                 if (logoutBtn) {
                     logoutBtn.style.display = 'block';
                     logoutBtn.classList.remove('nav-link-primary');
@@ -1922,6 +2030,10 @@
                 if (profileLink) {
                     profileLink.style.display = 'none';
                     profileLink.classList.remove('nav-link-primary');
+                }
+                if (applicationsLink) {
+                    applicationsLink.style.display = 'none';
+                    applicationsLink.classList.remove('nav-link-primary');
                 }
                 if (logoutBtn) {
                     logoutBtn.style.display = 'none';
