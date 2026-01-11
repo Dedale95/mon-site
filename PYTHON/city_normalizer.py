@@ -258,9 +258,18 @@ def normalize_city(city_raw):
     suspicious_patterns = [
         r'^\d+$',  # Uniquement des chiffres
         r'^\d+\s+\w+$',  # Nombre suivi d'un mot (ex: "29Th Floor")
+        r'^\d+[a-z]?$',  # Nombre seul avec lettre optionnelle (ex: "30", "14F")
         r'\d{4,}',  # Code postal long
     ]
     if any(re.search(pattern, city_clean) for pattern in suspicious_patterns):
+        return None
+    
+    # Rejeter les mots isolés qui ne sont pas des villes connues
+    # Mots-clés suspects qui ne devraient pas être des villes
+    invalid_standalone_words = ['central', 'boulevard', 'metro', 'park', 'einsteinring', 
+                                'allée', 'chemin', 'allee', 'scheffer', 'floor', 'bldg',
+                                'building', 'tower', 'road', 'street', 'avenue']
+    if city_clean in invalid_standalone_words:
         return None
     
     # Appliquer le mapping
@@ -269,9 +278,16 @@ def normalize_city(city_raw):
     
     # Si pas dans le mapping, vérifier si ça ressemble à une ville valide
     # Rejeter si ça contient des mots-clés suspects
-    invalid_keywords = ['provincia', 'province', 'province di', 'valtellina', 'leasing', 'factoring']
+    invalid_keywords = ['provincia', 'province', 'province di', 'valtellina', 'leasing', 'factoring',
+                       'central', 'boulevard', 'metro', 'park', 'einsteinring', 'scheffer', 'bldg']
     if any(keyword in city_clean for keyword in invalid_keywords):
         return None
+    
+    # Si pas dans le mapping et que c'est un seul mot suspect, rejeter
+    if ' ' not in city_clean and city_clean not in CITY_MAPPING:
+        # Vérifier si c'est un mot suspect
+        if city_clean in invalid_standalone_words:
+            return None
     
     # Si pas dans le mapping, retourner en Title Case
     # Regex pour mettre en majuscule après un tiret
