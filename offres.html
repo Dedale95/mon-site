@@ -9,6 +9,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -2211,22 +2214,90 @@
             document.getElementById('supportModal').style.display = 'none';
         }
 
-        function sendSupportEmail() {
+        async function sendSupportEmail() {
             const type = document.getElementById('supportType').value;
             const email = document.getElementById('supportEmail').value.trim();
             const subject = document.getElementById('supportSubject').value.trim() || `[${type}] Nouveau message`;
             const message = document.getElementById('supportMessage').value.trim();
 
             if (!message) {
-                alert('Veuillez saisir un message.');
+                showToast('Erreur', 'Veuillez saisir un message.', 'error');
                 return;
             }
 
-            const target = 'thibault.giraudet@outlook.com';
-            const body = encodeURIComponent(`Type: ${type}\n${email ? `Email: ${email}\n` : ''}\n${message}`);
-            const subj = encodeURIComponent(subject);
-            window.location.href = `mailto:${target}?subject=${subj}&body=${body}`;
-            closeSupportModal();
+            // EmailJS Configuration - À configurer sur https://www.emailjs.com/
+            const EMAILJS_SERVICE_ID = 'service_taleos';  // Remplacer par votre Service ID
+            const EMAILJS_TEMPLATE_ID = 'template_support'; // Remplacer par votre Template ID
+            const EMAILJS_PUBLIC_KEY = 'VOTRE_PUBLIC_KEY';  // Remplacer par votre Public Key
+
+            // Vérifier que EmailJS est chargé
+            if (typeof emailjs === 'undefined') {
+                showToast('Erreur', 'Service d\'envoi non disponible. Réessayez plus tard.', 'error');
+                console.error('EmailJS non chargé');
+                return;
+            }
+
+            // Désactiver le bouton et afficher un message de chargement
+            const sendButton = event.target;
+            const originalText = sendButton.textContent;
+            sendButton.disabled = true;
+            sendButton.textContent = '⏳ Envoi en cours...';
+
+            try {
+                // Initialiser EmailJS (une seule fois)
+                if (!window.emailjsInitialized) {
+                    emailjs.init(EMAILJS_PUBLIC_KEY);
+                    window.emailjsInitialized = true;
+                }
+
+                // Paramètres à envoyer au template EmailJS
+                const templateParams = {
+                    support_type: type,
+                    from_email: email || 'Non renseigné',
+                    subject: subject,
+                    message: message,
+                    to_email: 'thibault.giraudet@outlook.com' // Votre email de réception
+                };
+
+                // Envoyer l'email via EmailJS
+                const response = await emailjs.send(
+                    EMAILJS_SERVICE_ID,
+                    EMAILJS_TEMPLATE_ID,
+                    templateParams
+                );
+
+                console.log('✅ Email envoyé avec succès:', response);
+                showToast('Message envoyé !', 'Votre message a été envoyé avec succès. Nous vous répondrons rapidement.', 'success', 5000);
+                
+                // Réinitialiser le formulaire
+                document.getElementById('supportEmail').value = '';
+                document.getElementById('supportSubject').value = '';
+                document.getElementById('supportMessage').value = '';
+                
+                // Fermer la modal après un court délai
+                setTimeout(() => {
+                    closeSupportModal();
+                }, 1500);
+
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'envoi:', error);
+                
+                // Messages d'erreur personnalisés
+                let errorMessage = 'Une erreur est survenue. Réessayez plus tard.';
+                if (error.text) {
+                    if (error.text.includes('Invalid')) {
+                        errorMessage = 'Configuration EmailJS invalide. Contactez l\'administrateur.';
+                    } else if (error.text.includes('quota')) {
+                        errorMessage = 'Limite d\'envois atteinte. Réessayez demain ou contactez-nous directement.';
+                    }
+                }
+                
+                showToast('Erreur d\'envoi', errorMessage, 'error', 6000);
+                
+                // Restaurer le bouton
+                sendButton.disabled = false;
+                sendButton.textContent = originalText;
+            }
         }
 
         // Mettre en surbrillance uniquement la page actuelle
