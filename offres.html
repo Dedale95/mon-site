@@ -8,6 +8,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -431,6 +432,33 @@
         .job-link:hover {
             transform: translateX(5px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .job-apply-btn {
+            background: white;
+            color: #667eea;
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .job-apply-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .loading,
@@ -1257,7 +1285,7 @@
             });
         }
 
-        function applyFilters() {
+        async function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const selectedCountries = getCheckedValues('countryFilter');
             const selectedRegions = getCheckedValues('regionFilter');
@@ -1285,6 +1313,12 @@
                 return matchSearch && matchCountry && matchRegion && matchContract &&
                     matchExperience && matchFamily && matchCompany && matchEducation;
             });
+
+            // Mettre à jour les statistiques immédiatement après le filtrage (avant le rendu)
+            updateStats();
+            
+            // Forcer un rafraîchissement du DOM avant de continuer
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             // Pour calculer les options disponibles, on doit utiliser les jobs qui matchent TOUS les autres filtres
             // (pas celui qu'on évalue)
@@ -1415,15 +1449,106 @@
             populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
                 new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))));
 
-            (async () => {
-                await renderJobs();
-                updateStats();
-            })();
+            await renderJobs();
         }
 
         function getCheckedValues(containerId) {
             const container = document.getElementById(containerId);
             return Array.from(container.querySelectorAll('input:checked')).map(cb => cb.value);
+        }
+
+        // Variable globale pour stocker l'état d'authentification
+        let currentAuthState = false;
+
+        // Vérifier si l'utilisateur est connecté
+        function checkIsAuthenticated() {
+            // Utiliser l'état global mis à jour par onAuthStateChanged
+            // C'est plus fiable que de vérifier currentUser à chaque fois
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                try {
+                    const auth = firebase.auth();
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        currentAuthState = true;
+                        console.log('🔐 checkIsAuthenticated: true (Firebase user:', currentUser.email + ')');
+                        return true;
+                    }
+                } catch (e) {
+                    // Firebase non disponible
+                }
+            }
+            
+            // Fallback sur localStorage
+            const token = localStorage.getItem('authToken');
+            const isAuthenticated = !!token;
+            console.log('🔐 checkIsAuthenticated:', isAuthenticated, '(via localStorage)');
+            return isAuthenticated;
+        }
+
+        // Gérer la candidature à une offre
+        async function applyToJob(jobId, jobTitle) {
+            try {
+                // Vérifier Firebase
+                if (!firebase.auth || !firebase.firestore) {
+                    alert('Firebase non initialisé. Veuillez rafraîchir la page.');
+                    return;
+                }
+
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                const currentUser = auth.currentUser;
+
+                if (!currentUser) {
+                    alert('Veuillez vous connecter pour candidater.');
+                    window.location.href = 'auth.html';
+                    return;
+                }
+
+                const userId = currentUser.uid;
+
+                // Récupérer l'offre complète depuis allJobs
+                const job = allJobs.find(j => j.job_id === jobId);
+                if (!job) {
+                    alert('Offre introuvable.');
+                    return;
+                }
+
+                // Vérifier si l'utilisateur a déjà candidaté à cette offre
+                const applicationsRef = db.collection('profiles').doc(userId).collection('job_applications');
+                const existingApp = await applicationsRef.where('jobId', '==', jobId).get();
+                
+                if (!existingApp.empty) {
+                    alert('Vous avez déjà candidaté à cette offre !');
+                    return;
+                }
+
+                // Créer la candidature avec toutes les informations de l'offre
+                const applicationData = {
+                    jobId: jobId,
+                    jobTitle: cleanJobTitle(job.job_title),
+                    jobUrl: job.job_url,
+                    companyName: job.company_name || 'Non spécifié',
+                    location: job.location || 'Non spécifié',
+                    contractType: job.contract_type || 'Non spécifié',
+                    experienceLevel: job.experience_level || 'Non spécifié',
+                    jobFamily: job.job_family || 'Non spécifié',
+                    publicationDate: job.publication_date || 'Non spécifié',
+                    appliedDate: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'En cours'
+                };
+
+                // Sauvegarder dans Firestore
+                await applicationsRef.add(applicationData);
+                
+                console.log('✅ Candidature enregistrée dans Firestore:', applicationData);
+                
+                // Message de confirmation
+                alert(`✅ Candidature enregistrée pour : ${cleanJobTitle(job.job_title)}\n\nVous pouvez suivre vos candidatures dans votre profil.`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la candidature:', error);
+                alert('Une erreur est survenue lors de l\'enregistrement de votre candidature.\n\nDétails : ' + error.message);
+            }
         }
 
         async function renderJobs() {
@@ -1432,6 +1557,9 @@
                 container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
                 return;
             }
+
+            // Vérifier si l'utilisateur est connecté
+            const isAuthenticated = checkIsAuthenticated();
 
             // Fonction pour générer le HTML d'une carte d'offre (sans logos pour stabilité)
             function renderJobCard(job) {
@@ -1454,7 +1582,10 @@
             ` : ''}
             <div class="job-footer">
                 <div class="job-date">📅 ${job.publication_date || 'Date non spécifiée'}</div>
-                <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+                <div class="job-actions">
+                    ${isAuthenticated ? `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}')">📝 Candidater</button>` : ''}
+                    <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
+                </div>
             </div>
         </div>
     `;
@@ -1601,19 +1732,7 @@
             setTimeout(() => highlightCurrentPage(), 50);
         }
         
-        // Écouter les changements d'état Firebase si disponible
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            try {
-                const auth = firebase.auth();
-                auth.onAuthStateChanged((user) => {
-                    checkAuthAndUpdateNav();
-                });
-            } catch (e) {
-                // Firebase non disponible
-            }
-        }
-
-        // Initialiser Firebase (si pas déjà initialisé)
+        // Initialiser Firebase (si pas déjà initialisé) - AVANT onAuthStateChanged
         if (typeof firebase !== 'undefined') {
             try {
                 if (!firebase.apps || firebase.apps.length === 0) {
@@ -1632,6 +1751,46 @@
             } catch (e) {
                 console.log('ℹ️ Firebase déjà initialisé ou erreur:', e.message);
             }
+        }
+
+        // Variable pour suivre si Firebase Auth est prêt
+        let firebaseAuthReady = false;
+        let jobsLoaded = false;
+
+        // Écouter les changements d'état Firebase ET charger les jobs après initialisation
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            try {
+                const auth = firebase.auth();
+                auth.onAuthStateChanged((user) => {
+                    console.log('🔄 Auth state changed:', user ? 'Connecté (' + user.email + ')' : 'Déconnexion');
+                    const wasAuthenticated = currentAuthState;
+                    currentAuthState = !!user;
+                    
+                    checkAuthAndUpdateNav();
+                    
+                    // Lors du premier appel (Firebase Auth est prêt), charger les jobs
+                    if (!firebaseAuthReady) {
+                        firebaseAuthReady = true;
+                        console.log('✅ Firebase Auth prêt, chargement des jobs...');
+                        loadJobs().then(() => {
+                            jobsLoaded = true;
+                        });
+                    }
+                    // Si les jobs sont déjà chargés et l'état a changé, re-render
+                    else if (wasAuthenticated !== currentAuthState && jobsLoaded && filteredJobs.length > 0) {
+                        console.log('🔄 Re-rendering jobs avec nouveau statut auth:', currentAuthState);
+                        renderJobs();
+                    }
+                });
+            } catch (e) {
+                console.error('Erreur Firebase Auth:', e);
+                // Si Firebase échoue, charger quand même les jobs (sans auth)
+                loadJobs();
+            }
+        } else {
+            // Si Firebase n'est pas disponible, charger les jobs sans auth
+            console.warn('⚠️ Firebase non disponible, chargement des jobs sans authentification');
+            loadJobs();
         }
 
         // Fonction de déconnexion avec Firebase
@@ -1656,8 +1815,7 @@
             }
         }
 
-        // Charger les jobs
-        loadJobs();
+        // Ne PAS charger les jobs ici - ils seront chargés après l'initialisation Firebase
         
         // Mettre à jour la navigation - exécuter plusieurs fois pour garantir l'affichage
         highlightCurrentPage();
