@@ -871,8 +871,8 @@
                         <div class="app-actions">
                             <a href="${app.jobUrl || '#'}" target="_blank" class="btn btn-primary">Voir l'offre →</a>
                             ${statusClass === 'encours' ? `
-                                <button class="btn btn-danger" onclick="withdrawApplication('${app.id}', '${(app.jobTitle || '').replace(/'/g, "\\'")}')">
-                                    ✕ Retirer ma candidature
+                                <button class="btn btn-danger" onclick="cancelApplication('${app.id}', '${(app.jobTitle || '').replace(/'/g, "\\'")}')">
+                                    ✕ Annuler ma candidature
                                 </button>
                             ` : ''}
                             <button class="btn btn-secondary" onclick="changeStatus('${app.id}')">
@@ -895,9 +895,9 @@
         });
 
         // Withdraw application
-        function withdrawApplication(appId, jobTitle) {
+        function cancelApplication(appId, jobTitle) {
             showConfirmToast(
-                'Retirer votre candidature ?',
+                'Annuler votre candidature ?',
                 jobTitle,
                 async () => {
                     try {
@@ -912,7 +912,7 @@
                         const db = firebase.firestore();
                         await db.collection('profiles').doc(currentUser.uid).collection('job_applications').doc(appId).delete();
 
-                        showToast('Candidature retirée', jobTitle.substring(0, 50) + '...', 'info');
+                        showToast('Candidature annulée', jobTitle.substring(0, 50) + '...', 'info');
 
                         // Reload applications
                         await loadApplications();
@@ -923,7 +923,7 @@
                     }
                 },
                 () => {
-                    console.log('❌ Retrait annulé');
+                    console.log('❌ Annulation annulée');
                 }
             );
         }

@@ -479,7 +479,7 @@
             transform: none;
         }
 
-        .job-withdraw-btn {
+        .job-cancel-btn {
             background: white;
             color: #ef4444;
             padding: 10px 20px;
@@ -493,14 +493,14 @@
             font-size: inherit;
         }
 
-        .job-withdraw-btn:hover:not(:disabled) {
+        .job-cancel-btn:hover:not(:disabled) {
             background: #ef4444;
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
         }
 
-        .job-withdraw-btn:disabled {
+        .job-cancel-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -1873,19 +1873,19 @@
             }
         }
 
-        // Retirer une candidature
-        function withdrawApplication(jobId, jobTitle, buttonElement) {
+        // Annuler une candidature
+        function cancelApplication(jobId, jobTitle, buttonElement) {
             const btn = buttonElement || event.target;
             
             // Afficher toast de confirmation (non-bloquant)
             showConfirmToast(
-                'Retirer votre candidature ?',
+                'Annuler votre candidature ?',
                 jobTitle,
                 async () => {
-                    // Confirmation - on retire
+                    // Confirmation - on annule
                     if (btn) {
                         btn.disabled = true;
-                        btn.textContent = '⏳ Retrait...';
+                        btn.textContent = '⏳ Annulation...';
                     }
 
                     try {
@@ -1921,14 +1921,14 @@
                         const docId = existingApp.docs[0].id;
                         await applicationsRef.doc(docId).delete();
                         
-                        console.log('✅ Candidature retirée de Firestore');
+                        console.log('✅ Candidature annulée dans Firestore');
                         
                         // Retirer de la liste locale
                         userApplications.delete(jobId);
                         
                         // Message de confirmation
                         showToast(
-                            'Candidature retirée',
+                            'Candidature annulée',
                             jobTitle.substring(0, 50) + '...',
                             'info'
                         );
@@ -1937,19 +1937,19 @@
                         updateJobCardButtons(jobId);
                         
                     } catch (error) {
-                        console.error('❌ Erreur lors du retrait:', error);
+                        console.error('❌ Erreur lors de l\'annulation:', error);
                         showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
                         
                         // Restaurer le bouton en cas d'erreur
                         if (btn) {
                             btn.disabled = false;
-                            btn.textContent = '✕ Retirer';
+                            btn.textContent = '✕ Annuler';
                         }
                     }
                 },
                 () => {
-                    // Annulation - ne rien faire
-                    console.log('❌ Retrait annulé');
+                    // Pas d'annulation - ne rien faire
+                    console.log('❌ Annulation annulée');
                 }
             );
         }
@@ -1969,7 +1969,7 @@
                             actionsDiv.innerHTML = `
                                 ${isApplied 
                                     ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                                       <button class="job-withdraw-btn" onclick="event.stopPropagation(); withdrawApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Retirer</button>` 
+                                       <button class="job-cancel-btn" onclick="event.stopPropagation(); cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
                                     : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                                 }
                                 <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
@@ -2015,7 +2015,7 @@
                     ${isAuthenticated ? (
                         userApplications.has(job.job_id) 
                             ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                               <button class="job-withdraw-btn" onclick="event.stopPropagation(); withdrawApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Retirer</button>` 
+                               <button class="job-cancel-btn" onclick="event.stopPropagation(); cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
                             : `<button class="job-apply-btn" onclick="event.stopPropagation(); applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                     ) : ''}
                     <a href="${job.job_url}" target="_blank" class="job-link" onclick="event.stopPropagation()">Voir l'offre →</a>
