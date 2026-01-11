@@ -367,10 +367,13 @@ async def fetch_job_details(context: BrowserContext, url: str, sem: asyncio.Sema
                 city_normalized = normalize_city(city_raw) if city_raw else None
                 country_normalized = normalize_country(country_raw) if country_raw else None
 
+                # Si la ville est None (rejetée par le normaliseur), utiliser le format "Pays - Pays"
                 if city_normalized and country_normalized:
                     location = f"{city_normalized} - {country_normalized}"
                 elif country_normalized: # If only country is available, format as "Country - Country"
                     location = f"{country_normalized} - {country_normalized}"
+                else:
+                    location = None  # Si ni ville ni pays valides, location = None
 
 
             # Extract dates using regex

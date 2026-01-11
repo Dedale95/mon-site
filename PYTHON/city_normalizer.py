@@ -104,38 +104,84 @@ CITY_MAPPING = {
 
 def normalize_city(city_raw):
     """
-    Normalise un nom de ville selon les règles de mapping
+    Normalise un nom de ville selon les règles de mapping.
+    Retourne None si la valeur ne semble pas être une ville valide.
     """
     if not city_raw:
-        return city_raw
+        return None
     
     # Nettoyer et normaliser
     city_clean = city_raw.strip().lower()
     
+    # Liste des pays connus à rejeter (ne doivent pas être traités comme villes)
+    known_countries_lower = {
+        'france', 'inde', 'japon', 'pologne', 'roumanie', 'chine', 'corée', 'corée du sud',
+        'italie', 'allemagne', 'espagne', 'portugal', 'belgique', 'suisse', 'luxembourg',
+        'pays-bas', 'royaume-uni', 'united kingdom', 'états-unis', 'usa', 'canada',
+        'singapour', 'hong-kong', 'hong kong', 'thailande', 'thaïlande', 'malaisie',
+        'australie', 'nouvelle-zélande', 'brésil', 'argentine', 'chili', 'mexique',
+        'colombie', 'afrique du sud', 'égypte', 'maroc', 'tunisie', 'algérie'
+    }
+    
+    # Rejeter si c'est un pays
+    if city_clean in known_countries_lower:
+        return None
+    
     # Supprimer les adresses complètes (Road, Street, Av., #, Floor, etc.)
     # Détecter si c'est une adresse complète
     address_patterns = [
-        r'\d+\s+(road|street|avenue|av\.?|boulevard|blvd|drive|dr|lane|ln|way|plaza|tower|building)',
+        r'^\d+\s+(road|street|avenue|av\.?|boulevard|blvd|drive|dr|lane|ln|way|plaza|tower|building|allée|chemin|rue)',
         r'#\d+',
         r'\d+th\s+floor',
-        r'\d+º',
+        r'\d+st\s+floor',
+        r'\d+nd\s+floor',
+        r'\d+rd\s+floor',
+        r'\d+º\s+floor',
+        r'\d+\s+floor',
+        r'^\d+\s+',  # Commence par un nombre seul (ex: "2 Central Boulevard")
         r'capital tower',
-        r'floor',
+        r'\bfloor\b',
         r'av\.\s+[a-z]',  # Ex: "Av. Linares", "Av. Miguel"
         r'gmbh',
         r'co\.\s*kg',
         r'leasing',
         r'factoring',
+        r'\d{4,}\s+',  # Codes postaux longs au début
+        r'\b\d{4,}\s+[a-z]',  # Code postal suivi d'une ville (ex: "1010 Lausanne" -> rejeter)
+        r'chemin\s+de\s+[a-z]+\s+\d+',  # Ex: "Chemin De Bérée 38"
+        r'einsteinring\s+\d+',  # Ex: "Einsteinring 30"
+        r'building|bldg|tower',  # Mots-clés de bâtiments
+        r'sumitomo\s+bldg',  # Ex: "Shiodome Sumitomo Bldg. 14F"
+        r'\d+f\b',  # Étage (ex: "14F")
+        r'metro\s+park',  # Ex: "Metro Park"
     ]
     
     # Mots-clés de noms d'entreprises à exclure
     company_keywords = [
         'crédit agricole', 'leasing', 'factoring', 'gmbh', 'co.', 's.a.',
-        'indosuez', 'amundi', 'caceis', 'lcl', 'bforbank', 'merca'
+        'indosuez', 'amundi', 'caceis', 'lcl', 'bforbank', 'merca',
+        'leasing & factoring', 'leasing &', '& factoring'
+    ]
+    
+    # Détecter les provinces italiennes (format "Ville E Valtellina" ou "Province Di X")
+    italian_province_patterns = [
+        r'\be\s+(valtellina|provincia)',
+        r'provincia\s+di\s+',
+        r'province\s+di\s+',
+        r'provincia\s+di\s+genova',
+        r'provincia\s+di\s+modena',
+        r'provincia\s+di\s+pavia',
+        r'provincia\s+di\s+pordenone',
+        r'provincia\s+di\s+udine',
     ]
     
     is_address = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in address_patterns)
     is_company = any(keyword in city_clean for keyword in company_keywords)
+    is_italian_province = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in italian_province_patterns)
+    
+    # Rejeter si c'est une province italienne
+    if is_italian_province:
+        return None
     
     if is_address or is_company:
         # Extraire juste le nom de ville depuis l'adresse
@@ -145,7 +191,9 @@ def normalize_city(city_raw):
         
         # Si contient des mots-clés de ville connus, les extraire
         known_city_keywords = ['singapore', 'singapour', 'hong-kong', 'hong kong', 'madrid', 'barcelone', 
-                               'barcelona', 'lisbonne', 'lisboa', 'coruña', 'a coruña']
+                               'barcelona', 'lisbonne', 'lisboa', 'coruña', 'a coruña', 'lausanne',
+                               'zurich', 'genève', 'geneva', 'paris', 'london', 'londres']
+        extracted_city = None
         for keyword in known_city_keywords:
             if keyword in city_clean:
                 # Extraire le mot-clé et quelques mots autour
@@ -157,19 +205,24 @@ def normalize_city(city_raw):
                     for i, part in enumerate(parts):
                         if keyword in part:
                             # Prendre cette partie et éventuellement la suivante
-                            if i < len(parts) - 1 and parts[i+1] not in ['tower', 'building', 'road', 'street']:
-                                city_clean = ' '.join(parts[i:i+2])
+                            if i < len(parts) - 1 and parts[i+1] not in ['tower', 'building', 'road', 'street', 'park']:
+                                extracted_city = ' '.join(parts[i:i+2])
                             else:
-                                city_clean = parts[i]
+                                extracted_city = parts[i]
                             break
-                break
+                    if extracted_city:
+                        city_clean = extracted_city
+                        break
         
-        # Si on n'a pas trouvé, essayer d'extraire le dernier mot significatif
-        if is_address and city_clean == city_raw.strip().lower():
-            parts = [p for p in city_clean.split() if not re.match(r'^\d+', p) and p not in ['road', 'street', 'av.', 'boulevard', 'floor', 'tower', 'building', '#']]
-            if parts:
-                # Prendre les 2-3 derniers mots
-                city_clean = ' '.join(parts[-2:]) if len(parts) > 1 else parts[-1]
+        # Si on n'a pas trouvé de ville connue et que c'est clairement une adresse/entreprise, rejeter
+        if not extracted_city and (is_address or is_company):
+            # Essayer une dernière fois d'extraire quelque chose de valide
+            parts = [p for p in city_clean.split() if not re.match(r'^\d+', p) and p not in ['road', 'street', 'av.', 'boulevard', 'floor', 'tower', 'building', '#', 'park', 'bldg', 'bldg.']]
+            if parts and len(parts) <= 2:  # Si seulement 1-2 mots restants
+                city_clean = ' '.join(parts)
+            else:
+                # Si trop de mots ou suspects, rejeter
+                return None
     
     # Supprimer les parenthèses et leur contenu (ex: "Casablanca (Maroc)")
     city_clean = re.sub(r'\(.*?\)', '', city_clean).strip()
@@ -196,7 +249,37 @@ def normalize_city(city_raw):
     if city_clean in CITY_MAPPING:
         return CITY_MAPPING[city_clean]
     
+    # Vérifications finales : rejeter les valeurs suspectes
+    # Si la valeur est très longue (>30 caractères), c'est probablement une adresse complète
+    if len(city_clean) > 30:
+        return None
+    
+    # Si la valeur contient encore des chiffres isolés ou des mots-clés suspects, rejeter
+    suspicious_patterns = [
+        r'^\d+$',  # Uniquement des chiffres
+        r'^\d+\s+\w+$',  # Nombre suivi d'un mot (ex: "29Th Floor")
+        r'\d{4,}',  # Code postal long
+    ]
+    if any(re.search(pattern, city_clean) for pattern in suspicious_patterns):
+        return None
+    
+    # Appliquer le mapping
+    if city_clean in CITY_MAPPING:
+        return CITY_MAPPING[city_clean]
+    
+    # Si pas dans le mapping, vérifier si ça ressemble à une ville valide
+    # Rejeter si ça contient des mots-clés suspects
+    invalid_keywords = ['provincia', 'province', 'province di', 'valtellina', 'leasing', 'factoring']
+    if any(keyword in city_clean for keyword in invalid_keywords):
+        return None
+    
     # Si pas dans le mapping, retourner en Title Case
     # Regex pour mettre en majuscule après un tiret
     city_title = city_clean.title()
-    return re.sub(r'-([a-z])', lambda m: '-' + m.group(1).upper(), city_title)
+    result = re.sub(r'-([a-z])', lambda m: '-' + m.group(1).upper(), city_title)
+    
+    # Dernière vérification : si le résultat final est trop long ou suspect, rejeter
+    if len(result) > 30 or re.search(r'\d{4,}', result):
+        return None
+    
+    return result

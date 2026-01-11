@@ -429,6 +429,7 @@ class JobDetailScraper:
         city = normalize_city(city_raw)
         country = normalize_country(country_raw)
 
+        # Si la ville est None (rejetée par le normaliseur), utiliser le format "Pays - Pays"
         if not city:
             return f"{country} - {country}"
         
