@@ -394,46 +394,80 @@ class JobDetailScraper:
             if len(parts) >= 2:
                 city_raw = parts[0]
                 country_raw = parts[-1]
-                
-                # Si city_raw contient une virgule, c'est souvent au format "LIEU PRÉCIS, VILLE/ÉTAT"
+
+                # Si city_raw contient des virgules, c'est souvent au format complexe
+                # Ex: "Crédit Agricole Merca Leasing GmbH & Co. KG, Westerbachstraße 28, 61476 Kronberg / Taunus"
+                # Ex: "Crédit Agricole Leasing & Factoring, Einsteinring 30, 85609 Aschheim"
                 # Ex: "METRO PARK, NEW JERSEY" -> on veut "NEW JERSEY"
-                # Ex: "Crédit Agricole, Paris" -> on veut "Paris"
-                # Ex: "9 Allée Scheffer, Luxembourg Ville" -> on veut "Luxembourg Ville"
                 if "," in city_raw:
                     city_parts = [p.strip() for p in city_raw.split(",")]
-                    # Prendre la dernière partie (généralement la ville/état principal)
-                    city_raw = city_parts[-1]
-                
+                    
+                    # IMPORTANT : Détecter et rejeter les noms d'entreprises
+                    # Ex: "Crédit Agricole Merca Leasing GmbH & Co. KG"
+                    # Patterns d'entreprises: GmbH, & Co., KG, S.A., Leasing, Factoring, etc.
+                    company_keywords = [
+                        'gmbh', '& co.', '& co', 'kg', 's.a.', 'sa', 
+                        'leasing', 'factoring', 'ltd', 'llc', 'inc',
+                        'crédit agricole', 'credit agricole'
+                    ]
+                    
+                    # Filtrer les parties qui sont des noms d'entreprises
+                    valid_parts = []
+                    for part in city_parts:
+                        part_lower = part.lower()
+                        # Vérifier si la partie contient un mot-clé d'entreprise
+                        is_company = any(keyword in part_lower for keyword in company_keywords)
+                        if not is_company:
+                            valid_parts.append(part)
+                    
+                    # Si on a des parties valides, travailler avec elles
+                    if valid_parts:
+                        city_parts = valid_parts
+                    
+                    # Prendre la dernière partie non-entreprise
+                    city_raw = city_parts[-1] if city_parts else ""
+
+                # IMPORTANT : Extraire la ville des formats avec code postal
+                # Ex: "61476 Kronberg / Taunus" -> "Kronberg"
+                # Ex: "85609 Aschheim" -> "Aschheim"
+                # Pattern: code postal (4-5 chiffres) suivi de la ville
+                postal_match = re.match(r'^\d{4,5}\s+(.+?)(?:\s*/\s*\w+)?$', city_raw)
+                if postal_match:
+                    city_raw = postal_match.group(1).strip()
+                    # Si la ville contient " / ", prendre la partie avant le slash
+                    # Ex: "Kronberg / Taunus" -> "Kronberg"
+                    if " / " in city_raw:
+                        city_raw = city_raw.split(" / ")[0].strip()
+
                 # IMPORTANT : Détecter et rejeter les adresses avec numéro + rue
-                # Ex: "9 Allée Scheffer", "168 Robinson Road"
+                # Ex: "9 Allée Scheffer", "168 Robinson Road", "Einsteinring 30"
                 address_patterns = [
-                    r'^\d+\s+(allée|allee|avenue|rue|road|street|boulevard|chemin)',
+                    r'^\d+\s+(allée|allee|avenue|rue|road|street|boulevard|chemin|einsteinring|westerbachstraße|westerbachstrasse)',
                 ]
+                is_address = False
                 for pattern in address_patterns:
                     if re.match(pattern, city_raw.lower()):
-                        # C'est une adresse, pas une ville - chercher ailleurs
-                        # Si on a plusieurs parties avec virgule, essayer la partie avant
-                        if "," in parts[0]:
-                            city_parts = [p.strip() for p in parts[0].split(",")]
-                            if len(city_parts) > 1:
-                                # Essayer l'avant-dernière partie
-                                city_raw = city_parts[-2] if len(city_parts) >= 2 else city_parts[0]
-                            else:
-                                city_raw = ""  # Rejeter complètement
-                        else:
-                            city_raw = ""  # Rejeter complètement
+                        is_address = True
                         break
                 
-                # Nettoyer city_raw : supprimer les noms d'entreprises au début (ex: "Crédit Agricole Leasing & Factoring, ")
-                # Pattern : nom entreprise suivi d'une virgule et d'une adresse
-                # Ex: "Crédit Agricole Leasing & Factoring, Einsteinring 30, 85609 Aschheim"
-                # -> "Einsteinring 30, 85609 Aschheim"
-                company_patterns = [
-                    r'^[^,]+(?:Leasing|Factoring|Gmbh|Co\.|S\.A\.)[^,]*,\s*',  # Nom entreprise avec virgule
-                    r'^[^,]+(?:Leasing|Factoring)[^,]*,\s*',  # Juste Leasing/Factoring
-                ]
-                for pattern in company_patterns:
-                    city_raw = re.sub(pattern, '', city_raw, flags=re.IGNORECASE)
+                if is_address:
+                    # C'est une adresse, pas une ville - chercher dans les parties précédentes
+                    if "," in parts[0]:
+                        city_parts = [p.strip() for p in parts[0].split(",")]
+                        # Chercher la dernière partie qui contient un code postal + ville
+                        for part in reversed(city_parts):
+                            postal_match = re.match(r'^\d{4,5}\s+(.+?)(?:\s*/\s*\w+)?$', part)
+                            if postal_match:
+                                city_raw = postal_match.group(1).strip()
+                                if " / " in city_raw:
+                                    city_raw = city_raw.split(" / ")[0].strip()
+                                break
+                        else:
+                            # Aucun code postal trouvé, rejeter
+                            city_raw = ""
+                    else:
+                        city_raw = ""  # Rejeter complètement
+                
                 city_raw = city_raw.strip()
             else:
                 city_raw = parts[0]
