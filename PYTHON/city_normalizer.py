@@ -94,6 +94,8 @@ CITY_MAPPING = {
     'budapest': 'Budapest',
     'casablanca': 'Casablanca',
     'luxembourg': 'Luxembourg',
+    'luxembourg ville': 'Luxembourg',
+    'luxembourg-ville': 'Luxembourg',
     'esch-sur-alzette': 'Luxembourg',
     'dublin': 'Dublin',
     'sydney': 'Sydney',
@@ -146,7 +148,9 @@ def normalize_city(city_raw):
     # Supprimer les adresses complètes (Road, Street, Av., #, Floor, etc.)
     # Détecter si c'est une adresse complète
     address_patterns = [
-        r'^\d+\s+(road|street|avenue|av\.?|boulevard|blvd|drive|dr|lane|ln|way|plaza|tower|building|allée|chemin|rue)',
+        r'^\d+\s+(road|street|avenue|av\.?|boulevard|blvd|drive|dr|lane|ln|way|plaza|tower|building|allée|allée|chemin|rue)',
+        r'^\d+\s+allée\s+',  # Ex: "9 Allée Scheffer"
+        r'^\d+\s+allee\s+',  # Ex: "9 Allee Scheffer" (sans accent)
         r'#\d+',
         r'\d+th\s+floor',
         r'\d+st\s+floor',
@@ -170,6 +174,8 @@ def normalize_city(city_raw):
         r'sumitomo\s+bldg',  # Ex: "Shiodome Sumitomo Bldg. 14F"
         r'\d+f\b',  # Étage (ex: "14F")
         r'metro\s+park',  # Ex: "Metro Park"
+        r'allée\s+scheffer',  # Ex: "Allée Scheffer"
+        r'allee\s+scheffer',  # Ex: "Allee Scheffer" (sans accent)
     ]
     
     # Mots-clés de noms d'entreprises à exclure

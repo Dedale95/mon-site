@@ -398,10 +398,31 @@ class JobDetailScraper:
                 # Si city_raw contient une virgule, c'est souvent au format "LIEU PRÉCIS, VILLE/ÉTAT"
                 # Ex: "METRO PARK, NEW JERSEY" -> on veut "NEW JERSEY"
                 # Ex: "Crédit Agricole, Paris" -> on veut "Paris"
+                # Ex: "9 Allée Scheffer, Luxembourg Ville" -> on veut "Luxembourg Ville"
                 if "," in city_raw:
                     city_parts = [p.strip() for p in city_raw.split(",")]
                     # Prendre la dernière partie (généralement la ville/état principal)
                     city_raw = city_parts[-1]
+                
+                # IMPORTANT : Détecter et rejeter les adresses avec numéro + rue
+                # Ex: "9 Allée Scheffer", "168 Robinson Road"
+                address_patterns = [
+                    r'^\d+\s+(allée|allee|avenue|rue|road|street|boulevard|chemin)',
+                ]
+                for pattern in address_patterns:
+                    if re.match(pattern, city_raw.lower()):
+                        # C'est une adresse, pas une ville - chercher ailleurs
+                        # Si on a plusieurs parties avec virgule, essayer la partie avant
+                        if "," in parts[0]:
+                            city_parts = [p.strip() for p in parts[0].split(",")]
+                            if len(city_parts) > 1:
+                                # Essayer l'avant-dernière partie
+                                city_raw = city_parts[-2] if len(city_parts) >= 2 else city_parts[0]
+                            else:
+                                city_raw = ""  # Rejeter complètement
+                        else:
+                            city_raw = ""  # Rejeter complètement
+                        break
                 
                 # Nettoyer city_raw : supprimer les noms d'entreprises au début (ex: "Crédit Agricole Leasing & Factoring, ")
                 # Pattern : nom entreprise suivi d'une virgule et d'une adresse
