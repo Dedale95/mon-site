@@ -1608,6 +1608,7 @@
             window.removeSearchKeyword = function(keyword) {
                 searchKeywords.delete(keyword);
                 renderSearchTags();
+                updateActiveFiltersBadge(); // Mise à jour immédiate
                 applyFilters();
             };
         }
