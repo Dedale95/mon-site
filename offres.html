@@ -274,12 +274,12 @@
 
         /* Première ligne : Recherche, Pays, Région, Type de contrat, Niveau d'étude */
         .filter-row:first-of-type {
-            grid-template-columns: 1.8fr 1fr 1.3fr 1fr 0.9fr;
+            grid-template-columns: 1.8fr 1.1fr 1.4fr 0.9fr 0.8fr;
         }
 
         /* Deuxième ligne : Expérience, Famille de métier, Entreprise */
         .filter-row:nth-of-type(2) {
-            grid-template-columns: 1fr 1.8fr 1.5fr;
+            grid-template-columns: 0.9fr 1.5fr 1.6fr;
         }
 
         /* Ligne du bouton reset */
@@ -1275,6 +1275,13 @@
                 // Traitement optimisé par batch avec requestAnimationFrame pour éviter le débordement de stack
                 const processJob = (job) => {
                     try {
+                        // Nettoyage des noms d'entreprises : supprimer les acronymes entre parenthèses
+                        if (job && job.company_name && typeof job.company_name === 'string') {
+                            // Supprimer les acronymes entre parenthèses à la fin du nom
+                            // Ex: "Crédit Agricole Leasing & Factoring (CAL&F)" → "Crédit Agricole Leasing & Factoring"
+                            job.company_name = job.company_name.replace(/\s*\([A-Z&]+\)\s*$/g, '').trim();
+                        }
+                        
                         // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
                         if (job && job.contract_type && typeof job.contract_type === 'string') {
                             const contractLower = job.contract_type.toLowerCase();
@@ -2305,20 +2312,25 @@
             localStorage.setItem('filtersCollapsed', isCollapsed);
         }
 
-        // Fonction pour mettre à jour le badge des filtres actifs
+        // Fonction pour mettre à jour le badge des filtres actifs (optimisée)
         function updateActiveFiltersBadge() {
-            const checkedCount = document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]:checked').length;
-            const keywordsCount = window.searchKeywords ? window.searchKeywords.size : 0;
-            const totalActive = checkedCount + keywordsCount;
-            
-            const badge = document.getElementById('activeFiltersBadge');
-            if (totalActive === 0) {
-                badge.textContent = 'Aucun filtre';
-            } else if (totalActive === 1) {
-                badge.textContent = '1 filtre actif';
-            } else {
-                badge.textContent = `${totalActive} filtres actifs`;
-            }
+            // Utiliser requestAnimationFrame pour ne pas bloquer le thread principal
+            requestAnimationFrame(() => {
+                const checkedCount = document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]:checked').length;
+                const keywordsCount = window.searchKeywords ? window.searchKeywords.size : 0;
+                const totalActive = checkedCount + keywordsCount;
+                
+                const badge = document.getElementById('activeFiltersBadge');
+                if (!badge) return;
+                
+                if (totalActive === 0) {
+                    badge.textContent = 'Aucun filtre';
+                } else if (totalActive === 1) {
+                    badge.textContent = '1 filtre actif';
+                } else {
+                    badge.textContent = `${totalActive} filtres actifs`;
+                }
+            });
         }
 
         // Restaurer l'état de l'accordéon au chargement
