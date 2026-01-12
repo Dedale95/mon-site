@@ -266,19 +266,24 @@
         .filters-content {
             padding: 35px;
             opacity: 1;
-            transform: scaleY(1);
-            transform-origin: top;
-            transition: opacity 0.3s ease, transform 0.3s ease, padding 0.3s ease;
-            max-height: 2000px;
-            overflow: hidden;
+            visibility: visible;
+            transform: translateY(0);
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0s;
+            will-change: opacity, transform;
         }
 
         .filters-content.collapsed {
             opacity: 0;
-            transform: scaleY(0.95);
+            visibility: hidden;
+            transform: translateY(-10px);
             padding: 0 35px;
-            max-height: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s 0.25s;
             pointer-events: none;
+        }
+
+        .filters-wrapper.collapsed {
+            max-height: 65px;
+            transition: max-height 0.25s ease;
         }
 
         .filter-row {
@@ -2361,9 +2366,11 @@
         function toggleFilters() {
             const filtersContent = document.getElementById('filtersContainer');
             const filtersHeader = document.getElementById('filtersToggle');
+            const filtersWrapper = document.querySelector('.filters-wrapper');
             
             filtersContent.classList.toggle('collapsed');
             filtersHeader.classList.toggle('collapsed');
+            if (filtersWrapper) filtersWrapper.classList.toggle('collapsed');
             
             // Sauvegarder l'état dans localStorage
             const isCollapsed = filtersContent.classList.contains('collapsed');
@@ -2395,8 +2402,10 @@
             if (wasCollapsed) {
                 const filtersContent = document.getElementById('filtersContainer');
                 const filtersHeader = document.getElementById('filtersToggle');
+                const filtersWrapper = document.querySelector('.filters-wrapper');
                 if (filtersContent) filtersContent.classList.add('collapsed');
                 if (filtersHeader) filtersHeader.classList.add('collapsed');
+                if (filtersWrapper) filtersWrapper.classList.add('collapsed');
             }
         });
 
