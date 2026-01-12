@@ -2190,14 +2190,7 @@
                         // Retirer de la liste locale
                         userApplications.delete(jobId);
                         
-                        // Message de confirmation
-                        showToast(
-                            'Candidature annulée',
-                            jobTitle.substring(0, 50) + '...',
-                            'info'
-                        );
-                        
-                        // Mettre à jour uniquement cette carte (pas de re-render complet)
+                        // Mettre à jour uniquement cette carte (sans notification)
                         updateJobCardButtons(jobId);
                         
                     } catch (error) {
