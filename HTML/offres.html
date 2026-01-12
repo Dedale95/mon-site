@@ -1592,13 +1592,16 @@
                 return (counts.regions[b] || 0) - (counts.regions[a] || 0);
             });
             
-            populateCheckboxFilter('countryFilter', sortedCountries, new Set(), counts.countries);
-            populateCheckboxFilter('regionFilter', sortedRegions, new Set(), counts.regions);
-            populateCheckboxFilter('contractFilter', sortedContracts, new Set(), counts.contracts);
-            populateCheckboxFilter('experienceFilter', sortedExperiences, new Set(), counts.experiences);
-            populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set(), counts.families);
-            populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set(), counts.companies);
-            populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set(), counts.educations);
+            // hideDisabled=true pour Pays, Régions, Famille de métiers (masque les options sans résultats)
+            populateCheckboxFilter('countryFilter', sortedCountries, new Set(), counts.countries, true);
+            populateCheckboxFilter('regionFilter', sortedRegions, new Set(), counts.regions, true);
+            populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set(), counts.families, true);
+            
+            // hideDisabled=false pour Contrat et Études (garde le barré)
+            populateCheckboxFilter('contractFilter', sortedContracts, new Set(), counts.contracts, false);
+            populateCheckboxFilter('experienceFilter', sortedExperiences, new Set(), counts.experiences, false);
+            populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set(), counts.companies, false);
+            populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set(), counts.educations, false);
 
             // Système de recherche par mots-clés multiples
             const searchInput = document.getElementById('searchInput');
@@ -1643,12 +1646,20 @@
             };
         }
 
-        function populateCheckboxFilter(id, values, disabledValues = new Set(), counts = {}) {
+        function populateCheckboxFilter(id, values, disabledValues = new Set(), counts = {}, hideDisabled = false) {
             const container = document.getElementById(id);
             // Sauvegarder les valeurs actuellement cochées
             const checkedValues = new Set(getCheckedValues(id));
             container.innerHTML = '';
             values.forEach(value => {
+                const count = counts[value] || 0;
+                const isDisabled = disabledValues.has(value);
+                
+                // Si hideDisabled est true et qu'il n'y a pas de résultats, on masque complètement
+                if (hideDisabled && count === 0) {
+                    return; // Ne pas créer le label du tout
+                }
+                
                 const label = document.createElement('label');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -1663,14 +1674,15 @@
                     checkbox.checked = true;
                 }
 
-                if (disabledValues.has(value)) {
+                if (isDisabled) {
                     checkbox.disabled = true;
-                    label.classList.add('disabled');
+                    // Si on ne masque pas, on barre les éléments disabled
+                    if (!hideDisabled) {
+                        label.classList.add('disabled');
+                    }
                 }
 
                 const span = document.createElement('span');
-                // Ajouter le comptage entre parenthèses si disponible
-                const count = counts[value] || 0;
                 span.textContent = count > 0 ? `${value} (${count})` : value;
                 label.appendChild(checkbox);
                 label.appendChild(span);
@@ -1830,10 +1842,11 @@
                 return (regionCounts[b] || 0) - (regionCounts[a] || 0);
             });
             
+            // Mettre à jour avec hideDisabled=true pour Pays/Régions (masque les 0)
             populateCheckboxFilter('countryFilter', sortedAllCountries,
-                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), countryCounts);
+                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), countryCounts, true);
             populateCheckboxFilter('regionFilter', sortedAllRegions,
-                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), regionCounts);
+                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), regionCounts, true);
 
             const availableContracts = new Set();
             const availableExperiences = new Set();
@@ -1878,16 +1891,17 @@
                 }
             });
 
+            // hideDisabled=false pour Contrat/Études (garde le barré), true pour Famille (masque)
             populateCheckboxFilter('contractFilter', sortedAllContracts,
-                new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))), contractCounts);
+                new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))), contractCounts, false);
             populateCheckboxFilter('experienceFilter', sortedAllExperiences,
-                new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))), experienceCounts);
+                new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))), experienceCounts, false);
             populateCheckboxFilter('familyFilter', Array.from(allFamilies).sort(),
-                new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))), familyCounts);
+                new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))), familyCounts, true);
             populateCheckboxFilter('companyFilter', Array.from(allCompanies).sort(),
-                new Set([...allCompanies].filter(c => !availableCompanies.has(c) && !selectedCompanies.includes(c))), companyCounts);
+                new Set([...allCompanies].filter(c => !availableCompanies.has(c) && !selectedCompanies.includes(c))), companyCounts, false);
             populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
-                new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))), educationCounts);
+                new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))), educationCounts, false);
 
             await renderJobs();
             updateActiveFiltersBadge();
