@@ -563,6 +563,40 @@
             }
         }
 
+        // Mise à jour immédiate de la navigation (avant Firebase) pour éviter le flash
+        function updateNavigationImmediate() {
+            const navAuth = document.getElementById('navAuth');
+            const navProfile = document.getElementById('navProfile');
+            const navCandidatures = document.getElementById('navCandidatures');
+            const navConnexions = document.getElementById('navConnexions');
+            const btnLogout = document.getElementById('btnLogout');
+
+            if (!navAuth || !navProfile || !btnLogout) {
+                return;
+            }
+
+            // Vérifier localStorage immédiatement
+            const token = localStorage.getItem('authToken');
+            const email = localStorage.getItem('userEmail');
+            const isAuthenticated = !!(token && email);
+
+            if (isAuthenticated) {
+                // Utilisateur connecté - afficher les liens appropriés
+                navAuth.style.display = 'none';
+                navProfile.style.display = 'block';
+                if (navCandidatures) navCandidatures.style.display = 'block';
+                if (navConnexions) navConnexions.style.display = 'block';
+                btnLogout.style.display = 'block';
+            } else {
+                // Utilisateur non connecté
+                navAuth.style.display = 'block';
+                navProfile.style.display = 'none';
+                if (navCandidatures) navCandidatures.style.display = 'none';
+                if (navConnexions) navConnexions.style.display = 'none';
+                btnLogout.style.display = 'none';
+            }
+        }
+
         // Déconnexion
         function logout() {
             auth.signOut().then(() => {
@@ -805,6 +839,9 @@
                 window.location.href = 'auth.html';
             }
         })();
+
+        // Mise à jour immédiate de la navigation (avant Firebase) pour éviter le flash
+        updateNavigationImmediate();
 
         // Initialisation
         auth.onAuthStateChanged(async (user) => {
