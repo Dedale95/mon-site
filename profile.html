@@ -1060,7 +1060,6 @@
                         <label for="availableFrom">Disponible à partir de</label>
                         <input type="date" id="availableFrom" name="availableFrom" placeholder="jj/mm/yyyy">
                     </div>
-                    </div>
                 </div>
 
                 <!-- Section Préférences géographiques -->
@@ -1409,7 +1408,6 @@
                         <span class="accordion-icon">▼</span>
                     </div>
                     <div class="accordion-content">
-                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 24px; line-height: 1.6;">Renseignez vos informations de formation et de diplômes.</p>
                     
                     <div class="form-group">
                         <label for="educationLevel">Niveau d'étude</label>
@@ -1596,7 +1594,7 @@
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             const applicationsLink = document.getElementById('applicationsLink');
-            
+
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
             }
@@ -1620,12 +1618,12 @@
             } else {
                 // Utilisateur non connecté - masquer le profil, mes candidatures et le bouton déconnexion, afficher l'auth
                 profileLink.style.display = 'none';
+                if (applicationsLink) applicationsLink.style.display = 'none';
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
                 authLink.classList.remove('nav-link-primary');
-                if (applicationsLink) applicationsLink.style.display = 'none';
             }
             
             highlightCurrentPage();
@@ -1833,6 +1831,52 @@
             }
         }
 
+        // Fonction pour afficher une notification toast moderne
+        function showToast(type, title, message) {
+            // Créer le conteneur s'il n'existe pas
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            
+            // Créer le toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            // Icône selon le type
+            const icon = type === 'success' ? '✓' : '✕';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            // Ajouter au conteneur
+            container.appendChild(toast);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-fermeture après 5 secondes
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
         // Fonction pour charger les métiers sélectionnés
         function loadJobs(profile) {
             const jobs = profile.jobs || [];
@@ -1999,15 +2043,15 @@
                 const fileInput = document.getElementById(`${fileType}Upload`);
                 const fileInfo = document.getElementById(`${fileType}FileInfo`);
                 const fileNameEl = document.getElementById(`${fileType}FileName`);
-                const uploadBtn = fileInput ? fileInput.nextElementSibling : null;
+                const uploadBtn = fileInput.nextElementSibling;
                 const uploadText = document.getElementById(`${fileType}UploadText`);
                 
-                if (!fileInput) return;
-                
                 // Mettre à jour les attributs
-                fileInput.setAttribute('data-url', fileUrl);
-                if (storagePath) {
-                    fileInput.setAttribute('data-storage-path', storagePath);
+                if (fileInput) {
+                    fileInput.setAttribute('data-url', fileUrl);
+                    if (storagePath) {
+                        fileInput.setAttribute('data-storage-path', storagePath);
+                    }
                 }
                 
                 // Afficher les informations du fichier
@@ -2061,23 +2105,25 @@
 
         // Fonction pour uploader un fichier vers Firebase Storage
         async function uploadFile(file, fileType, userId) {
-            const fileInput = document.getElementById(`${fileType}Upload`);
-            const uploadBtn = fileInput ? fileInput.nextElementSibling : null;
+            const uploadBtn = fileType === 'cv' 
+                ? document.querySelector('#cvUpload').nextElementSibling 
+                : document.querySelector('#letterUpload').nextElementSibling;
             const uploadText = document.getElementById(`${fileType}UploadText`);
             const uploadStatus = document.getElementById(`${fileType}UploadStatus`);
             const fileInfo = document.getElementById(`${fileType}FileInfo`);
             const fileName = document.getElementById(`${fileType}FileName`);
+            const fileInput = document.getElementById(`${fileType}Upload`);
             
             try {
                 if (!storage) {
                     throw new Error('Firebase Storage n\'est pas disponible. Veuillez recharger la page.');
                 }
                 
-                if (!uploadBtn) return;
-                
                 // Mettre à jour l'UI
-                uploadBtn.classList.add('uploading');
-                uploadBtn.disabled = true;
+                if (uploadBtn) {
+                    uploadBtn.classList.add('uploading');
+                    uploadBtn.disabled = true;
+                }
                 if (uploadText) uploadText.textContent = 'Téléchargement en cours...';
                 if (uploadStatus) uploadStatus.textContent = '0%';
                 
@@ -2102,8 +2148,10 @@
                     (error) => {
                         // Erreur lors de l'upload
                         console.error('Erreur upload:', error);
-                        uploadBtn.classList.remove('uploading');
-                        uploadBtn.disabled = false;
+                        if (uploadBtn) {
+                            uploadBtn.classList.remove('uploading');
+                            uploadBtn.disabled = false;
+                        }
                         if (uploadText) uploadText.textContent = fileType === 'cv' ? 'Télécharger votre CV' : 'Télécharger votre lettre de motivation';
                         if (uploadStatus) uploadStatus.textContent = '';
                         showToast('error', 'Erreur de téléchargement', 'Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
@@ -2130,8 +2178,10 @@
                         }
                         
                         // Mettre à jour l'UI
-                        uploadBtn.classList.remove('uploading');
-                        uploadBtn.disabled = false;
+                        if (uploadBtn) {
+                            uploadBtn.classList.remove('uploading');
+                            uploadBtn.disabled = false;
+                        }
                         if (uploadText) uploadText.textContent = file.name;
                         if (uploadStatus) uploadStatus.textContent = '';
                         if (fileInfo) fileInfo.style.display = 'flex';
@@ -2227,52 +2277,6 @@
                 console.error('Erreur lors de la suppression:', error);
                 showToast('error', 'Erreur', 'Une erreur est survenue lors de la suppression. Veuillez réessayer.');
             }
-        }
-
-        // Fonction pour afficher une notification toast moderne
-        function showToast(type, title, message) {
-            // Créer le conteneur s'il n'existe pas
-            let container = document.querySelector('.toast-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.className = 'toast-container';
-                document.body.appendChild(container);
-            }
-            
-            // Créer le toast
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            // Icône selon le type
-            const icon = type === 'success' ? '✓' : '✕';
-            
-            toast.innerHTML = `
-                <div class="toast-icon">${icon}</div>
-                <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-            `;
-            
-            // Ajouter au conteneur
-            container.appendChild(toast);
-            
-            // Animation d'apparition
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-            
-            // Auto-fermeture après 5 secondes
-            setTimeout(() => {
-                toast.classList.remove('show');
-                toast.classList.add('hide');
-                setTimeout(() => {
-                    if (toast.parentElement) {
-                        toast.remove();
-                    }
-                }, 300);
-            }, 5000);
         }
 
         // Sauvegarder le profil dans Firestore (avec fallback localStorage)
@@ -2475,8 +2479,8 @@
         function checkAuthAndUpdateNav() {
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
-            const logoutBtn = document.getElementById('logoutBtn');
             const applicationsLink = document.getElementById('applicationsLink');
+            const logoutBtn = document.getElementById('logoutBtn');
             
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
@@ -2513,9 +2517,9 @@
                 profileLink.style.display = 'none';
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
-                if (applicationsLink) applicationsLink.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
+                if (applicationsLink) applicationsLink.style.display = 'none';
                 authLink.classList.remove('nav-link-primary');
             }
             
