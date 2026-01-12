@@ -1316,22 +1316,6 @@
                     jobsContainer.innerHTML = '<div class="no-results"><h3>⏳ Traitement des données...</h3><p>Normalisation des ' + data.length + ' offres, veuillez patienter...</p></div>';
                 }
 
-                // ⚡ OPTIMISATION : Calculer et afficher les stats IMMÉDIATEMENT avant le traitement lourd
-                const quickCountries = new Set();
-                data.forEach(job => {
-                    if (job && job.location && typeof job.location === 'string' && job.location.includes(' - ')) {
-                        const parts = job.location.split(' - ');
-                        const country = parts[1] ? String(parts[1]).trim() : '';
-                        if (country) quickCountries.add(country);
-                    }
-                });
-                
-                // Afficher les stats basiques IMMÉDIATEMENT
-                document.getElementById('totalJobs').textContent = data.length;
-                document.getElementById('filteredJobs').textContent = data.length;
-                document.getElementById('countries').textContent = quickCountries.size;
-                console.log(`⚡ Stats affichées immédiatement : ${data.length} offres, ${quickCountries.size} pays`);
-                
                 allJobs = [];
 
                 // Traitement optimisé par batch avec requestAnimationFrame pour éviter le débordement de stack
