@@ -364,6 +364,32 @@ async def fetch_job_details(context: BrowserContext, url: str, sem: asyncio.Sema
                 elif len(parts) == 1:
                     country_raw = parts[0] # Assume single part is a country if no city is explicit
 
+                # Mapping ville → état pour harmonisation (US principalement)
+                # Exemple: "Jersey City" → "New Jersey" pour cohérence
+                city_to_state_mapping = {
+                    "jersey city": "New Jersey",
+                    "newark": "New Jersey",
+                    "trenton": "New Jersey",
+                    "new york city": "New York",
+                    "new york": "New York",
+                    "brooklyn": "New York",
+                    "manhattan": "New York",
+                    "boston": "Massachusetts",
+                    "chicago": "Illinois",
+                    "los angeles": "California",
+                    "san francisco": "California",
+                    "miami": "Florida",
+                    "dallas": "Texas",
+                    "houston": "Texas",
+                    "austin": "Texas",
+                    "seattle": "Washington",
+                    "atlanta": "Georgia",
+                }
+                
+                # Appliquer le mapping si la ville est reconnue
+                if city_raw and city_raw.lower() in city_to_state_mapping:
+                    city_raw = city_to_state_mapping[city_raw.lower()]
+
                 city_normalized = normalize_city(city_raw) if city_raw else None
                 country_normalized = normalize_country(country_raw) if country_raw else None
 
