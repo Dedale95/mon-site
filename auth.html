@@ -1462,7 +1462,7 @@
                 resetEmailInput.classList.add('error');
                 let errorMessage = 'Une erreur est survenue. ';
                 
-                // Gérer les erreurs Firebase
+                // Gérer les erreurs Firebase avec messages français professionnels
                 switch (error.code) {
                     case 'auth/user-not-found':
                         errorMessage = 'Aucun compte trouvé avec cet email. Vérifiez l\'adresse email.';
@@ -1473,8 +1473,16 @@
                     case 'auth/too-many-requests':
                         errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
                         break;
+                    case 'auth/invalid-credential':
+                        errorMessage = 'L\'email fourni est invalide. Vérifiez votre adresse email.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
+                        break;
                     default:
-                        errorMessage += error.message;
+                        // Message générique professionnel pour les erreurs inconnues
+                        errorMessage = 'Une erreur est survenue. Veuillez réessayer.';
+                        console.error('Code d\'erreur non géré:', error.code, error.message);
                 }
                 
                 resetError.textContent = errorMessage;
@@ -1623,7 +1631,7 @@
                 console.error('Erreur d\'inscription:', error);
                 let errorMessage = 'Une erreur est survenue lors de l\'inscription. ';
                 
-                // Gérer les erreurs Firebase
+                // Gérer les erreurs Firebase avec messages français professionnels
                 switch (error.code) {
                     case 'auth/email-already-in-use':
                         errorMessage = 'Cet email est déjà utilisé. Utilisez la connexion ou réinitialisez votre mot de passe.';
@@ -1635,10 +1643,18 @@
                         errorMessage = 'Le mot de passe est trop faible. Utilisez au moins 6 caractères.';
                         break;
                     case 'auth/operation-not-allowed':
-                        errorMessage = 'L\'authentification par email/mot de passe n\'est pas activée. Vérifiez la configuration Firebase.';
+                        errorMessage = 'L\'authentification par email/mot de passe n\'est pas activée. Contactez le support.';
+                        break;
+                    case 'auth/invalid-credential':
+                        errorMessage = 'Les informations fournies sont invalides. Veuillez vérifier vos données.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
                         break;
                     default:
-                        errorMessage += error.message;
+                        // Message générique professionnel pour les erreurs inconnues
+                        errorMessage = 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
+                        console.error('Code d\'erreur non géré:', error.code, error.message);
                 }
                 
                 showError('signupError', errorMessage);
@@ -1714,7 +1730,7 @@
                 console.error('Erreur de connexion:', error);
                 let errorMessage = 'Erreur de connexion. ';
                 
-                // Gérer les erreurs Firebase
+                // Gérer les erreurs Firebase avec messages français professionnels
                 switch (error.code) {
                     case 'auth/user-not-found':
                         errorMessage = 'Aucun compte trouvé avec cet email.';
@@ -1731,8 +1747,22 @@
                     case 'auth/too-many-requests':
                         errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
                         break;
+                    case 'auth/invalid-credential':
+                        errorMessage = 'Email ou mot de passe incorrect. Veuillez vérifier vos identifiants.';
+                        break;
+                    case 'auth/invalid-verification-code':
+                        errorMessage = 'Code de vérification invalide ou expiré.';
+                        break;
+                    case 'auth/session-cookie-expired':
+                        errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet.';
+                        break;
                     default:
-                        errorMessage += error.message;
+                        // Message générique professionnel pour les erreurs inconnues
+                        errorMessage = 'Une erreur est survenue lors de la connexion. Veuillez réessayer.';
+                        console.error('Code d\'erreur non géré:', error.code, error.message);
                 }
                 
                 showError('loginError', errorMessage);
