@@ -159,7 +159,6 @@
             background: #f9fafb;
             cursor: pointer;
             transition: all 0.3s;
-            border-bottom: 2px solid transparent;
             user-select: none;
         }
 
@@ -170,7 +169,6 @@
         .accordion-section.active .accordion-header {
             background: #667eea;
             color: white;
-            border-bottom-color: #5568d3;
         }
 
         .accordion-header h2 {
@@ -325,6 +323,63 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        /* Styles pour champs/sections incomplets */
+        .accordion-section.incomplete .accordion-header {
+            background: #fee2e2;
+            border-left: 4px solid #dc2626;
+        }
+
+        .accordion-section.incomplete .accordion-header h2 {
+            color: #dc2626;
+        }
+
+        .accordion-section.incomplete .accordion-icon {
+            color: #dc2626;
+        }
+
+        .accordion-section.incomplete.active .accordion-header {
+            background: #dc2626;
+            border-left: 4px solid #991b1b;
+        }
+
+        .accordion-section.incomplete.active .accordion-header h2,
+        .accordion-section.incomplete.active .accordion-icon {
+            color: white;
+        }
+
+        .form-group.incomplete label {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .form-group.incomplete input,
+        .form-group.incomplete select {
+            border-color: #dc2626;
+            background: #fef2f2;
+        }
+
+        .form-group.incomplete input:focus,
+        .form-group.incomplete select:focus {
+            border-color: #991b1b;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .checkbox-group.incomplete {
+            border: 2px solid #dc2626;
+            background: #fef2f2;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .checkbox-group.incomplete::before {
+            content: "⚠️ Sélectionnez au moins une option";
+            display: block;
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
         }
 
         /* Notification Toast Moderne */
@@ -1497,8 +1552,8 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 30px;">
-                    <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 30px;">
+                    <button type="submit" class="btn" id="saveBtn">💾 Enregistrer mon profil</button>
                 </div>
             </form>
         </div>
@@ -2281,9 +2336,131 @@
         }
 
         // Sauvegarder le profil dans Firestore (avec fallback localStorage)
+        // Fonction de validation du profil
+        function validateProfile() {
+            // Réinitialiser toutes les classes "incomplete"
+            document.querySelectorAll('.incomplete').forEach(el => el.classList.remove('incomplete'));
+
+            const incompleteFields = [];
+            const incompleteSections = new Set();
+
+            // Définir les champs requis par section
+            const requiredFields = {
+                'Informations personnelles': [
+                    { id: 'civility', label: 'Civilité', section: 'Informations personnelles' },
+                    { id: 'firstName', label: 'Prénom', section: 'Informations personnelles' },
+                    { id: 'lastName', label: 'Nom', section: 'Informations personnelles' },
+                    { id: 'phone', label: 'Téléphone', section: 'Informations personnelles' }
+                ],
+                'Adresse': [
+                    { id: 'address', label: 'Adresse', section: 'Adresse' },
+                    { id: 'postalCode', label: 'Code postal', section: 'Adresse' },
+                    { id: 'city', label: 'Ville', section: 'Adresse' },
+                    { id: 'country', label: 'Pays', section: 'Adresse' }
+                ],
+                'Les métiers qui m\'intéressent': [
+                    { name: 'jobs', label: 'Métiers', section: 'Les métiers qui m\'intéressent', isCheckbox: true }
+                ],
+                'Contrat et disponibilité': [
+                    { id: 'contractType', label: 'Type de contrat', section: 'Contrat et disponibilité' },
+                    { id: 'availableFrom', label: 'Disponibilité', section: 'Contrat et disponibilité' }
+                ],
+                'Préférences géographiques': [
+                    { name: 'continents', label: 'Continents', section: 'Préférences géographiques', isCheckbox: true },
+                    { name: 'preferredCountries', label: 'Pays', section: 'Préférences géographiques', isCheckbox: true }
+                ],
+                'Niveau d\'expérience': [
+                    { id: 'experienceLevel', label: 'Niveau d\'expérience', section: 'Niveau d\'expérience' }
+                ],
+                'Formation': [
+                    { id: 'educationLevel', label: 'Niveau d\'études', section: 'Formation' },
+                    { id: 'institutionType', label: 'Type d\'établissement', section: 'Formation' },
+                    { id: 'diplomaStatus', label: 'Statut du diplôme', section: 'Formation' }
+                ]
+            };
+
+            // Vérifier chaque champ requis
+            Object.values(requiredFields).flat().forEach(field => {
+                if (field.isCheckbox) {
+                    // Vérifier les checkbox groups
+                    const checkboxes = document.querySelectorAll(`input[name="${field.name}"]:checked`);
+                    if (checkboxes.length === 0) {
+                        incompleteFields.push(field.label);
+                        incompleteSections.add(field.section);
+                        // Marquer le groupe de checkbox comme incomplet
+                        const checkboxContainer = document.querySelector(`input[name="${field.name}"]`)?.closest('.checkbox-grid, .form-group');
+                        if (checkboxContainer) {
+                            checkboxContainer.classList.add('incomplete');
+                            checkboxContainer.classList.add('checkbox-group');
+                        }
+                    }
+                } else {
+                    // Vérifier les champs input/select
+                    const element = document.getElementById(field.id);
+                    if (element && (!element.value || element.value.trim() === '')) {
+                        incompleteFields.push(field.label);
+                        incompleteSections.add(field.section);
+                        // Marquer le form-group comme incomplet
+                        const formGroup = element.closest('.form-group');
+                        if (formGroup) {
+                            formGroup.classList.add('incomplete');
+                        }
+                    }
+                }
+            });
+
+            // Marquer les sections incomplètes
+            incompleteSections.forEach(sectionName => {
+                const accordionHeaders = document.querySelectorAll('.accordion-header h2');
+                accordionHeaders.forEach(header => {
+                    if (header.textContent.trim() === sectionName) {
+                        const section = header.closest('.accordion-section');
+                        if (section) {
+                            section.classList.add('incomplete');
+                        }
+                    }
+                });
+            });
+
+            // Si des champs sont incomplets, afficher un toast et retourner false
+            if (incompleteFields.length > 0) {
+                const fieldsList = incompleteFields.slice(0, 5).join(', ');
+                const moreText = incompleteFields.length > 5 ? ` et ${incompleteFields.length - 5} autre(s)` : '';
+                
+                showToast(
+                    '⚠️ Profil incomplet',
+                    `Pour activer l'automatisation des candidatures, veuillez compléter tous les champs obligatoires : ${fieldsList}${moreText}.`,
+                    'warning',
+                    8000
+                );
+
+                // Scroller vers la première section incomplète
+                const firstIncompleteSection = document.querySelector('.accordion-section.incomplete');
+                if (firstIncompleteSection) {
+                    firstIncompleteSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Ouvrir la section si elle est fermée
+                    if (!firstIncompleteSection.classList.contains('active')) {
+                        const header = firstIncompleteSection.querySelector('.accordion-header');
+                        if (header) {
+                            header.click();
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
         async function handleSaveProfile(event) {
             event.preventDefault();
-            
+
+            // Valider le profil avant de sauvegarder
+            if (!validateProfile()) {
+                return; // Arrêter si validation échoue
+            }
+
             // Vérifier l'utilisateur avec plusieurs fallbacks
             let user = null;
             let userEmail = null;
