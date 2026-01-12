@@ -1582,6 +1582,7 @@
                         searchKeywords.add(keyword);
                         renderSearchTags();
                         this.value = '';
+                        updateActiveFiltersBadge(); // Mise à jour immédiate
                         applyFilters();
                     }
                 }
@@ -1621,7 +1622,10 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = value;
-                checkbox.onchange = applyFilters;
+                checkbox.onchange = () => {
+                    updateActiveFiltersBadge(); // Mise à jour immédiate du badge
+                    applyFilters(); // Puis application des filtres
+                };
 
                 // Restaurer l'état coché si la valeur était cochée avant
                 if (checkedValues.has(value)) {
@@ -2328,25 +2332,23 @@
             localStorage.setItem('filtersCollapsed', isCollapsed);
         }
 
-        // Fonction pour mettre à jour le badge des filtres actifs (optimisée)
+        // Fonction pour mettre à jour le badge des filtres actifs (ultra-optimisée)
         function updateActiveFiltersBadge() {
-            // Utiliser requestAnimationFrame pour ne pas bloquer le thread principal
-            requestAnimationFrame(() => {
-                const checkedCount = document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]:checked').length;
-                const keywordsCount = window.searchKeywords ? window.searchKeywords.size : 0;
-                const totalActive = checkedCount + keywordsCount;
-                
-                const badge = document.getElementById('activeFiltersBadge');
-                if (!badge) return;
-                
-                if (totalActive === 0) {
-                    badge.textContent = 'Aucun filtre';
-                } else if (totalActive === 1) {
-                    badge.textContent = '1 filtre actif';
-                } else {
-                    badge.textContent = `${totalActive} filtres actifs`;
-                }
-            });
+            // Exécution immédiate sans requestAnimationFrame pour être plus réactif
+            const checkedCount = document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]:checked').length;
+            const keywordsCount = window.searchKeywords ? window.searchKeywords.size : 0;
+            const totalActive = checkedCount + keywordsCount;
+            
+            const badge = document.getElementById('activeFiltersBadge');
+            if (!badge) return;
+            
+            if (totalActive === 0) {
+                badge.textContent = 'Aucun filtre';
+            } else if (totalActive === 1) {
+                badge.textContent = '1 filtre actif';
+            } else {
+                badge.textContent = `${totalActive} filtres actifs`;
+            }
         }
 
         // Restaurer l'état de l'accordéon au chargement
