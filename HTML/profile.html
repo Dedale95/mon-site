@@ -234,7 +234,7 @@
         .form-group input {
             width: 100%;
             padding: 12px 14px;
-            border: 2px solid #e5e7eb;
+            border: 1px solid #e5e7eb;
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s;
@@ -630,9 +630,9 @@
             align-items: center;
             gap: 12px;
             padding: 14px 16px;
-            border: 2px solid #e5e7eb;
+            border: none;
             border-radius: 10px;
-            background: white;
+            background: #f9fafb;
             cursor: pointer;
             transition: all 0.3s;
             font-size: 0.95rem;
@@ -642,8 +642,7 @@
         }
 
         .checkbox-label:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(102, 126, 234, 0.1);
         }
 
         .checkbox-label input[type="checkbox"] {
@@ -660,7 +659,7 @@
             width: 20px;
             height: 20px;
             min-width: 20px;
-            border: 2px solid #d1d5db;
+            border: 1px solid #d1d5db;
             border-radius: 5px;
             background: white;
             margin-right: 0;
@@ -670,6 +669,7 @@
 
         .checkbox-label:hover input[type="checkbox"] + .checkbox-text::before {
             border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
         }
 
         .checkbox-label input[type="checkbox"]:checked + .checkbox-text::before {
