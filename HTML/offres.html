@@ -134,7 +134,7 @@
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 16px;
-            padding: 20px 30px;
+            padding: 15px 30px;
             margin-bottom: 25px;
             box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             position: relative;
@@ -154,8 +154,8 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
             position: relative;
             z-index: 1;
         }
@@ -163,9 +163,12 @@
         .stat-item {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
-            padding: 15px 20px;
+            padding: 12px 18px;
             border-radius: 12px;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s;
         }
@@ -179,12 +182,15 @@
             font-size: 1.8rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 5px;
+            margin: 0;
+            line-height: 1;
         }
 
         .stat-label {
             color: rgba(255, 255, 255, 0.9);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            margin: 0;
+            white-space: nowrap;
         }
 
         .filters {
