@@ -1592,16 +1592,17 @@
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             const applicationsLink = document.getElementById('applicationsLink');
+            const connexionsLink = document.getElementById('connexionsLink');
 
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
             }
-            
+
             // Vérifier localStorage immédiatement
             const token = localStorage.getItem('authToken');
             const email = localStorage.getItem('userEmail');
             const isAuthenticated = !!(token && email);
-            
+
             if (isAuthenticated) {
                 // Utilisateur connecté - afficher le profil, mes candidatures et le bouton déconnexion, masquer l'auth
                 profileLink.style.display = 'block';
@@ -1613,17 +1614,19 @@
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'none';
                 if (applicationsLink) applicationsLink.style.display = 'block';
+                if (connexionsLink) connexionsLink.style.display = 'block';
             } else {
                 // Utilisateur non connecté - masquer le profil, mes candidatures et le bouton déconnexion, afficher l'auth
                 profileLink.style.display = 'none';
                 if (applicationsLink) applicationsLink.style.display = 'none';
+                if (connexionsLink) connexionsLink.style.display = 'none';
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
                 authLink.classList.remove('nav-link-primary');
             }
-            
+
             highlightCurrentPage();
         }
         
@@ -2478,15 +2481,16 @@
             const profileLink = document.getElementById('profileLink');
             const authLink = document.getElementById('authLink');
             const applicationsLink = document.getElementById('applicationsLink');
+            const connexionsLink = document.getElementById('connexionsLink');
             const logoutBtn = document.getElementById('logoutBtn');
-            
+
             if (!profileLink || !authLink || !logoutBtn) {
                 return;
             }
-            
+
             // Vérifier l'état d'authentification (Firebase en priorité, sinon localStorage)
             let isAuthenticated = false;
-            
+
             if (currentUser && currentUser.uid) {
                 isAuthenticated = true;
             } else if (auth && auth.currentUser && auth.currentUser.uid) {
@@ -2497,7 +2501,7 @@
                 const email = localStorage.getItem('userEmail');
                 isAuthenticated = !!(token && email);
             }
-            
+
             if (isAuthenticated) {
                 // Utilisateur connecté - afficher le profil, mes candidatures et le bouton déconnexion, masquer l'auth
                 profileLink.style.display = 'block';
@@ -2510,6 +2514,7 @@
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'none';
                 if (applicationsLink) applicationsLink.style.display = 'block';
+                if (connexionsLink) connexionsLink.style.display = 'block';
             } else {
                 // Utilisateur non connecté - masquer le profil, mes candidatures et le bouton déconnexion, afficher l'auth
                 profileLink.style.display = 'none';
@@ -2518,9 +2523,10 @@
                 logoutBtn.classList.remove('nav-link-primary');
                 authLink.style.display = 'block';
                 if (applicationsLink) applicationsLink.style.display = 'none';
+                if (connexionsLink) connexionsLink.style.display = 'none';
                 authLink.classList.remove('nav-link-primary');
             }
-            
+
             setTimeout(() => highlightCurrentPage(), 50);
         }
 

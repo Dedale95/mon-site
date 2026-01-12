@@ -654,6 +654,7 @@
                 <a href="offres.html" class="nav-link">Offres</a>
                 <a href="filtres.html" class="nav-link">Recherche avancée</a>
                 <a href="mes-candidatures.html" class="nav-link nav-link-primary">Mes candidatures</a>
+                <a href="connexions.html" class="nav-link" id="connexionsLink" style="display: none;">🔗 Connexions</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
                 <a href="#" class="nav-link" id="logoutLink" style="display: none;">Déconnexion</a>
@@ -877,15 +878,18 @@
         function updateNavigation(user) {
             const authLink = document.getElementById('authLink');
             const profileLink = document.getElementById('profileLink');
+            const connexionsLink = document.getElementById('connexionsLink');
             const logoutLink = document.getElementById('logoutLink');
 
             if (user) {
                 authLink.style.display = 'none';
                 profileLink.style.display = 'block';
+                if (connexionsLink) connexionsLink.style.display = 'block';
                 logoutLink.style.display = 'block';
             } else {
                 authLink.style.display = 'block';
                 profileLink.style.display = 'none';
+                if (connexionsLink) connexionsLink.style.display = 'none';
                 logoutLink.style.display = 'none';
             }
         }

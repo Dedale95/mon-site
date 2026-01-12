@@ -2743,6 +2743,7 @@
         function checkAuthAndUpdateNav() {
             const profileLink = document.getElementById('profileLink');
             const applicationsLink = document.getElementById('applicationsLink');
+            const connexionsLink = document.getElementById('connexionsLink');
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             
@@ -2774,6 +2775,10 @@
                     applicationsLink.style.display = 'block';
                     applicationsLink.classList.remove('nav-link-primary');
                 }
+                if (connexionsLink) {
+                    connexionsLink.style.display = 'block';
+                    connexionsLink.classList.remove('nav-link-primary');
+                }
                 if (logoutBtn) {
                     logoutBtn.style.display = 'block';
                     logoutBtn.classList.remove('nav-link-primary');
@@ -2787,6 +2792,10 @@
                 if (applicationsLink) {
                     applicationsLink.style.display = 'none';
                     applicationsLink.classList.remove('nav-link-primary');
+                }
+                if (connexionsLink) {
+                    connexionsLink.style.display = 'none';
+                    connexionsLink.classList.remove('nav-link-primary');
                 }
                 if (logoutBtn) {
                     logoutBtn.style.display = 'none';
