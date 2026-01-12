@@ -2415,7 +2415,15 @@
         let firebaseAuthReady = false;
         let jobsLoaded = false;
 
-        // Écouter les changements d'état Firebase ET charger les jobs après initialisation
+        // ⚡ OPTIMISATION : Charger les jobs IMMÉDIATEMENT sans attendre l'auth
+        // Les statistiques s'affichent tout de suite, les boutons se mettent à jour après
+        console.log('⚡ Démarrage du chargement des jobs (optimisé)...');
+        loadJobs().then(() => {
+            jobsLoaded = true;
+            console.log('✅ Jobs chargés et affichés');
+        });
+
+        // Écouter les changements d'état Firebase EN PARALLÈLE
         if (typeof firebase !== 'undefined' && firebase.auth) {
             try {
                 const auth = firebase.auth();
@@ -2423,38 +2431,33 @@
                     console.log('🔄 Auth state changed:', user ? 'Connecté (' + user.email + ')' : 'Déconnexion');
                     const wasAuthenticated = currentAuthState;
                     currentAuthState = !!user;
-                    
+
                     checkAuthAndUpdateNav();
-                    
-                    // Charger les candidatures de l'utilisateur
+
+                    // Charger les candidatures de l'utilisateur EN ARRIÈRE-PLAN
                     if (user) {
-                        await loadUserApplications();
+                        loadUserApplications().then(() => {
+                            // Une fois les candidatures chargées, mettre à jour les boutons
+                            if (jobsLoaded && filteredJobs.length > 0) {
+                                console.log('🔄 Mise à jour des boutons avec les candidatures');
+                                renderJobs();
+                            }
+                        });
                     } else {
                         userApplications.clear();
+                        // Re-render pour enlever les boutons "Candidature en cours"
+                        if (jobsLoaded && filteredJobs.length > 0) {
+                            renderJobs();
+                        }
                     }
-                    
-                    // Lors du premier appel (Firebase Auth est prêt), charger les jobs
-                    if (!firebaseAuthReady) {
-                        firebaseAuthReady = true;
-                        console.log('✅ Firebase Auth prêt, chargement des jobs...');
-                        await loadJobs();
-                        jobsLoaded = true;
-                    }
-                    // Si les jobs sont déjà chargés et l'état a changé, re-render
-                    else if (wasAuthenticated !== currentAuthState && jobsLoaded && filteredJobs.length > 0) {
-                        console.log('🔄 Re-rendering jobs avec nouveau statut auth:', currentAuthState);
-                        await renderJobs();
-                    }
+
+                    firebaseAuthReady = true;
                 });
             } catch (e) {
                 console.error('Erreur Firebase Auth:', e);
-                // Si Firebase échoue, charger quand même les jobs (sans auth)
-                loadJobs();
             }
         } else {
-            // Si Firebase n'est pas disponible, charger les jobs sans auth
-            console.warn('⚠️ Firebase non disponible, chargement des jobs sans authentification');
-            loadJobs();
+            console.warn('⚠️ Firebase non disponible');
         }
 
         // Fonction de déconnexion avec Firebase
