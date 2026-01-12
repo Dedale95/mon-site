@@ -1599,9 +1599,13 @@
                 await user.sendEmailVerification();
 
                 showSuccess('signupSuccess', 
-                    'Inscription réussie ! Un email de vérification a été envoyé à ' + email + '. Veuillez vérifier votre boîte mail et cliquer sur le lien pour activer votre compte.');
+                    '✅ Inscription réussie ! Un email de vérification a été envoyé à ' + email + '. ' +
+                    '📧 Veuillez vérifier votre boîte mail (et le dossier SPAM/Courrier indésirable) et cliquer sur le lien pour activer votre compte. ' +
+                    '⚠️ Si vous ne recevez pas l\'email dans les 5 minutes, vérifiez vos spams !');
                 
                 document.getElementById('signupForm').reset();
+                // Reset checkbox CGU
+                document.getElementById('acceptTerms').checked = false;
                 document.querySelectorAll('.password-requirements li').forEach(li => li.classList.remove('valid'));
 
                 // Déconnecter l'utilisateur jusqu'à ce qu'il vérifie son email
