@@ -323,6 +323,7 @@
                 <a href="offres.html" class="nav-link">Offres</a>
                 <a href="filtres.html" class="nav-link nav-link-primary">Recherche avancée</a>
                 <a href="mes-candidatures.html" class="nav-link" id="applicationsLink" style="display: none;">Mes candidatures</a>
+                <a href="connexions.html" class="nav-link" id="connexionsLink" style="display: none;">🔗 Connexions</a>
                 <a href="auth.html" class="nav-link" id="authLink">Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Mon Profil</a>
                 <button class="nav-link logout-btn" id="logoutBtn" onclick="handleLogout()" style="display: none;">Déconnexion</button>
@@ -406,6 +407,7 @@
             const authLink = document.getElementById('authLink');
             const logoutBtn = document.getElementById('logoutBtn');
             const applicationsLink = document.getElementById('applicationsLink');
+            const connexionsLink = document.getElementById('connexionsLink');
 
             // Vérifier à la fois localStorage et Firebase auth
             const token = localStorage.getItem('authToken');
@@ -437,6 +439,7 @@
                 }
                 if (authLink) authLink.style.display = 'none';
                 if (applicationsLink) applicationsLink.style.display = 'block';
+                if (connexionsLink) connexionsLink.style.display = 'block';
             } else {
                 if (profileLink) {
                     profileLink.style.display = 'none';
@@ -451,6 +454,7 @@
                     authLink.classList.remove('nav-link-primary');
                 }
                 if (applicationsLink) applicationsLink.style.display = 'none';
+                if (connexionsLink) connexionsLink.style.display = 'none';
             }
             
             setTimeout(() => highlightCurrentPage(), 50);
