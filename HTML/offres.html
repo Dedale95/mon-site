@@ -481,6 +481,127 @@
         .jobs-container {
             display: grid;
             gap: 20px;
+            padding: 25px 0;
+        }
+
+        /* Pagination */
+        .pagination-container {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        #paginationBottom {
+            margin-bottom: 0;
+            margin-top: 25px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        #paginationBottom .pagination-controls {
+            margin-bottom: 0;
+            margin-top: 15px;
+        }
+
+        .items-per-page {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .items-per-page select {
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .items-per-page select:hover {
+            border-color: #667eea;
+        }
+
+        .items-per-page select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .pagination-info strong {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 10px 16px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            color: #666;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .pagination-btn:hover:not(:disabled):not(.active) {
+            border-color: #667eea;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .pagination-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.ellipsis {
+            border: none;
+            background: transparent;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .pagination-btn.prev-next {
+            font-weight: 700;
         }
 
         .job-card {
@@ -1006,8 +1127,41 @@
             </div>
         </div>
 
+        <!-- Pagination supérieure -->
+        <div class="pagination-container" id="paginationTop" style="display: none;">
+            <div class="pagination-controls">
+                <div class="items-per-page">
+                    <label for="itemsPerPage">Offres par page :</label>
+                    <select id="itemsPerPage" onchange="changeItemsPerPage()">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="pagination-info" id="paginationInfoTop">
+                    Affichage de <strong>1-25</strong> sur <strong>0</strong> offres
+                </div>
+            </div>
+            <div class="pagination-buttons" id="paginationButtonsTop">
+                <!-- Boutons de pagination générés dynamiquement -->
+            </div>
+        </div>
+
         <div class="jobs-container" id="jobsContainer">
             <div class="loading">Chargement des offres...</div>
+        </div>
+
+        <!-- Pagination inférieure -->
+        <div class="pagination-container" id="paginationBottom" style="display: none;">
+            <div class="pagination-buttons" id="paginationButtonsBottom">
+                <!-- Boutons de pagination générés dynamiquement -->
+            </div>
+            <div class="pagination-controls">
+                <div class="pagination-info" id="paginationInfoBottom">
+                    Affichage de <strong>1-25</strong> sur <strong>0</strong> offres
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1025,6 +1179,10 @@
     <script>
         let allJobs = [];
         let filteredJobs = [];
+        
+        // Pagination variables
+        let currentPage = 1;
+        let itemsPerPage = 25;
 
         const cityToRegion = {
             // Île-de-France
@@ -2256,13 +2414,112 @@
             });
         }
 
-        async function renderJobs() {
+        // Fonction pour changer le nombre d'offres par page
+        function changeItemsPerPage() {
+            const select = document.getElementById('itemsPerPage');
+            itemsPerPage = parseInt(select.value);
+            currentPage = 1; // Retour à la première page
+            renderPaginatedJobs();
+        }
+
+        // Fonction pour changer de page
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            renderPaginatedJobs();
+            
+            // Scroll vers le haut des offres
+            document.getElementById('jobsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Fonction pour générer les boutons de pagination
+        function generatePaginationButtons() {
+            const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+            const maxVisibleButtons = 7;
+            
+            let buttons = '<button class="pagination-btn prev-next" onclick="goToPage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + '>← Précédent</button>';
+            
+            if (totalPages <= maxVisibleButtons) {
+                for (let i = 1; i <= totalPages; i++) {
+                    buttons += '<button class="pagination-btn ' + (i === currentPage ? 'active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+                }
+            } else {
+                buttons += '<button class="pagination-btn ' + (1 === currentPage ? 'active' : '') + '" onclick="goToPage(1)">1</button>';
+                
+                if (currentPage > 3) {
+                    buttons += '<button class="pagination-btn ellipsis">...</button>';
+                }
+                
+                let start = Math.max(2, currentPage - 1);
+                let end = Math.min(totalPages - 1, currentPage + 1);
+                
+                for (let i = start; i <= end; i++) {
+                    buttons += '<button class="pagination-btn ' + (i === currentPage ? 'active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+                }
+                
+                if (currentPage < totalPages - 2) {
+                    buttons += '<button class="pagination-btn ellipsis">...</button>';
+                }
+                
+                buttons += '<button class="pagination-btn ' + (totalPages === currentPage ? 'active' : '') + '" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
+            }
+            
+            buttons += '<button class="pagination-btn prev-next" onclick="goToPage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + '>Suivant →</button>';
+            
+            return buttons;
+        }
+
+        // Fonction pour mettre à jour les infos de pagination
+        function updatePaginationInfo() {
+            const totalJobs = filteredJobs.length;
+            const startIndex = (currentPage - 1) * itemsPerPage + 1;
+            const endIndex = Math.min(currentPage * itemsPerPage, totalJobs);
+            
+            const infoText = 'Affichage de <strong>' + startIndex + '-' + endIndex + '</strong> sur <strong>' + totalJobs + '</strong> offres';
+            
+            document.getElementById('paginationInfoTop').innerHTML = infoText;
+            document.getElementById('paginationInfoBottom').innerHTML = infoText;
+        }
+
+        // Fonction pour afficher les offres paginées
+        async function renderPaginatedJobs() {
             const container = document.getElementById('jobsContainer');
+            
             if (filteredJobs.length === 0) {
                 container.innerHTML = '<div class="no-results"><h3>😕 Aucune offre</h3><p>Modifiez vos filtres</p></div>';
+                document.getElementById('paginationTop').style.display = 'none';
+                document.getElementById('paginationBottom').style.display = 'none';
                 return;
             }
+            
+            // Afficher les paginations
+            document.getElementById('paginationTop').style.display = 'block';
+            document.getElementById('paginationBottom').style.display = 'block';
+            
+            // Calculer les indices
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            
+            // Obtenir les offres pour la page actuelle
+            const jobsToDisplay = filteredJobs.slice(startIndex, endIndex);
+            
+            // Afficher les offres
+            container.innerHTML = '';
+            await renderJobsCards(jobsToDisplay);
+            
+            // Mettre à jour la pagination
+            const paginationButtons = generatePaginationButtons();
+            document.getElementById('paginationButtonsTop').innerHTML = paginationButtons;
+            document.getElementById('paginationButtonsBottom').innerHTML = paginationButtons;
+            
+            updatePaginationInfo();
+        }
 
+        async function renderJobsCards(jobs) {
+            const container = document.getElementById('jobsContainer');
+            
             // Vérifier si l'utilisateur est connecté
             const isAuthenticated = checkIsAuthenticated();
 
