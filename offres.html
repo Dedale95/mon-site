@@ -131,66 +131,42 @@
             padding: 0 20px;
         }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
-            padding: 15px 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
+        /* Stats compactes intégrées dans le header des filtres */
+        .filters-stats {
+            display: flex;
+            gap: 25px;
+            align-items: center;
         }
 
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .stat-item {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            padding: 12px 18px;
-            border-radius: 12px;
+        .stat-item-compact {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
-        .stat-item:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.2);
+        .stat-item-compact:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
         }
 
-        .stat-number {
-            font-size: 1.8rem;
+        .stat-number-compact {
+            font-size: 1.3rem;
             font-weight: 700;
             color: white;
-            margin: 0;
             line-height: 1;
         }
 
-        .stat-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.9rem;
-            margin: 0;
+        .stat-label-compact {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.85rem;
             white-space: nowrap;
+            font-weight: 500;
         }
 
         /* Wrapper des filtres */
@@ -205,13 +181,14 @@
         /* Header cliquable pour toggle */
         .filters-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px 30px;
+            padding: 18px 30px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
             transition: all 0.3s ease;
             border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+            gap: 25px;
         }
 
         .filters-header:hover {
@@ -226,16 +203,18 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
         }
 
         .toggle-icon {
-            font-size: 1.3rem;
+            width: 20px;
+            height: 20px;
             transition: transform 0.3s ease;
-            line-height: 1;
+            flex-shrink: 0;
         }
 
         .filters-header.collapsed .toggle-icon {
-            transform: rotate(-90deg);
+            transform: rotate(-180deg);
         }
 
         .filters-title {
@@ -1025,6 +1004,41 @@
             .filter-row:last-of-type {
                 grid-template-columns: 1fr;
             }
+
+            /* Responsive pour le nouveau header avec stats */
+            .filters-header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 20px;
+            }
+
+            .filters-header-left {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .filters-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .stat-item-compact {
+                padding: 5px 12px;
+            }
+
+            .stat-number-compact {
+                font-size: 1.1rem;
+            }
+
+            .stat-label-compact {
+                font-size: 0.75rem;
+            }
+
+            .toggle-badge {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -1054,29 +1068,28 @@
 
     <div class="main-content">
     <div class="container">
-        <div class="header">
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-number" id="totalJobs">⏳</div>
-                    <div class="stat-label">Offres totales</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="filteredJobs">⏳</div>
-                    <div class="stat-label">Affichées</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="countries">⏳</div>
-                    <div class="stat-label">Pays</div>
-                </div>
-            </div>
-        </div>
-
         <div class="filters-wrapper">
-            <!-- Header cliquable pour toggle -->
+            <!-- Header cliquable pour toggle avec stats intégrées -->
             <div class="filters-header" id="filtersToggle" onclick="toggleFilters()">
                 <div class="filters-header-left">
-                    <span class="toggle-icon">🔽</span>
+                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5L10 12.5L15 7.5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                     <span class="filters-title">Filtres de recherche</span>
+                </div>
+                <div class="filters-stats">
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact" id="totalJobs">⏳</span>
+                        <span class="stat-label-compact">Offres totales</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact" id="filteredJobs">⏳</span>
+                        <span class="stat-label-compact">Affichées</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact" id="countries">⏳</span>
+                        <span class="stat-label-compact">Pays</span>
+                    </div>
                 </div>
                 <span class="toggle-badge" id="activeFiltersBadge">Aucun filtre</span>
             </div>
