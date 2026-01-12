@@ -2502,8 +2502,11 @@
 
         // Fonction wrapper pour la compatibilité - appelée par les filtres
         function renderJobs(jobs) {
-            // Mettre à jour la liste des offres filtrées
-            filteredJobs = jobs || [];
+            // Si des jobs sont fournis, mettre à jour filteredJobs
+            // Sinon, utiliser filteredJobs existant (ne pas écraser avec [])
+            if (jobs !== undefined) {
+                filteredJobs = jobs;
+            }
             
             // Reset à la page 1
             currentPage = 1;
