@@ -483,11 +483,48 @@
             border-radius: 16px;
             padding: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
             cursor: pointer;
             border: 2px solid transparent;
             position: relative;
             overflow: hidden;
+        }
+
+        /* États de candidature */
+        .job-card.application-pending {
+            background: linear-gradient(to right, #fff5e6 0%, #ffffff 100%);
+            border-color: #ff9500;
+            box-shadow: 0 4px 20px rgba(255, 149, 0, 0.15);
+        }
+
+        .job-card.application-submitted {
+            background: linear-gradient(to right, #e6f7ed 0%, #ffffff 100%);
+            border-color: #34c759;
+            box-shadow: 0 4px 20px rgba(52, 199, 89, 0.15);
+        }
+
+        /* Badge d'état dans le coin */
+        .job-card-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .job-card.application-pending .job-card-badge {
+            background: #ff9500;
+            color: white;
+        }
+
+        .job-card.application-submitted .job-card-badge {
+            background: #34c759;
+            color: white;
         }
         
         /* Empêcher le tremblement quand on clique sur les boutons */
@@ -2217,10 +2254,27 @@
             // Vérifier si l'utilisateur est connecté
             const isAuthenticated = checkIsAuthenticated();
 
-            // Fonction pour générer le HTML d'une carte d'offre (sans logos pour stabilité)
+            // Fonction pour générer le HTML d'une carte d'offre (avec états visuels)
             function renderJobCard(job) {
+                // Déterminer l'état de la candidature
+                const hasApplied = userApplications.has(job.job_id);
+                const applicationStatus = hasApplied ? 'pending' : 'none'; // Pour l'instant, toutes sont pending
+                
+                // Classes CSS selon l'état
+                let cardClass = 'job-card';
+                let badgeHTML = '';
+                
+                if (applicationStatus === 'pending') {
+                    cardClass += ' application-pending';
+                    badgeHTML = '<div class="job-card-badge">⏳ En attente</div>';
+                } else if (applicationStatus === 'submitted') {
+                    cardClass += ' application-submitted';
+                    badgeHTML = '<div class="job-card-badge">✓ Candidature envoyée</div>';
+                }
+                
                 return `
-        <div class="job-card" data-job-url="${job.job_url}">
+        <div class="${cardClass}" data-job-url="${job.job_url}">
+            ${badgeHTML}
             <div class="job-title">${cleanJobTitle(job.job_title)}</div>
             <div class="job-id">${job.job_id}</div>
             <div class="job-tags">
@@ -2240,9 +2294,11 @@
                 <div class="job-date">Publiée le ${job.publication_date || 'date inconnue'}</div>
                 <div class="job-actions">
                     ${isAuthenticated ? (
-                        userApplications.has(job.job_id) 
-                            ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                               <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
+                        hasApplied
+                            ? (applicationStatus === 'pending' 
+                                ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
+                                   <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`
+                                : `<button class="job-apply-btn applied" disabled>✓ Candidature envoyée</button>`)
                             : `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
                     ) : ''}
                     <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
