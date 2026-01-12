@@ -1333,14 +1333,41 @@
                 experiences: new Set(), families: new Set(), companies: new Set(), educations: new Set()
             };
 
+            // Compteurs pour chaque valeur
+            const counts = {
+                countries: {}, regions: {}, contracts: {}, experiences: {},
+                families: {}, companies: {}, educations: {}
+            };
+
             allJobs.forEach(job => {
-                if (job.cleanCountries) job.cleanCountries.forEach(c => sets.countries.add(c));
-                if (job.cleanRegions) job.cleanRegions.forEach(r => sets.regions.add(r));
-                if (job.contract_type) sets.contracts.add(job.contract_type);
-                if (job.experience_level) sets.experiences.add(job.experience_level);
-                if (job.job_family) sets.families.add(job.job_family);
-                if (job.company_name) sets.companies.add(job.company_name);
-                if (job.education_level) sets.educations.add(job.education_level);
+                if (job.cleanCountries) job.cleanCountries.forEach(c => {
+                    sets.countries.add(c);
+                    counts.countries[c] = (counts.countries[c] || 0) + 1;
+                });
+                if (job.cleanRegions) job.cleanRegions.forEach(r => {
+                    sets.regions.add(r);
+                    counts.regions[r] = (counts.regions[r] || 0) + 1;
+                });
+                if (job.contract_type) {
+                    sets.contracts.add(job.contract_type);
+                    counts.contracts[job.contract_type] = (counts.contracts[job.contract_type] || 0) + 1;
+                }
+                if (job.experience_level) {
+                    sets.experiences.add(job.experience_level);
+                    counts.experiences[job.experience_level] = (counts.experiences[job.experience_level] || 0) + 1;
+                }
+                if (job.job_family) {
+                    sets.families.add(job.job_family);
+                    counts.families[job.job_family] = (counts.families[job.job_family] || 0) + 1;
+                }
+                if (job.company_name) {
+                    sets.companies.add(job.company_name);
+                    counts.companies[job.company_name] = (counts.companies[job.company_name] || 0) + 1;
+                }
+                if (job.education_level) {
+                    sets.educations.add(job.education_level);
+                    counts.educations[job.education_level] = (counts.educations[job.education_level] || 0) + 1;
+                }
             });
 
             const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI'];
@@ -1363,13 +1390,13 @@
                 return a.localeCompare(b);
             });
 
-            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set());
-            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set());
-            populateCheckboxFilter('contractFilter', sortedContracts, new Set());
-            populateCheckboxFilter('experienceFilter', sortedExperiences, new Set());
-            populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set());
-            populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set());
-            populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set());
+            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set(), counts.countries);
+            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set(), counts.regions);
+            populateCheckboxFilter('contractFilter', sortedContracts, new Set(), counts.contracts);
+            populateCheckboxFilter('experienceFilter', sortedExperiences, new Set(), counts.experiences);
+            populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set(), counts.families);
+            populateCheckboxFilter('companyFilter', Array.from(sets.companies).sort(), new Set(), counts.companies);
+            populateCheckboxFilter('educationFilter', Array.from(sets.educations).sort(), new Set(), counts.educations);
 
             // Système de recherche par mots-clés multiples
             const searchInput = document.getElementById('searchInput');
@@ -1412,7 +1439,7 @@
             };
         }
 
-        function populateCheckboxFilter(id, values, disabledValues = new Set()) {
+        function populateCheckboxFilter(id, values, disabledValues = new Set(), counts = {}) {
             const container = document.getElementById(id);
             // Sauvegarder les valeurs actuellement cochées
             const checkedValues = new Set(getCheckedValues(id));
@@ -1435,7 +1462,9 @@
                 }
 
                 const span = document.createElement('span');
-                span.textContent = value;
+                // Ajouter le comptage entre parenthèses si disponible
+                const count = counts[value] || 0;
+                span.textContent = count > 0 ? `${value} (${count})` : value;
                 label.appendChild(checkbox);
                 label.appendChild(span);
                 container.appendChild(label);
@@ -1506,29 +1535,43 @@
 
             // Pour les pays : si régions sélectionnées, ne montrer que les pays de ces régions
             let availableCountries = new Set();
+            const countryCounts = {};
             if (selectedRegions.length > 0) {
                 getJobsMatchingOtherFilters('country').forEach(job => {
                     if (job.cleanRegions && job.cleanRegions.some(r => selectedRegions.includes(r))) {
-                        if (job.cleanCountries) job.cleanCountries.forEach(c => availableCountries.add(c));
+                        if (job.cleanCountries) job.cleanCountries.forEach(c => {
+                            availableCountries.add(c);
+                            countryCounts[c] = (countryCounts[c] || 0) + 1;
+                        });
                     }
                 });
             } else {
                 getJobsMatchingOtherFilters('country').forEach(job => {
-                    if (job.cleanCountries) job.cleanCountries.forEach(c => availableCountries.add(c));
+                    if (job.cleanCountries) job.cleanCountries.forEach(c => {
+                        availableCountries.add(c);
+                        countryCounts[c] = (countryCounts[c] || 0) + 1;
+                    });
                 });
             }
 
             // Pour les régions : si pays sélectionnés, ne montrer que les régions de ces pays
             let availableRegions = new Set();
+            const regionCounts = {};
             if (selectedCountries.length > 0) {
                 getJobsMatchingOtherFilters('region').forEach(job => {
                     if (job.cleanCountries && job.cleanCountries.some(c => selectedCountries.includes(c))) {
-                        if (job.cleanRegions) job.cleanRegions.forEach(r => availableRegions.add(r));
+                        if (job.cleanRegions) job.cleanRegions.forEach(r => {
+                            availableRegions.add(r);
+                            regionCounts[r] = (regionCounts[r] || 0) + 1;
+                        });
                     }
                 });
             } else {
                 getJobsMatchingOtherFilters('region').forEach(job => {
-                    if (job.cleanRegions) job.cleanRegions.forEach(r => availableRegions.add(r));
+                    if (job.cleanRegions) job.cleanRegions.forEach(r => {
+                        availableRegions.add(r);
+                        regionCounts[r] = (regionCounts[r] || 0) + 1;
+                    });
                 });
             }
 
@@ -1573,42 +1616,63 @@
             });
 
             populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
-                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))));
+                new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), countryCounts);
             populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
-                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))));
+                new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), regionCounts);
 
             const availableContracts = new Set();
             const availableExperiences = new Set();
             const availableFamilies = new Set();
             const availableCompanies = new Set();
             const availableEducations = new Set();
+            
+            const contractCounts = {};
+            const experienceCounts = {};
+            const familyCounts = {};
+            const companyCounts = {};
+            const educationCounts = {};
 
             getJobsMatchingOtherFilters('contract').forEach(job => {
-                if (job.contract_type) availableContracts.add(job.contract_type);
+                if (job.contract_type) {
+                    availableContracts.add(job.contract_type);
+                    contractCounts[job.contract_type] = (contractCounts[job.contract_type] || 0) + 1;
+                }
             });
             getJobsMatchingOtherFilters('experience').forEach(job => {
-                if (job.experience_level) availableExperiences.add(job.experience_level);
+                if (job.experience_level) {
+                    availableExperiences.add(job.experience_level);
+                    experienceCounts[job.experience_level] = (experienceCounts[job.experience_level] || 0) + 1;
+                }
             });
             getJobsMatchingOtherFilters('family').forEach(job => {
-                if (job.job_family) availableFamilies.add(job.job_family);
+                if (job.job_family) {
+                    availableFamilies.add(job.job_family);
+                    familyCounts[job.job_family] = (familyCounts[job.job_family] || 0) + 1;
+                }
             });
             getJobsMatchingOtherFilters('company').forEach(job => {
-                if (job.company_name) availableCompanies.add(job.company_name);
+                if (job.company_name) {
+                    availableCompanies.add(job.company_name);
+                    companyCounts[job.company_name] = (companyCounts[job.company_name] || 0) + 1;
+                }
             });
             getJobsMatchingOtherFilters('education').forEach(job => {
-                if (job.education_level) availableEducations.add(job.education_level);
+                if (job.education_level) {
+                    availableEducations.add(job.education_level);
+                    educationCounts[job.education_level] = (educationCounts[job.education_level] || 0) + 1;
+                }
             });
 
             populateCheckboxFilter('contractFilter', sortedAllContracts,
-                new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))));
+                new Set([...allContracts].filter(c => !availableContracts.has(c) && !selectedContracts.includes(c))), contractCounts);
             populateCheckboxFilter('experienceFilter', sortedAllExperiences,
-                new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))));
+                new Set([...allExperiences].filter(e => !availableExperiences.has(e) && !selectedExperiences.includes(e))), experienceCounts);
             populateCheckboxFilter('familyFilter', Array.from(allFamilies).sort(),
-                new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))));
+                new Set([...allFamilies].filter(f => !availableFamilies.has(f) && !selectedFamilies.includes(f))), familyCounts);
             populateCheckboxFilter('companyFilter', Array.from(allCompanies).sort(),
-                new Set([...allCompanies].filter(c => !availableCompanies.has(c) && !selectedCompanies.includes(c))));
+                new Set([...allCompanies].filter(c => !availableCompanies.has(c) && !selectedCompanies.includes(c))), companyCounts);
             populateCheckboxFilter('educationFilter', Array.from(allEducations).sort(),
-                new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))));
+                new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))), educationCounts);
 
             await renderJobs();
         }
