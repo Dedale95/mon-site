@@ -193,12 +193,77 @@
             white-space: nowrap;
         }
 
+        /* Bouton accordéon pour les filtres */
+        .filters-toggle {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 16px;
+            padding: 18px 25px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .filters-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .filters-toggle:active {
+            transform: translateY(0);
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            margin-right: 12px;
+        }
+
+        .filters-toggle.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .toggle-text {
+            flex: 1;
+            text-align: left;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .toggle-badge {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
         .filters {
             background: white;
             border-radius: 20px;
             padding: 35px;
             margin-bottom: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+            opacity: 1;
+        }
+
+        .filters.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding: 0 35px;
+            margin-bottom: 0;
         }
 
         .filter-row {
@@ -207,14 +272,27 @@
             margin-bottom: 20px;
         }
 
-        /* Première ligne : Recherche, Pays, Région, Type de contrat */
+        /* Première ligne : Recherche, Pays, Région, Type de contrat, Niveau d'étude */
         .filter-row:first-of-type {
-            grid-template-columns: 1.5fr 1fr 1.5fr 1.1fr;
+            grid-template-columns: 1.8fr 1fr 1.3fr 1fr 0.9fr;
         }
 
-        /* Deuxième ligne : Expérience, Famille de métier, Entreprise, Niveau d'étude, Reset */
-        .filter-row:last-of-type {
-            grid-template-columns: 1fr 1.8fr 1.5fr 1fr 0.8fr;
+        /* Deuxième ligne : Expérience, Famille de métier, Entreprise */
+        .filter-row:nth-of-type(2) {
+            grid-template-columns: 1fr 1.8fr 1.5fr;
+        }
+
+        /* Ligne du bouton reset */
+        .filter-row-reset {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f3f4f6;
+        }
+
+        .filter-row-reset .reset-btn {
+            margin: 0;
         }
 
         /* Responsive : retour à une colonne sur petit écran */
@@ -814,7 +892,14 @@
             </div>
         </div>
 
-        <div class="filters">
+        <!-- Bouton accordéon pour les filtres -->
+        <button class="filters-toggle" id="filtersToggle" onclick="toggleFilters()">
+            <span class="toggle-icon">🔽</span>
+            <span class="toggle-text">Filtres de recherche</span>
+            <span class="toggle-badge" id="activeFiltersBadge">0 actif</span>
+        </button>
+
+        <div class="filters" id="filtersContainer">
             <div class="filter-row">
                 <div class="filter-group">
                     <label for="searchInput">🔍 Recherche par mots-clés</label>
@@ -835,6 +920,10 @@
                     <label>📄 Type de contrat</label>
                     <div id="contractFilter" class="filter-checkbox-container"></div>
                 </div>
+                <div class="filter-group">
+                    <label>🎓 Niveau d'étude</label>
+                    <div id="educationFilter" class="filter-checkbox-container"></div>
+                </div>
             </div>
             <div class="filter-row">
                 <div class="filter-group">
@@ -849,13 +938,9 @@
                     <label>🏢 Entreprise</label>
                     <div id="companyFilter" class="filter-checkbox-container"></div>
                 </div>
-                <div class="filter-group">
-                    <label>🎓 Niveau d'étude</label>
-                    <div id="educationFilter" class="filter-checkbox-container"></div>
-                </div>
-                <div class="filter-group">
-                    <button class="reset-btn" onclick="resetFilters()">🔄 Réinitialiser</button>
-                </div>
+            </div>
+            <div class="filter-row-reset">
+                <button class="reset-btn" onclick="resetFilters()">🔄 Réinitialiser tous les filtres</button>
             </div>
         </div>
 
@@ -1747,6 +1832,7 @@
                 new Set([...allEducations].filter(e => !availableEducations.has(e) && !selectedEducations.includes(e))), educationCounts);
 
             await renderJobs();
+            updateActiveFiltersBadge();
         }
 
         function getCheckedValues(containerId) {
@@ -2203,7 +2289,46 @@
             window.renderSearchTags();
             document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
             applyFilters();
+            updateActiveFiltersBadge();
         }
+
+        // Fonction pour toggle l'accordéon des filtres
+        function toggleFilters() {
+            const filtersContainer = document.getElementById('filtersContainer');
+            const toggleButton = document.getElementById('filtersToggle');
+            
+            filtersContainer.classList.toggle('collapsed');
+            toggleButton.classList.toggle('collapsed');
+            
+            // Sauvegarder l'état dans localStorage
+            const isCollapsed = filtersContainer.classList.contains('collapsed');
+            localStorage.setItem('filtersCollapsed', isCollapsed);
+        }
+
+        // Fonction pour mettre à jour le badge des filtres actifs
+        function updateActiveFiltersBadge() {
+            const checkedCount = document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]:checked').length;
+            const keywordsCount = window.searchKeywords ? window.searchKeywords.size : 0;
+            const totalActive = checkedCount + keywordsCount;
+            
+            const badge = document.getElementById('activeFiltersBadge');
+            if (totalActive === 0) {
+                badge.textContent = 'Aucun filtre';
+            } else if (totalActive === 1) {
+                badge.textContent = '1 filtre actif';
+            } else {
+                badge.textContent = `${totalActive} filtres actifs`;
+            }
+        }
+
+        // Restaurer l'état de l'accordéon au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            const wasCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
+            if (wasCollapsed) {
+                document.getElementById('filtersContainer').classList.add('collapsed');
+                document.getElementById('filtersToggle').classList.add('collapsed');
+            }
+        });
 
 
         // Mettre en surbrillance uniquement la page actuelle
