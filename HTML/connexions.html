@@ -745,16 +745,51 @@
             }).join('');
         }
 
+        // Vérification immédiate de l'authentification (avant Firebase)
+        (function checkAuthImmediate() {
+            const token = localStorage.getItem('authToken');
+            const email = localStorage.getItem('userEmail');
+            
+            if (!token || !email) {
+                console.log('❌ Page Connexions - Accès refusé');
+                console.log('🔄 Redirection vers la page de connexion...');
+                window.location.href = 'auth.html';
+            }
+        })();
+
         // Initialisation
         auth.onAuthStateChanged(async (user) => {
             updateNavigation(user);
 
-            if (user && user.emailVerified) {
+            if (user) {
                 currentUser = user;
                 await loadUserConnections();
+                renderBanks();
             } else {
-                // Rediriger vers la page de connexion si pas connecté
-                window.location.href = 'auth.html';
+                // Vérifier localStorage en cas de connexion persistante
+                const token = localStorage.getItem('authToken');
+                const email = localStorage.getItem('userEmail');
+                
+                if (token && email) {
+                    // Attendre un peu que Firebase charge la session
+                    setTimeout(async () => {
+                        if (auth.currentUser) {
+                            currentUser = auth.currentUser;
+                            await loadUserConnections();
+                            renderBanks();
+                        } else {
+                            // Toujours pas d'utilisateur après attente, rediriger
+                            console.log('❌ Accès refusé - Redirection vers la page de connexion');
+                            localStorage.removeItem('authToken');
+                            localStorage.removeItem('userEmail');
+                            window.location.href = 'auth.html';
+                        }
+                    }, 1500);
+                } else {
+                    // Aucun token dans localStorage, rediriger immédiatement
+                    console.log('❌ Accès refusé - Aucune session active');
+                    window.location.href = 'auth.html';
+                }
             }
         });
     </script>
