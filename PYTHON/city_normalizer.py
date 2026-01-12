@@ -104,6 +104,53 @@ CITY_MAPPING = {
     'putrajaya': 'Kuala Lumpur',
     'aschheim': 'Aschheim',
     'aschheim bei münchen': 'Aschheim',
+    
+    # ========== ITALIE - Harmonisation villes/provinces ==========
+    'torino': 'Turin',
+    'turin': 'Turin',
+    'parma': 'Parma',
+    'parma e provincia': 'Parma',
+    'milano e provincia': 'Milan',
+    'fidenza': 'Fidenza',
+    'verona': 'Verona',
+    'verona e provincia': 'Verona',
+    'vicenza': 'Vicenza',
+    'vicenza e provincia': 'Vicenza',
+    'piacenza': 'Piacenza',
+    'piacenza e provincia': 'Piacenza',
+    'pordenone': 'Pordenone',
+    'provincia di pordenone': 'Pordenone',
+    'udine': 'Udine',
+    'provincia di udine': 'Udine',
+    'provincia di udine e pordenone': 'Udine',
+    'pavia': 'Pavia',
+    'provincia di pavia': 'Pavia',
+    'genova': 'Genova',
+    'genoa': 'Genova',
+    'provincia di genova': 'Genova',
+    'modena': 'Modena',
+    'provincia di modena': 'Modena',
+    'cuneo': 'Cuneo',
+    'province di cuneo': 'Cuneo',
+    'province di cuneo e verbano': 'Cuneo',
+    'verbano': 'Verbano',
+    'mantova': 'Mantova',
+    'mantua': 'Mantova',
+    'province di mantova': 'Mantova',
+    'cremona': 'Cremona',
+    'province di cremona': 'Cremona',
+    'province di mantova e cremona': 'Mantova',
+    'sondrio': 'Sondrio',
+    'sondrio e valtellina': 'Sondrio',
+    'lecco': 'Lecco',
+    'lecco e valtellina': 'Lecco',
+    'roma': 'Rome',
+    'rome': 'Rome',
+    'bologna': 'Bologne',
+    'firenze': 'Florence',
+    'florence': 'Florence',
+    'napoli': 'Naples',
+    'naples': 'Naples',
 }
 
 def normalize_city(city_raw):
@@ -133,8 +180,11 @@ def normalize_city(city_raw):
         'finlande', 'finland', 'danemark', 'denmark', 'pays-bas', 'netherlands', 'hollande'
     }
     
-    # Rejeter si c'est un pays
+    # Rejeter si c'est un pays ou une région italienne
     if city_clean in known_countries_lower:
+        return None
+    
+    if city_clean in italian_regions:
         return None
     
     # EN PRIORITÉ : Extraire la ville depuis un format "Code postal + Ville" AVANT les autres vérifications
@@ -191,25 +241,8 @@ def normalize_city(city_raw):
         'leasing & factoring', 'leasing &', '& factoring'
     ]
     
-    # Détecter les provinces italiennes (format "Ville E Valtellina" ou "Province Di X")
-    italian_province_patterns = [
-        r'\be\s+(valtellina|provincia)',
-        r'provincia\s+di\s+',
-        r'province\s+di\s+',
-        r'provincia\s+di\s+genova',
-        r'provincia\s+di\s+modena',
-        r'provincia\s+di\s+pavia',
-        r'provincia\s+di\s+pordenone',
-        r'provincia\s+di\s+udine',
-    ]
-    
     is_address = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in address_patterns)
     is_company = any(keyword in city_clean for keyword in company_keywords)
-    is_italian_province = any(re.search(pattern, city_clean, re.IGNORECASE) for pattern in italian_province_patterns)
-    
-    # Rejeter si c'est une province italienne
-    if is_italian_province:
-        return None
     
     # Si on a déjà extrait une ville depuis un code postal, skip les vérifications d'adresse
     if postal_extracted_city:
