@@ -1424,8 +1424,16 @@
                 return a.localeCompare(b);
             });
 
-            populateCheckboxFilter('countryFilter', Array.from(sets.countries).sort(), new Set(), counts.countries);
-            populateCheckboxFilter('regionFilter', Array.from(sets.regions).sort(), new Set(), counts.regions);
+            // Trier les pays et régions par nombre d'offres (décroissant)
+            const sortedCountries = Array.from(sets.countries).sort((a, b) => {
+                return (counts.countries[b] || 0) - (counts.countries[a] || 0);
+            });
+            const sortedRegions = Array.from(sets.regions).sort((a, b) => {
+                return (counts.regions[b] || 0) - (counts.regions[a] || 0);
+            });
+            
+            populateCheckboxFilter('countryFilter', sortedCountries, new Set(), counts.countries);
+            populateCheckboxFilter('regionFilter', sortedRegions, new Set(), counts.regions);
             populateCheckboxFilter('contractFilter', sortedContracts, new Set(), counts.contracts);
             populateCheckboxFilter('experienceFilter', sortedExperiences, new Set(), counts.experiences);
             populateCheckboxFilter('familyFilter', Array.from(sets.families).sort(), new Set(), counts.families);
@@ -1649,9 +1657,17 @@
                 return a.localeCompare(b);
             });
 
-            populateCheckboxFilter('countryFilter', Array.from(allCountries).sort(),
+            // Trier les pays et régions par nombre d'offres (décroissant)
+            const sortedAllCountries = Array.from(allCountries).sort((a, b) => {
+                return (countryCounts[b] || 0) - (countryCounts[a] || 0);
+            });
+            const sortedAllRegions = Array.from(allRegions).sort((a, b) => {
+                return (regionCounts[b] || 0) - (regionCounts[a] || 0);
+            });
+            
+            populateCheckboxFilter('countryFilter', sortedAllCountries,
                 new Set([...allCountries].filter(c => !availableCountries.has(c) && !selectedCountries.includes(c))), countryCounts);
-            populateCheckboxFilter('regionFilter', Array.from(allRegions).sort(),
+            populateCheckboxFilter('regionFilter', sortedAllRegions,
                 new Set([...allRegions].filter(r => !availableRegions.has(r) && !selectedRegions.includes(r))), regionCounts);
 
             const availableContracts = new Set();
