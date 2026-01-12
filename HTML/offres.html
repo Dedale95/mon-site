@@ -203,12 +203,12 @@
 
         /* Première ligne : Recherche, Pays, Région, Type de contrat */
         .filter-row:first-of-type {
-            grid-template-columns: 2fr 1.2fr 1.5fr 1.2fr;
+            grid-template-columns: 1.5fr 1fr 1.5fr 1.1fr;
         }
 
         /* Deuxième ligne : Expérience, Famille de métier, Entreprise, Niveau d'étude, Reset */
         .filter-row:last-of-type {
-            grid-template-columns: 1fr 1.8fr 1.5fr 1.2fr 0.8fr;
+            grid-template-columns: 1fr 1.8fr 1.5fr 1fr 0.8fr;
         }
 
         /* Responsive : retour à une colonne sur petit écran */
@@ -1171,16 +1171,31 @@
                         // Harmonisation des types de contrat (avec vérification de type pour éviter les erreurs)
                         if (job && job.contract_type && typeof job.contract_type === 'string') {
                             const contractLower = job.contract_type.toLowerCase();
-                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage') {
-                                job.contract_type = 'Alternance / Apprentissage';
+                            if (contractLower === 'alternance' || contractLower === 'alternance / apprentissage' || contractLower === 'apprentissage') {
+                                job.contract_type = 'Alternance';
                             }
                         }
                         
                         // Harmonisation des niveaux d'études
                         if (job && job.education_level && typeof job.education_level === 'string') {
-                            if (job.education_level.toLowerCase().includes('certificat fédéral de capacité')) {
-                                job.education_level = 'Certificat Fédéral de Capacité (CFC)';
+                            const eduLower = job.education_level.toLowerCase();
+                            
+                            // Regroupement simplifié en 3 catégories
+                            if (eduLower.includes('bac+5') || eduLower.includes('bac +5') || 
+                                eduLower.includes('master') || eduLower.includes('ingénieur') || 
+                                eduLower.includes('grande école') || eduLower.includes('doctorat') ||
+                                eduLower.includes('bac+4') || eduLower.includes('bac +4')) {
+                                job.education_level = 'Bac +5';
+                            } else if (eduLower.includes('bac+3') || eduLower.includes('bac +3') || 
+                                       eduLower.includes('licence') || eduLower.includes('bachelor') ||
+                                       eduLower.includes('bac+2') || eduLower.includes('bac +2') ||
+                                       eduLower.includes('bts') || eduLower.includes('dut')) {
+                                job.education_level = 'Bac +3';
+                            } else if (eduLower.includes('bac') || eduLower.includes('lycée') || 
+                                       eduLower.includes('certificat fédéral')) {
+                                job.education_level = 'Bac';
                             }
+                            // Sinon on garde la valeur originale
                         }
 
                         job.cleanRegions = [];
@@ -1388,7 +1403,7 @@
                 }
             });
 
-            const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI'];
+            const contractOrder = ['Stage', 'Alternance', 'VIE', 'CDD', 'CDI'];
             const sortedContracts = Array.from(sets.contracts).sort((a, b) => {
                 const indexA = contractOrder.indexOf(a);
                 const indexB = contractOrder.indexOf(b);
@@ -1613,7 +1628,7 @@
             });
 
             // Mettre à jour les filtres avec les options désactivées
-            const contractOrder = ['Stage', 'Alternance / Apprentissage', 'VIE', 'CDD', 'CDI'];
+            const contractOrder = ['Stage', 'Alternance', 'VIE', 'CDD', 'CDI'];
             const sortedAllContracts = Array.from(allContracts).sort((a, b) => {
                 const indexA = contractOrder.indexOf(a);
                 const indexB = contractOrder.indexOf(b);
