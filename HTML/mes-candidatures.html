@@ -901,6 +901,40 @@
             }
         }
 
+        // Mise à jour immédiate de la navigation (avant Firebase) pour éviter le flash
+        function updateNavigationImmediate() {
+            const authLink = document.getElementById('authLink');
+            const profileLink = document.getElementById('profileLink');
+            const connexionsLink = document.getElementById('connexionsLink');
+            const logoutLink = document.getElementById('logoutLink');
+            const applicationsLink = document.getElementById('applicationsLink');
+
+            if (!authLink || !profileLink || !logoutLink) {
+                return;
+            }
+
+            // Vérifier localStorage immédiatement
+            const token = localStorage.getItem('authToken');
+            const email = localStorage.getItem('userEmail');
+            const isAuthenticated = !!(token && email);
+
+            if (isAuthenticated) {
+                // Utilisateur connecté - afficher les liens appropriés
+                authLink.style.display = 'none';
+                profileLink.style.display = 'block';
+                if (connexionsLink) connexionsLink.style.display = 'block';
+                if (applicationsLink) applicationsLink.style.display = 'block';
+                logoutLink.style.display = 'block';
+            } else {
+                // Utilisateur non connecté
+                authLink.style.display = 'block';
+                profileLink.style.display = 'none';
+                if (connexionsLink) connexionsLink.style.display = 'none';
+                if (applicationsLink) applicationsLink.style.display = 'none';
+                logoutLink.style.display = 'none';
+            }
+        }
+
         // Logout function
         document.getElementById('logoutLink')?.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -1376,6 +1410,9 @@
                 }
             );
         };
+
+        // Mise à jour immédiate de la navigation (avant Firebase) pour éviter le flash
+        updateNavigationImmediate();
 
         // Initialize on auth state change
         firebase.auth().onAuthStateChanged((user) => {
