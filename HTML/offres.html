@@ -2611,15 +2611,14 @@
             
             // Rendre par batch pour éviter le débordement de stack
             const batchSize = 50; // Réduire la taille du batch pour éviter les problèmes
-            container.innerHTML = ''; // Vider le conteneur
             
-            for (let i = 0; i < filteredJobs.length; i += batchSize) {
-                const batch = filteredJobs.slice(i, i + batchSize);
+            for (let i = 0; i < jobs.length; i += batchSize) {
+                const batch = jobs.slice(i, i + batchSize);
                 const batchHTML = batch.map(renderJobCard).join('');
                 container.innerHTML += batchHTML;
                 
                 // Laisser le navigateur respirer entre les batches pour éviter de bloquer l'UI
-                if (i + batchSize < filteredJobs.length) {
+                if (i + batchSize < jobs.length) {
                     await new Promise(resolve => setTimeout(resolve, 0));
                 }
             }
