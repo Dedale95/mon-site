@@ -2500,6 +2500,18 @@
             document.getElementById('paginationInfoBottom').innerHTML = infoText;
         }
 
+        // Fonction wrapper pour la compatibilité - appelée par les filtres
+        function renderJobs(jobs) {
+            // Mettre à jour la liste des offres filtrées
+            filteredJobs = jobs || [];
+            
+            // Reset à la page 1
+            currentPage = 1;
+            
+            // Rendre la première page
+            renderPaginatedJobs();
+        }
+
         // Fonction pour afficher les offres paginées
         async function renderPaginatedJobs() {
             const container = document.getElementById('jobsContainer');
