@@ -1194,18 +1194,19 @@
                         
                         // Harmonisation des niveaux d'études
                         if (job && job.education_level && typeof job.education_level === 'string') {
-                            const eduLower = job.education_level.toLowerCase();
+                            const eduLower = job.education_level.toLowerCase().replace(/\s+/g, ' '); // Normaliser les espaces
                             
                             // Regroupement simplifié en 3 catégories
-                            if (eduLower.includes('bac+5') || eduLower.includes('bac +5') || 
+                            if (eduLower.includes('bac + 5') || eduLower.includes('bac +5') || eduLower.includes('bac+5') ||
+                                eduLower.includes('bac + 4') || eduLower.includes('bac +4') || eduLower.includes('bac+4') ||
                                 eduLower.includes('master') || eduLower.includes('ingénieur') || 
                                 eduLower.includes('grande école') || eduLower.includes('doctorat') ||
-                                eduLower.includes('bac+4') || eduLower.includes('bac +4')) {
+                                eduLower.includes('m2') || eduLower.includes('m1')) {
                                 job.education_level = 'Bac +5';
-                            } else if (eduLower.includes('bac+3') || eduLower.includes('bac +3') || 
+                            } else if (eduLower.includes('bac + 3') || eduLower.includes('bac +3') || eduLower.includes('bac+3') ||
+                                       eduLower.includes('bac + 2') || eduLower.includes('bac +2') || eduLower.includes('bac+2') ||
                                        eduLower.includes('licence') || eduLower.includes('bachelor') ||
-                                       eduLower.includes('bac+2') || eduLower.includes('bac +2') ||
-                                       eduLower.includes('bts') || eduLower.includes('dut')) {
+                                       eduLower.includes('bts') || eduLower.includes('dut') || eduLower.includes('l3')) {
                                 job.education_level = 'Bac +3';
                             } else if (eduLower.includes('bac') || eduLower.includes('lycée') || 
                                        eduLower.includes('certificat fédéral')) {
