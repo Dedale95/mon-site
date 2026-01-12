@@ -83,6 +83,10 @@
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
+            display: inline-block;
+            box-sizing: border-box;
+            min-width: fit-content;
+            position: relative;
         }
 
         .nav-link:hover {
@@ -94,11 +98,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white !important;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            /* Même padding pour éviter décalage */
+            padding: 8px 16px;
         }
 
         .nav-link-primary:hover {
-            transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            /* Pas de transform pour éviter décalage */
         }
 
         /* Container principal */

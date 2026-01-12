@@ -96,10 +96,13 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 0.95rem;
-            transition: color 0.3s;
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
+            display: inline-block;
+            box-sizing: border-box;
+            min-width: fit-content;
+            position: relative;
         }
 
         .nav-link:hover {
@@ -109,16 +112,15 @@
 
         .nav-link-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: 700;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            /* Même padding pour éviter décalage */
+            padding: 8px 16px;
         }
 
         .nav-link-primary:hover {
-            filter: brightness(1.1);
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            /* Pas de transform pour éviter décalage */
         }
 
         .logout-btn {
