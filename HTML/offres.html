@@ -197,9 +197,26 @@
 
         .filter-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
             margin-bottom: 20px;
+        }
+
+        /* Première ligne : Recherche, Pays, Région, Type de contrat */
+        .filter-row:first-of-type {
+            grid-template-columns: 2fr 1.2fr 1.5fr 1.2fr;
+        }
+
+        /* Deuxième ligne : Expérience, Famille de métier, Entreprise, Niveau d'étude, Reset */
+        .filter-row:last-of-type {
+            grid-template-columns: 1fr 1.8fr 1.5fr 1.2fr 0.8fr;
+        }
+
+        /* Responsive : retour à une colonne sur petit écran */
+        @media (max-width: 1200px) {
+            .filter-row:first-of-type,
+            .filter-row:last-of-type {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .filter-group {
@@ -742,7 +759,8 @@
                 text-align: center;
             }
 
-            .filter-row {
+            .filter-row:first-of-type,
+            .filter-row:last-of-type {
                 grid-template-columns: 1fr;
             }
         }
