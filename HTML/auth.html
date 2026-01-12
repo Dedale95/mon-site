@@ -568,6 +568,153 @@
             }
         }
 
+        /* Terms checkbox */
+        .terms-group {
+            margin-bottom: 24px !important;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            cursor: pointer;
+            margin-top: 2px;
+            accent-color: #667eea;
+        }
+
+        .checkbox-text {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .terms-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .terms-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        /* Terms Modal */
+        .terms-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .terms-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terms-modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .terms-modal-header {
+            padding: 24px 28px;
+            border-bottom: 2px solid #e5e7eb;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .terms-modal-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .terms-modal-body {
+            padding: 28px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .terms-modal-body h3 {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 24px 0 12px 0;
+        }
+
+        .terms-modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .terms-modal-body p {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .terms-modal-body ul {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .terms-modal-body li {
+            margin-bottom: 8px;
+        }
+
+        .terms-modal-body strong {
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .terms-highlight {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 16px 0;
+        }
+
+        .terms-highlight p {
+            margin: 0;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        .terms-modal-footer {
+            padding: 20px 28px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            background: #f9fafb;
+            border-radius: 0 0 16px 16px;
+        }
+
         /* Footer */
         footer {
             background: #1a1a1a;
@@ -718,6 +865,16 @@
                     <div class="error-message" id="confirmPasswordError"></div>
                 </div>
 
+                <div class="form-group terms-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="acceptTerms" name="acceptTerms" required>
+                        <span class="checkbox-text">
+                            J'accepte les <a href="#" onclick="openTermsModal(event)" class="terms-link">Conditions Générales d'Utilisation</a> et la <a href="#" onclick="openPrivacyModal(event)" class="terms-link">Politique de Confidentialité</a>
+                        </span>
+                    </label>
+                    <div class="error-message" id="termsError"></div>
+                </div>
+
                 <div class="success-message" id="signupSuccess"></div>
                 <div class="error-message" id="signupError"></div>
 
@@ -763,6 +920,265 @@
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeForgotPasswordModal()" id="cancelBtn">Annuler</button>
                 <button class="btn-primary" onclick="handlePasswordReset()" id="resetBtn">Envoyer l'email</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal CGU -->
+    <div id="termsModal" class="terms-modal">
+        <div class="terms-modal-content">
+            <div class="terms-modal-header">
+                <h2>📋 Conditions Générales d'Utilisation</h2>
+            </div>
+            <div class="terms-modal-body">
+                <p><strong>Dernière mise à jour :</strong> Janvier 2025</p>
+
+                <div class="terms-highlight">
+                    <p>⚠️ En vous inscrivant sur Taleos, vous acceptez l'intégralité des présentes Conditions Générales d'Utilisation. Veuillez les lire attentivement.</p>
+                </div>
+
+                <h3>1. 🔐 Compte utilisateur</h3>
+                <p><strong>1.1 Création de compte</strong></p>
+                <ul>
+                    <li>Chaque utilisateur ne peut créer qu'un seul compte personnel</li>
+                    <li>Les informations fournies doivent être exactes et à jour</li>
+                    <li>Vous êtes seul responsable de la confidentialité de vos identifiants</li>
+                </ul>
+                
+                <p><strong>1.2 Interdictions strictes</strong></p>
+                <ul>
+                    <li><strong>❌ Le prêt, la vente ou le partage de compte est formellement interdit</strong></li>
+                    <li><strong>❌ Toute utilisation détournée peut entraîner un bannissement définitif sans préavis ni remboursement</strong></li>
+                    <li>La création de comptes multiples est interdite</li>
+                    <li>L'utilisation de fausses informations est passible de résiliation immédiate</li>
+                </ul>
+
+                <h3>2. 💳 Paiement et remboursement</h3>
+                <p><strong>2.1 Politique de non-remboursement</strong></p>
+                <ul>
+                    <li><strong>❌ Tous les paiements sont définitifs et non remboursables</strong></li>
+                    <li>Aucun remboursement ne sera effectué, quelle qu'en soit la raison</li>
+                    <li>En cas de bannissement pour violation des CGU, aucun remboursement ne sera accordé</li>
+                    <li>Les abonnements sont facturés selon les modalités choisies lors de la souscription</li>
+                </ul>
+
+                <p><strong>2.2 Renouvellement automatique</strong></p>
+                <ul>
+                    <li>Les abonnements se renouvellent automatiquement sauf résiliation préalable</li>
+                    <li>Vous pouvez annuler votre abonnement à tout moment depuis votre profil</li>
+                    <li>L'annulation prend effet à la fin de la période payée en cours</li>
+                </ul>
+
+                <h3>3. 🚫 Responsabilité et disponibilité</h3>
+                <p><strong>3.1 Service fourni "tel quel"</strong></p>
+                <ul>
+                    <li><strong>⚠️ Taleos ne peut être tenu responsable en cas d'indisponibilité du service</strong></li>
+                    <li>Nous nous réservons le droit d'interrompre le service pour maintenance sans préavis</li>
+                    <li>Aucune garantie n'est donnée quant à la disponibilité continue du service</li>
+                    <li>Nous déclinons toute responsabilité en cas de perte de données due à un problème technique</li>
+                </ul>
+
+                <p><strong>3.2 Pas de garantie d'embauche</strong></p>
+                <ul>
+                    <li>Taleos est un outil d'aide à la recherche d'emploi</li>
+                    <li><strong>Nous ne garantissons aucun résultat en termes d'embauche ou d'entretien</strong></li>
+                    <li>Le succès de vos candidatures dépend de nombreux facteurs indépendants de notre volonté</li>
+                    <li>Vous restez seul responsable du contenu de vos candidatures</li>
+                </ul>
+
+                <h3>4. 📊 Utilisation des données</h3>
+                <p><strong>4.1 Collecte et traitement</strong></p>
+                <ul>
+                    <li>Nous collectons uniquement les données nécessaires au fonctionnement du service</li>
+                    <li>Vos données sont stockées de manière sécurisée sur Firebase (Google Cloud)</li>
+                    <li>Nous ne vendons ni ne partageons vos données personnelles avec des tiers</li>
+                    <li>Consultez notre Politique de Confidentialité pour plus de détails</li>
+                </ul>
+
+                <p><strong>4.2 Droit d'accès et suppression</strong></p>
+                <ul>
+                    <li>Vous pouvez demander l'accès, la modification ou la suppression de vos données</li>
+                    <li>Pour toute demande, contactez-nous à : <strong>support@taleos.com</strong></li>
+                    <li>La suppression de votre compte entraîne la suppression définitive de toutes vos données</li>
+                </ul>
+
+                <h3>5. ⚖️ Utilisation acceptable</h3>
+                <p><strong>5.1 Obligations de l'utilisateur</strong></p>
+                <ul>
+                    <li>Vous vous engagez à utiliser le service de manière légale et éthique</li>
+                    <li>Vous ne devez pas tenter de contourner les mesures de sécurité</li>
+                    <li>Vous ne devez pas surcharger les serveurs ou effectuer des requêtes excessives</li>
+                    <li>Vous devez respecter les CGU des plateformes d'emploi tierces</li>
+                </ul>
+
+                <p><strong>5.2 Sanctions en cas de violation</strong></p>
+                <ul>
+                    <li><strong>Premier avertissement :</strong> Suspension temporaire du compte</li>
+                    <li><strong>Violation répétée :</strong> Bannissement définitif sans remboursement</li>
+                    <li><strong>Activité frauduleuse :</strong> Bannissement immédiat et poursuites légales possibles</li>
+                </ul>
+
+                <h3>6. 🔄 Modifications des CGU</h3>
+                <p><strong>6.1 Droit de modification</strong></p>
+                <ul>
+                    <li>Taleos se réserve le droit de modifier les présentes CGU à tout moment</li>
+                    <li>Toute modification sera notifiée par email aux utilisateurs actifs</li>
+                    <li>L'utilisation continue du service après notification vaut acceptation des nouvelles CGU</li>
+                    <li>En cas de désaccord, vous pouvez résilier votre compte</li>
+                </ul>
+
+                <h3>7. 🛡️ Propriété intellectuelle</h3>
+                <p><strong>7.1 Droits réservés</strong></p>
+                <ul>
+                    <li>Tous les contenus du site (textes, images, logos, code) sont protégés par le droit d'auteur</li>
+                    <li>Toute reproduction ou utilisation sans autorisation est interdite</li>
+                    <li>La marque "Taleos" est déposée et protégée</li>
+                </ul>
+
+                <h3>8. 📞 Contact et support</h3>
+                <p><strong>8.1 Service client</strong></p>
+                <ul>
+                    <li><strong>Email :</strong> support@taleos.com</li>
+                    <li><strong>Délai de réponse :</strong> 48-72 heures ouvrées</li>
+                    <li>Pour toute question technique, juridique ou commerciale</li>
+                </ul>
+
+                <h3>9. 🌍 Loi applicable</h3>
+                <p><strong>9.1 Juridiction</strong></p>
+                <ul>
+                    <li>Les présentes CGU sont régies par le droit français</li>
+                    <li>Tout litige sera soumis aux tribunaux compétents de Paris</li>
+                    <li>En cas de traduction, la version française fait foi</li>
+                </ul>
+
+                <div class="terms-highlight">
+                    <p>✅ En cochant la case "J'accepte les CGU", vous reconnaissez avoir lu, compris et accepté l'intégralité des présentes Conditions Générales d'Utilisation.</p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button class="btn-primary" onclick="closeTermsModal()">J'ai compris</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Politique de Confidentialité -->
+    <div id="privacyModal" class="terms-modal">
+        <div class="terms-modal-content">
+            <div class="terms-modal-header">
+                <h2>🔒 Politique de Confidentialité</h2>
+            </div>
+            <div class="terms-modal-body">
+                <p><strong>Dernière mise à jour :</strong> Janvier 2025</p>
+
+                <div class="terms-highlight">
+                    <p>🔐 Taleos s'engage à protéger votre vie privée et vos données personnelles conformément au RGPD.</p>
+                </div>
+
+                <h3>1. 📋 Données collectées</h3>
+                <p><strong>1.1 Informations personnelles</strong></p>
+                <ul>
+                    <li><strong>Compte :</strong> Adresse email, mot de passe (hashé)</li>
+                    <li><strong>Profil :</strong> Nom, prénom, téléphone, localisation (optionnel)</li>
+                    <li><strong>Candidatures :</strong> Historique des offres auxquelles vous avez postulé</li>
+                    <li><strong>Technique :</strong> Adresse IP, cookies, logs de connexion</li>
+                </ul>
+
+                <p><strong>1.2 Finalités du traitement</strong></p>
+                <ul>
+                    <li>Gestion de votre compte et authentification</li>
+                    <li>Fonctionnement du service de candidature automatisée</li>
+                    <li>Amélioration de l'expérience utilisateur</li>
+                    <li>Communication sur les nouveautés du service</li>
+                    <li>Statistiques anonymisées d'utilisation</li>
+                </ul>
+
+                <h3>2. 🔐 Sécurité des données</h3>
+                <p><strong>2.1 Mesures de protection</strong></p>
+                <ul>
+                    <li>Chiffrement SSL/TLS pour toutes les communications</li>
+                    <li>Mots de passe hashés avec algorithme sécurisé (bcrypt)</li>
+                    <li>Hébergement sécurisé sur Firebase (Google Cloud Platform)</li>
+                    <li>Sauvegardes régulières et redondance des données</li>
+                    <li>Accès restreint aux données par le personnel autorisé</li>
+                </ul>
+
+                <p><strong>2.2 Durée de conservation</strong></p>
+                <ul>
+                    <li><strong>Compte actif :</strong> Données conservées tant que le compte existe</li>
+                    <li><strong>Compte supprimé :</strong> Suppression immédiate des données personnelles</li>
+                    <li><strong>Logs techniques :</strong> Conservation 12 mois maximum</li>
+                    <li><strong>Données anonymisées :</strong> Conservation illimitée à des fins statistiques</li>
+                </ul>
+
+                <h3>3. 🤝 Partage des données</h3>
+                <p><strong>3.1 Aucun partage commercial</strong></p>
+                <ul>
+                    <li><strong>❌ Nous ne vendons jamais vos données à des tiers</strong></li>
+                    <li><strong>❌ Nous ne louons pas vos informations</strong></li>
+                    <li><strong>❌ Pas de publicité ciblée basée sur vos données</strong></li>
+                </ul>
+
+                <p><strong>3.2 Partage nécessaire au service</strong></p>
+                <ul>
+                    <li><strong>Firebase/Google :</strong> Hébergement et authentification</li>
+                    <li><strong>Plateformes d'emploi :</strong> Transmission de vos candidatures (avec votre consentement)</li>
+                    <li><strong>Autorités légales :</strong> Sur demande judiciaire uniquement</li>
+                </ul>
+
+                <h3>4. 🍪 Cookies et traceurs</h3>
+                <p><strong>4.1 Types de cookies utilisés</strong></p>
+                <ul>
+                    <li><strong>Essentiels :</strong> Nécessaires au fonctionnement (authentification)</li>
+                    <li><strong>Fonctionnels :</strong> Préférences utilisateur, état de l'UI</li>
+                    <li><strong>Analytiques :</strong> Statistiques d'utilisation anonymisées</li>
+                </ul>
+
+                <p><strong>4.2 Gestion des cookies</strong></p>
+                <ul>
+                    <li>Vous pouvez désactiver les cookies non essentiels dans votre navigateur</li>
+                    <li>La désactivation peut affecter certaines fonctionnalités</li>
+                </ul>
+
+                <h3>5. ✅ Vos droits (RGPD)</h3>
+                <p><strong>5.1 Droits garantis</strong></p>
+                <ul>
+                    <li><strong>Droit d'accès :</strong> Consulter vos données personnelles</li>
+                    <li><strong>Droit de rectification :</strong> Modifier vos informations</li>
+                    <li><strong>Droit à l'effacement :</strong> Supprimer votre compte et vos données</li>
+                    <li><strong>Droit à la portabilité :</strong> Exporter vos données au format JSON</li>
+                    <li><strong>Droit d'opposition :</strong> Refuser certains traitements</li>
+                    <li><strong>Droit de limitation :</strong> Restreindre l'utilisation de vos données</li>
+                </ul>
+
+                <p><strong>5.2 Exercer vos droits</strong></p>
+                <ul>
+                    <li>Contactez-nous à : <strong>privacy@taleos.com</strong></li>
+                    <li>Réponse sous 30 jours maximum</li>
+                    <li>Possibilité de réclamation auprès de la CNIL</li>
+                </ul>
+
+                <h3>6. 🔄 Modifications de la politique</h3>
+                <p><strong>6.1 Évolution de la politique</strong></p>
+                <ul>
+                    <li>Cette politique peut être modifiée pour refléter les changements légaux ou techniques</li>
+                    <li>Toute modification substantielle vous sera notifiée par email</li>
+                    <li>Date de dernière mise à jour toujours affichée en haut</li>
+                </ul>
+
+                <h3>7. 📞 Contact DPO</h3>
+                <p><strong>7.1 Délégué à la Protection des Données</strong></p>
+                <ul>
+                    <li><strong>Email :</strong> dpo@taleos.com</li>
+                    <li>Pour toute question relative à la protection de vos données</li>
+                    <li>Pour exercer vos droits RGPD</li>
+                </ul>
+
+                <div class="terms-highlight">
+                    <p>🔒 Taleos s'engage à respecter la confidentialité de vos données et à vous garantir un contrôle total sur vos informations personnelles.</p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button class="btn-primary" onclick="closePrivacyModal()">J'ai compris</button>
             </div>
         </div>
     </div>
@@ -1310,6 +1726,39 @@
                 }
             }
         }
+
+        // Functions for Terms Modal
+        function openTermsModal(event) {
+            event.preventDefault();
+            document.getElementById('termsModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTermsModal() {
+            document.getElementById('termsModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        function openPrivacyModal(event) {
+            event.preventDefault();
+            document.getElementById('privacyModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'termsModal') {
+                closeTermsModal();
+            }
+            if (e.target.id === 'privacyModal') {
+                closePrivacyModal();
+            }
+        });
     </script>
 </body>
 </html>
