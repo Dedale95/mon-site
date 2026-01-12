@@ -34,6 +34,33 @@
             z-index: 1000;
         }
 
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
         .nav-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -50,21 +77,36 @@
 
         .nav-link {
             text-decoration: none;
-            color: #333;
+            color: #666;
             font-weight: 600;
-            padding: 10px 20px;
+            font-size: 0.95rem;
+            padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
+            display: inline-block;
+            box-sizing: border-box;
+            min-width: fit-content;
+            position: relative;
         }
 
         .nav-link:hover {
-            background: rgba(102, 126, 234, 0.1);
             color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
         }
 
-        .nav-link.active {
+        .nav-link.active,
+        .nav-link-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            /* Même padding pour éviter décalage */
+            padding: 8px 16px;
+        }
+
+        .nav-link.active:hover,
+        .nav-link-primary:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            /* Pas de transform pour éviter décalage */
         }
 
         .logout-btn {
@@ -78,6 +120,7 @@
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
+            font-family: inherit;
         }
 
         .logout-btn:hover {
@@ -410,6 +453,10 @@
 <body>
     <nav>
         <div class="nav-container">
+            <a href="landing_page_finance.html" class="logo">
+                <div class="logo-icon">T</div>
+                <div class="logo-text">Taleos</div>
+            </a>
             <div class="nav-links">
                 <a href="landing_page_finance.html" class="nav-link">Présentation</a>
                 <a href="offres.html" class="nav-link">Offres</a>
@@ -418,8 +465,8 @@
                 <a href="connexions.html" class="nav-link active" id="navConnexions" style="display: none;">🔗 Connexions</a>
                 <a href="auth.html" class="nav-link" id="navAuth">Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="navProfile" style="display: none;">Mon Profil</a>
+                <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">Déconnexion</button>
             </div>
-            <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">Déconnexion</button>
         </div>
     </nav>
 
