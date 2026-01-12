@@ -1558,6 +1558,13 @@
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const acceptTerms = document.getElementById('acceptTerms').checked;
+
+            // Vérifier que les CGU sont acceptées
+            if (!acceptTerms) {
+                showError('termsError', 'Vous devez accepter les Conditions Générales d\'Utilisation pour vous inscrire.');
+                return;
+            }
 
             // Validation côté client
             if (password.length < 6) {
