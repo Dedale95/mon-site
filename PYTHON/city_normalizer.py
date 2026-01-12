@@ -166,8 +166,8 @@ def normalize_city(city_raw):
     
     # Liste des pays connus à rejeter (ne doivent pas être traités comme villes)
     known_countries_lower = {
-        'france', 'inde', 'japon', 'pologne', 'roumanie', 'romania', 'chine', 'corée', 'corée du sud',
-        'italie', 'allemagne', 'espagne', 'portugal', 'belgique', 'suisse', 'luxembourg',
+        'france', 'inde', 'india', 'japon', 'japan', 'pologne', 'poland', 'roumanie', 'romania', 'chine', 'china', 'corée', 'corée du sud', 'korea', 'south korea',
+        'italie', 'italy', 'allemagne', 'germany', 'espagne', 'spain', 'portugal', 'belgique', 'belgium', 'suisse', 'switzerland', 'luxembourg',
         'pays-bas', 'royaume-uni', 'united kingdom', 'états-unis', 'etats-unis', 'usa', 'united states',
         'canada', 'singapour', 'singapore', 'hong-kong', 'hong kong', 'thailande', 'thaïlande', 
         'thailand', 'malaisie', 'malaysia', 'australie', 'australia', 'nouvelle-zélande', 
