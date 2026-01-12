@@ -624,6 +624,11 @@
         }
 
         /* Responsive */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2rem;
@@ -704,7 +709,9 @@
                     <div class="stat-label">de temps économisé sur vos candidatures</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">1000+</div>
+                    <div class="stat-number" id="totalJobsCount">
+                        <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                    </div>
                     <div class="stat-label">offres actualisées quotidiennement</div>
                 </div>
                 <div class="stat-item">
@@ -1155,9 +1162,9 @@
                 profileLink.classList.remove('nav-link-primary');
                 logoutBtn.style.display = 'none';
                 logoutBtn.classList.remove('nav-link-primary');
+                if (applicationsLink) applicationsLink.style.display = 'none';
                 authLink.style.display = 'block';
                 authLink.classList.remove('nav-link-primary');
-                if (applicationsLink) applicationsLink.style.display = 'none';
             }
             
             // Remettre en surbrillance la page actuelle après avoir mis à jour la visibilité
