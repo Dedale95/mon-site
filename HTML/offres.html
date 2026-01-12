@@ -193,77 +193,88 @@
             white-space: nowrap;
         }
 
-        /* Bouton accordéon pour les filtres */
-        .filters-toggle {
-            width: 100%;
+        /* Wrapper des filtres */
+        .filters-wrapper {
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* Header cliquable pour toggle */
+        .filters-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 16px;
-            padding: 18px 25px;
-            margin-bottom: 15px;
+            padding: 20px 30px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
         }
 
-        .filters-toggle:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        .filters-header:hover {
+            background: linear-gradient(135deg, #7c8ef0 0%, #8659b0 100%);
         }
 
-        .filters-toggle:active {
-            transform: translateY(0);
+        .filters-header:active {
+            transform: scale(0.99);
+        }
+
+        .filters-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .toggle-icon {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             transition: transform 0.3s ease;
-            margin-right: 12px;
+            line-height: 1;
         }
 
-        .filters-toggle.collapsed .toggle-icon {
+        .filters-header.collapsed .toggle-icon {
             transform: rotate(-90deg);
         }
 
-        .toggle-text {
-            flex: 1;
-            text-align: left;
-            font-size: 1.1rem;
-            font-weight: 600;
+        .filters-title {
+            font-size: 1.15rem;
+            font-weight: 700;
             color: white;
+            letter-spacing: 0.3px;
         }
 
         .toggle-badge {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
         }
 
-        .filters {
-            background: white;
-            border-radius: 20px;
+        .filters-header:hover .toggle-badge {
+            background: rgba(255, 255, 255, 0.35);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Contenu des filtres */
+        .filters-content {
             padding: 35px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
             max-height: 2000px;
             overflow: hidden;
-            transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+            transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.4s ease;
             opacity: 1;
         }
 
-        .filters.collapsed {
+        .filters-content.collapsed {
             max-height: 0;
             opacity: 0;
             padding: 0 35px;
-            margin-bottom: 0;
         }
 
         .filter-row {
@@ -892,14 +903,18 @@
             </div>
         </div>
 
-        <!-- Bouton accordéon pour les filtres -->
-        <button class="filters-toggle" id="filtersToggle" onclick="toggleFilters()">
-            <span class="toggle-icon">🔽</span>
-            <span class="toggle-text">Filtres de recherche</span>
-            <span class="toggle-badge" id="activeFiltersBadge">0 actif</span>
-        </button>
+        <div class="filters-wrapper">
+            <!-- Header cliquable pour toggle -->
+            <div class="filters-header" id="filtersToggle" onclick="toggleFilters()">
+                <div class="filters-header-left">
+                    <span class="toggle-icon">🔽</span>
+                    <span class="filters-title">Filtres de recherche</span>
+                </div>
+                <span class="toggle-badge" id="activeFiltersBadge">Aucun filtre</span>
+            </div>
 
-        <div class="filters" id="filtersContainer">
+            <!-- Contenu des filtres -->
+            <div class="filters-content" id="filtersContainer">
             <div class="filter-row">
                 <div class="filter-group">
                     <label for="searchInput">🔍 Recherche par mots-clés</label>
@@ -941,6 +956,7 @@
             </div>
             <div class="filter-row-reset">
                 <button class="reset-btn" onclick="resetFilters()">🔄 Réinitialiser tous les filtres</button>
+            </div>
             </div>
         </div>
 
@@ -2285,14 +2301,14 @@
 
         // Fonction pour toggle l'accordéon des filtres
         function toggleFilters() {
-            const filtersContainer = document.getElementById('filtersContainer');
-            const toggleButton = document.getElementById('filtersToggle');
+            const filtersContent = document.getElementById('filtersContainer');
+            const filtersHeader = document.getElementById('filtersToggle');
             
-            filtersContainer.classList.toggle('collapsed');
-            toggleButton.classList.toggle('collapsed');
+            filtersContent.classList.toggle('collapsed');
+            filtersHeader.classList.toggle('collapsed');
             
             // Sauvegarder l'état dans localStorage
-            const isCollapsed = filtersContainer.classList.contains('collapsed');
+            const isCollapsed = filtersContent.classList.contains('collapsed');
             localStorage.setItem('filtersCollapsed', isCollapsed);
         }
 
@@ -2321,8 +2337,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             const wasCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
             if (wasCollapsed) {
-                document.getElementById('filtersContainer').classList.add('collapsed');
-                document.getElementById('filtersToggle').classList.add('collapsed');
+                const filtersContent = document.getElementById('filtersContainer');
+                const filtersHeader = document.getElementById('filtersToggle');
+                if (filtersContent) filtersContent.classList.add('collapsed');
+                if (filtersHeader) filtersHeader.classList.add('collapsed');
             }
         });
 
