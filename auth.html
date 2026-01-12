@@ -237,17 +237,25 @@
         }
 
         .success-message {
-            color: #10b981;
-            font-size: 0.9rem;
-            margin-top: 10px;
-            padding: 12px;
+            color: #065f46;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 16px;
+            padding: 16px 20px;
             background: #d1fae5;
-            border-radius: 8px;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
             display: none;
+            animation: slideIn 0.3s ease-out;
         }
 
         .success-message.show {
             display: block;
+        }
+
+        .success-message strong {
+            color: #065f46;
+            font-weight: 700;
         }
 
         /* Loader élégant pour la connexion */
