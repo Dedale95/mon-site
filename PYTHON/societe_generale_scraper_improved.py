@@ -362,7 +362,9 @@ async def fetch_job_details(context: BrowserContext, url: str, sem: asyncio.Sema
                     city_raw = parts[0]
                     country_raw = parts[-1]
                 elif len(parts) == 1:
-                    country_raw = parts[0] # Assume single part is a country if no city is explicit
+                    # Si une seule partie, c'est probablement un pays
+                    country_raw = parts[0]
+                    city_raw = None  # Pas de ville
 
                 # Mapping ville → état pour harmonisation (US principalement)
                 # Exemple: "Jersey City" → "New Jersey" pour cohérence
@@ -389,6 +391,25 @@ async def fetch_job_details(context: BrowserContext, url: str, sem: asyncio.Sema
                 # Appliquer le mapping si la ville est reconnue
                 if city_raw and city_raw.lower() in city_to_state_mapping:
                     city_raw = city_to_state_mapping[city_raw.lower()]
+
+                # IMPORTANT : Vérifier si city_raw est en fait un pays
+                # Liste des pays connus (à compléter)
+                known_countries = {
+                    'france', 'inde', 'india', 'japon', 'japan', 'pologne', 'poland', 
+                    'roumanie', 'romania', 'chine', 'china', 'italie', 'italy', 
+                    'allemagne', 'germany', 'espagne', 'spain', 'portugal', 
+                    'belgique', 'belgium', 'suisse', 'switzerland', 'luxembourg',
+                    'pays-bas', 'netherlands', 'royaume-uni', 'united kingdom', 
+                    'états-unis', 'united states', 'usa', 'canada', 'singapour', 
+                    'singapore', 'hong-kong', 'hong kong', 'australie', 'australia',
+                    'grèce', 'greece', 'turquie', 'turkey', 'maroc', 'morocco'
+                }
+                
+                # Si city_raw est un pays, le rejeter et utiliser comme pays si country_raw est vide
+                if city_raw and city_raw.lower() in known_countries:
+                    if not country_raw:
+                        country_raw = city_raw
+                    city_raw = None  # Rejeter la "ville" qui est en fait un pays
 
                 city_normalized = normalize_city(city_raw) if city_raw else None
                 country_normalized = normalize_country(country_raw) if country_raw else None

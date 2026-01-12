@@ -119,12 +119,18 @@ def normalize_city(city_raw):
     
     # Liste des pays connus à rejeter (ne doivent pas être traités comme villes)
     known_countries_lower = {
-        'france', 'inde', 'japon', 'pologne', 'roumanie', 'chine', 'corée', 'corée du sud',
+        'france', 'inde', 'japon', 'pologne', 'roumanie', 'romania', 'chine', 'corée', 'corée du sud',
         'italie', 'allemagne', 'espagne', 'portugal', 'belgique', 'suisse', 'luxembourg',
-        'pays-bas', 'royaume-uni', 'united kingdom', 'états-unis', 'usa', 'canada',
-        'singapour', 'hong-kong', 'hong kong', 'thailande', 'thaïlande', 'malaisie',
-        'australie', 'nouvelle-zélande', 'brésil', 'argentine', 'chili', 'mexique',
-        'colombie', 'afrique du sud', 'égypte', 'maroc', 'tunisie', 'algérie'
+        'pays-bas', 'royaume-uni', 'united kingdom', 'états-unis', 'etats-unis', 'usa', 'united states',
+        'canada', 'singapour', 'singapore', 'hong-kong', 'hong kong', 'thailande', 'thaïlande', 
+        'thailand', 'malaisie', 'malaysia', 'australie', 'australia', 'nouvelle-zélande', 
+        'new zealand', 'brésil', 'brazil', 'argentine', 'argentina', 'chili', 'chile', 
+        'mexique', 'mexico', 'colombie', 'colombia', 'afrique du sud', 'south africa',
+        'égypte', 'egypt', 'maroc', 'morocco', 'tunisie', 'tunisia', 'algérie', 'algeria',
+        'grèce', 'greece', 'turquie', 'turkey', 'russie', 'russia', 'ukraine',
+        'hongrie', 'hungary', 'tchéquie', 'czech republic', 'slovaquie', 'slovakia',
+        'autriche', 'austria', 'irlande', 'ireland', 'norvège', 'norway', 'suède', 'sweden',
+        'finlande', 'finland', 'danemark', 'denmark', 'pays-bas', 'netherlands', 'hollande'
     }
     
     # Rejeter si c'est un pays
