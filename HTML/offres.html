@@ -2501,7 +2501,7 @@
         }
 
         // Fonction wrapper pour la compatibilité - appelée par les filtres
-        function renderJobs(jobs) {
+        async function renderJobs(jobs) {
             // Si des jobs sont fournis, mettre à jour filteredJobs
             // Sinon, utiliser filteredJobs existant (ne pas écraser avec [])
             if (jobs !== undefined) {
@@ -2512,7 +2512,7 @@
             currentPage = 1;
             
             // Rendre la première page
-            renderPaginatedJobs();
+            await renderPaginatedJobs();
         }
 
         // Fonction pour afficher les offres paginées
