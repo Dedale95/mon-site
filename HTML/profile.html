@@ -151,10 +151,14 @@
         }
 
         .accordion-section {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .accordion-section:last-child {
+            margin-bottom: 0;
         }
 
         .accordion-header {
@@ -2416,17 +2420,36 @@
                 }
             });
 
-            // Marquer les sections incomplètes
+            // Marquer les sections incomplètes (seulement celles qui ont réellement des champs incomplets)
             incompleteSections.forEach(sectionName => {
-                const accordionHeaders = document.querySelectorAll('.accordion-header h2');
-                accordionHeaders.forEach(header => {
-                    if (header.textContent.trim() === sectionName) {
-                        const section = header.closest('.accordion-section');
-                        if (section) {
-                            section.classList.add('incomplete');
+                // Vérifier que cette section a vraiment des champs incomplets avant de la marquer
+                const sectionHasIncompleteFields = Object.values(requiredFields)
+                    .flat()
+                    .some(field => {
+                        if (field.section === sectionName) {
+                            if (field.isCheckbox) {
+                                const checkboxes = document.querySelectorAll(`input[name="${field.name}"]:checked`);
+                                return checkboxes.length === 0;
+                            } else {
+                                const element = document.getElementById(field.id);
+                                return element && (!element.value || element.value.trim() === '');
+                            }
                         }
-                    }
-                });
+                        return false;
+                    });
+                
+                // Marquer la section seulement si elle a réellement des champs incomplets
+                if (sectionHasIncompleteFields) {
+                    const accordionHeaders = document.querySelectorAll('.accordion-header h2');
+                    accordionHeaders.forEach(header => {
+                        if (header.textContent.trim() === sectionName) {
+                            const section = header.closest('.accordion-section');
+                            if (section) {
+                                section.classList.add('incomplete');
+                            }
+                        }
+                    });
+                }
             });
 
             // Si des champs sont incomplets, afficher un toast et retourner false
