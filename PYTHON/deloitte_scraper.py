@@ -260,9 +260,9 @@ async def get_all_jobs(context: BrowserContext) -> List[Dict]:
             city = normalize_city(location_raw)
             country = normalize_country("France") # Deloitte FR context
 
-            # Si la ville est None (rejetée par le normaliseur), utiliser le format "Pays - Pays"
-            if not city:
-                location = f"{country} - {country}"
+            # Si la ville est None ou égale au pays, utiliser "N/A"
+            if not city or city.lower() == country.lower():
+                location = f"N/A - {country}"
             else:
                 location = f"{city} - {country}"
 
