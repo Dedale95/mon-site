@@ -84,27 +84,44 @@ def safe_click(driver, element):
 def test_credit_agricole_connection(email: str, password: str, timeout: int = 30) -> Dict:
     """
     Teste la connexion à Crédit Agricole en suivant le flux réel
+    
+    Cette fonction ouvre automatiquement un navigateur Chrome (visible) pour :
+    1. Ouvrir une page d'offre d'emploi Crédit Agricole
+    2. Cliquer sur "Je postule"
+    3. Cliquer sur le lien de connexion
+    4. Remplir le formulaire de connexion
+    5. Vérifier si la connexion a réussi en détectant le formulaire de candidature
+    
+    Le navigateur reste visible pour que vous puissiez voir ce qui se passe.
     """
     logger.info(f"🔍 Test de connexion pour Crédit Agricole avec {email}")
     
     # Configuration Chrome
     chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("--headless")  # Mode headless pour le serveur
+    chrome_options.add_argument("--start-maximized")  # Fenêtre maximisée
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")  # Masquer l'automation
+    
+    # Mode headless désactivé pour voir ce qui se passe pendant les tests
+    # Le navigateur Chrome s'ouvrira et vous pourrez voir toutes les actions
+    # chrome_options.add_argument("--headless")  # Décommenter pour activer le mode headless (invisible)
+    
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     
     driver = None
     try:
-        # Initialiser le driver
+        # Initialiser le driver Chrome
+        # webdriver-manager télécharge automatiquement le bon ChromeDriver si nécessaire
         if ChromeDriverManager:
+            logger.info("🌐 Ouverture du navigateur Chrome...")
             driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=chrome_options
             )
         else:
             # Fallback si webdriver_manager n'est pas disponible
+            # Nécessite que ChromeDriver soit dans le PATH
+            logger.info("🌐 Ouverture du navigateur Chrome (sans webdriver-manager)...")
             driver = webdriver.Chrome(options=chrome_options)
         
         wait = WebDriverWait(driver, timeout)

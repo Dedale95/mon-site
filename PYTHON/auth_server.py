@@ -545,11 +545,12 @@ def test_bank_connection(user_id, user_email):
         # Importer le module de test de connexion
         try:
             from test_bank_connection import test_connection_sync
-        except ImportError:
+        except ImportError as e:
             return jsonify({
                 'success': False,
-                'message': 'Module de test de connexion non disponible. Vérifiez que Playwright est installé.',
-                'error': 'MODULE_NOT_FOUND'
+                'message': 'Module de test de connexion non disponible. Vérifiez que Selenium est installé.',
+                'error': 'MODULE_NOT_FOUND',
+                'details': str(e)
             }), 500
         
         # Tester la connexion
