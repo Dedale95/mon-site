@@ -330,6 +330,41 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .password-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-input-wrapper input {
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 1.2rem;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .password-toggle:focus {
+            outline: none;
+        }
+
         .form-actions {
             display: flex;
             gap: 15px;
@@ -641,6 +676,20 @@
             renderBanks();
         }
 
+        // Fonction pour afficher/masquer le mot de passe
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const toggleIcon = button.querySelector('span');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggleIcon.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggleIcon.textContent = '👁️';
+            }
+        }
+
         // Toggle module banque
         function toggleBank(bankId) {
             const module = document.getElementById(`bank-${bankId}`);
@@ -847,7 +896,12 @@
                                         </div>
                                         <div class="form-group">
                                             <label for="password-${bank.id}">🔒 Mot de passe</label>
-                                            <input type="password" id="password-${bank.id}" placeholder="Votre mot de passe" required>
+                                            <div class="password-input-wrapper">
+                                                <input type="password" id="password-${bank.id}" placeholder="Votre mot de passe" required>
+                                                <button type="button" class="password-toggle" onclick="togglePassword('password-${bank.id}', this)" aria-label="Afficher/Masquer le mot de passe">
+                                                    <span>👁️</span>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="connection-status" id="status-${bank.id}"></div>
                                         <div class="form-actions">
