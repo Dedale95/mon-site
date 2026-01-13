@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 """
 Script pour tester les connexions aux sites carrière des banques
-Utilise Playwright pour automatiser la connexion et vérifier si elle fonctionne
+Utilise Selenium pour automatiser la connexion et vérifier si elle fonctionne
 """
 
-import asyncio
+import time
 import sys
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 import logging
 
 try:
-    from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeoutError
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.common.exceptions import (
+        ElementClickInterceptedException,
+        TimeoutException,
+        NoSuchElementException
+    )
+    from selenium.webdriver.common.keys import Keys
+    try:
+        from webdriver_manager.chrome import ChromeDriverManager
+    except ImportError:
+        ChromeDriverManager = None
 except ImportError:
-    print("❌ Playwright n'est pas installé. Installez-le avec: pip install playwright && playwright install")
+    print("❌ Selenium n'est pas installé. Installez-le avec: pip install selenium webdriver-manager")
     sys.exit(1)
 
 # Configuration du logging
@@ -24,19 +39,21 @@ logger = logging.getLogger(__name__)
 BANK_CONFIGS = {
     'credit_agricole': {
         'name': 'Crédit Agricole',
-        'base_url': 'https://www.ca-recrute.fr',
-        'login_url': 'https://ca-recrute.talent-soft.com/pages/candidat/',
-        'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"], input[name*="identifiant"], input[id*="identifiant"], input[name*="login"], input[id*="login"]',
-        'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"], input[name*="pass"], input[id*="pass"]',
-        'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter"), button:has-text("Connexion"), a:has-text("Connexion")',
-        'success_indicators': ['dashboard', 'profil', 'candidatures', 'mon compte', 'espace candidat', 'mes candidatures'],
-        'error_indicators': ['erreur', 'incorrect', 'invalid', 'échec', 'identifiant ou mot de passe incorrect'],
-        'wait_after_submit': 5  # Attendre plus longtemps pour Crédit Agricole
+        'base_url': 'https://groupecreditagricole.jobs',
+        'test_job_url': 'https://groupecreditagricole.jobs/fr/nos-offres-emploi/577-170479-4-gestionnaire-middle-office-titrisation-abc-gestion-hf-reference--2025-105204--/',
+        'email_id': 'form-login-email',
+        'password_id': 'form-login-password',
+        'submit_id': 'form-login-submit',
+        'connexion_link_selector': "a.cta.secondary.arrow[href*='connexion']",
+        'postuler_button_selector': "button.cta.primary[data-popin='popin-application']",
+        'cookie_button_selector': 'button.rgpd-btn-refuse',
+        'success_indicator_id': 'form-apply-firstname',  # Formulaire de candidature après connexion
+        'error_indicators': ['erreur', 'incorrect', 'invalid', 'échec', 'identifiant ou mot de passe incorrect']
     },
     'societe_generale': {
         'name': 'Société Générale',
         'base_url': 'https://careers.societegenerale.com',
-        'login_url': 'https://careers.societegenerale.com/login',  # À adapter
+        'login_url': 'https://careers.societegenerale.com/login',
         'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"], input[name*="username"]',
         'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"]',
         'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter"), button:has-text("Sign in")',
@@ -46,7 +63,7 @@ BANK_CONFIGS = {
     'deloitte': {
         'name': 'Deloitte',
         'base_url': 'https://jobs2.deloitte.com',
-        'login_url': 'https://jobs2.deloitte.com/login',  # À adapter
+        'login_url': 'https://jobs2.deloitte.com/login',
         'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"], input[name*="username"]',
         'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"]',
         'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter"), button:has-text("Sign in"), button:has-text("Log in")',
@@ -56,128 +73,177 @@ BANK_CONFIGS = {
 }
 
 
-async def find_login_elements(page: Page, config: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """
-    Trouve les éléments de connexion sur la page
-    Retourne (email_selector, password_selector, submit_selector)
-    """
+def safe_click(driver, element):
+    """Clique sur un élément, même s'il est intercepté."""
     try:
-        # Attendre que la page soit chargée
-        await page.wait_for_load_state('domcontentloaded', timeout=15000)
-        await asyncio.sleep(1)  # Attendre un peu pour les scripts JS
+        element.click()
+    except ElementClickInterceptedException:
+        driver.execute_script("arguments[0].click();", element)
+
+
+def test_credit_agricole_connection(email: str, password: str, timeout: int = 30) -> Dict:
+    """
+    Teste la connexion à Crédit Agricole en suivant le flux réel
+    """
+    logger.info(f"🔍 Test de connexion pour Crédit Agricole avec {email}")
+    
+    # Configuration Chrome
+    chrome_options = Options()
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--headless")  # Mode headless pour le serveur
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    driver = None
+    try:
+        # Initialiser le driver
+        if ChromeDriverManager:
+            driver = webdriver.Chrome(
+                service=Service(ChromeDriverManager().install()),
+                options=chrome_options
+            )
+        else:
+            # Fallback si webdriver_manager n'est pas disponible
+            driver = webdriver.Chrome(options=chrome_options)
         
-        # Chercher les champs email avec plus de variantes
-        email_selectors = [
-            'input[type="email"]',
-            'input[name*="email" i]',
-            'input[id*="email" i]',
-            'input[name*="username" i]',
-            'input[id*="username" i]',
-            'input[name*="login" i]',
-            'input[id*="login" i]',
-            'input[name*="identifiant" i]',
-            'input[id*="identifiant" i]',
-            'input[name*="user" i]',
-            'input[id*="user" i]',
-            'input[placeholder*="email" i]',
-            'input[placeholder*="identifiant" i]',
-            'input[placeholder*="login" i]'
-        ]
+        wait = WebDriverWait(driver, timeout)
+        config = BANK_CONFIGS['credit_agricole']
         
-        email_element = None
-        for selector in email_selectors:
-            try:
-                elements = await page.query_selector_all(selector)
-                if elements:
-                    # Prendre le premier élément visible
-                    for elem in elements:
-                        is_visible = await elem.is_visible()
-                        if is_visible:
-                            email_element = selector
-                            logger.info(f"✅ Champ email trouvé: {selector}")
-                            break
-                    if email_element:
-                        break
-            except Exception as e:
-                logger.debug(f"Erreur avec selector {selector}: {e}")
-                continue
+        # ---------- Ouvrir une page d'offre d'emploi ----------
+        logger.info(f"📡 Ouverture de la page d'offre: {config['test_job_url']}")
+        driver.get(config['test_job_url'])
+        time.sleep(2)
         
-        # Chercher les champs password avec plus de variantes
-        password_selectors = [
-            'input[type="password"]',
-            'input[name*="password" i]',
-            'input[id*="password" i]',
-            'input[name*="pass" i]',
-            'input[id*="pass" i]',
-            'input[placeholder*="password" i]',
-            'input[placeholder*="mot de passe" i]'
-        ]
+        # ---------- Gérer les cookies ----------
+        try:
+            cookie_button = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, config['cookie_button_selector']))
+            )
+            safe_click(driver, cookie_button)
+            time.sleep(1)
+            logger.info("✅ Bannière de cookies refusée")
+        except (TimeoutException, NoSuchElementException):
+            logger.info("⚠️ Bannière de cookies non trouvée")
         
-        password_element = None
-        for selector in password_selectors:
-            try:
-                elements = await page.query_selector_all(selector)
-                if elements:
-                    # Prendre le premier élément visible
-                    for elem in elements:
-                        is_visible = await elem.is_visible()
-                        if is_visible:
-                            password_element = selector
-                            logger.info(f"✅ Champ password trouvé: {selector}")
-                            break
-                    if password_element:
-                        break
-            except Exception as e:
-                logger.debug(f"Erreur avec selector {selector}: {e}")
-                continue
+        # ---------- Cliquer sur "Je postule" ----------
+        logger.info("🔘 Clic sur 'Je postule'")
+        postuler = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, config['postuler_button_selector']))
+        )
+        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", postuler)
+        safe_click(driver, postuler)
+        time.sleep(2)
+        logger.info("✅ 'Je postule' cliqué")
         
-        # Chercher le bouton de soumission avec plus de variantes
-        submit_selectors = [
-            'button[type="submit"]',
-            'input[type="submit"]',
-            'button:has-text("Connexion")',
-            'button:has-text("Se connecter")',
-            'button:has-text("Sign in")',
-            'button:has-text("Log in")',
-            'button:has-text("Login")',
-            'a:has-text("Connexion")',
-            'a:has-text("Se connecter")',
-            'button.button-primary',
-            'button.btn-primary',
-            'button.btn',
-            'form button:not([type="button"])',
-            'form input[type="submit"]',
-            'button[class*="submit"]',
-            'button[class*="login"]',
-            'button[class*="connect"]'
-        ]
+        # ---------- Cliquer sur le lien de connexion ----------
+        logger.info("🔗 Clic sur le lien de connexion")
+        connexion = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, config['connexion_link_selector']))
+        )
+        safe_click(driver, connexion)
+        time.sleep(2)
         
-        submit_element = None
-        for selector in submit_selectors:
-            try:
-                elements = await page.query_selector_all(selector)
-                if elements:
-                    # Prendre le premier élément visible et cliquable
-                    for elem in elements:
-                        is_visible = await elem.is_visible()
-                        if is_visible:
-                            submit_element = selector
-                            logger.info(f"✅ Bouton submit trouvé: {selector}")
-                            break
-                    if submit_element:
-                        break
-            except Exception as e:
-                logger.debug(f"Erreur avec selector {selector}: {e}")
-                continue
+        # ---------- Remplir le formulaire de connexion ----------
+        logger.info("✍️  Remplissage du formulaire de connexion")
+        email_field = wait.until(EC.element_to_be_clickable((By.ID, config['email_id'])))
+        password_field = wait.until(EC.element_to_be_clickable((By.ID, config['password_id'])))
         
-        return email_element, password_element, submit_element
+        email_field.clear()
+        email_field.send_keys(email)
+        time.sleep(0.5)
         
+        password_field.clear()
+        password_field.send_keys(password)
+        time.sleep(0.5)
+        
+        # ---------- Soumettre le formulaire ----------
+        logger.info("📤 Soumission du formulaire")
+        submit_button = wait.until(EC.element_to_be_clickable((By.ID, config['submit_id'])))
+        safe_click(driver, submit_button)
+        logger.info("✅ Formulaire soumis")
+        
+        # ---------- Attendre la réponse ----------
+        logger.info("⏳ Attente de la réponse...")
+        time.sleep(3)  # Attendre que la page réagisse
+        
+        # Vérifier si on est sur le formulaire de candidature (succès)
+        try:
+            success_element = wait.until(
+                EC.presence_of_element_located((By.ID, config['success_indicator_id']))
+            )
+            logger.info("✅ Connexion réussie ! Formulaire de candidature détecté")
+            return {
+                'success': True,
+                'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                'details': {
+                    'url': driver.current_url,
+                    'reason': 'application_form_detected'
+                }
+            }
+        except TimeoutException:
+            # Vérifier s'il y a des erreurs
+            page_text = driver.find_element(By.TAG_NAME, 'body').text.lower()
+            
+            for error_indicator in config['error_indicators']:
+                if error_indicator.lower() in page_text:
+                    logger.warning(f"❌ Erreur détectée: {error_indicator}")
+                    return {
+                        'success': False,
+                        'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
+                        'details': {
+                            'url': driver.current_url,
+                            'error_found': error_indicator
+                        }
+                    }
+            
+            # Si on est toujours sur la page de login, c'est un échec
+            if 'connexion' in driver.current_url.lower() or 'login' in driver.current_url.lower():
+                logger.warning("❌ Toujours sur la page de connexion")
+                return {
+                    'success': False,
+                    'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
+                    'details': {
+                        'url': driver.current_url,
+                        'reason': 'still_on_login_page'
+                    }
+                }
+            
+            # Cas indéterminé
+            logger.warning("⚠️ Impossible de déterminer le résultat")
+            return {
+                'success': False,
+                'message': 'Impossible de déterminer si la connexion a réussi. Veuillez vérifier manuellement.',
+                'details': {
+                    'url': driver.current_url
+                }
+            }
+        
+    except TimeoutException as e:
+        logger.error(f"❌ Timeout: {str(e)}")
+        return {
+            'success': False,
+            'message': 'Timeout: La page a pris trop de temps à répondre',
+            'details': {
+                'url': driver.current_url if driver else 'unknown',
+                'error': str(e)
+            }
+        }
     except Exception as e:
-        logger.error(f"Erreur lors de la recherche des éléments: {e}")
-        return None, None, None
+        logger.error(f"❌ Erreur lors du test de connexion: {e}")
+        return {
+            'success': False,
+            'message': f'Erreur technique: {str(e)}',
+            'details': {
+                'error': str(e)
+            }
+        }
+    finally:
+        if driver:
+            driver.quit()
 
 
-async def test_bank_connection(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
+def test_bank_connection(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
     """
     Teste la connexion à un site carrière bancaire
     
@@ -197,188 +263,24 @@ async def test_bank_connection(bank_id: str, email: str, password: str, timeout:
             'details': {}
         }
     
-    config = BANK_CONFIGS[bank_id]
-    logger.info(f"🔍 Test de connexion pour {config['name']} avec {email}")
+    # Pour Crédit Agricole, utiliser la méthode spécifique
+    if bank_id == 'credit_agricole':
+        return test_credit_agricole_connection(email, password, timeout)
     
-    try:
-        async with async_playwright() as p:
-            # Lancer le navigateur en mode headless
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
-                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            )
-            page = await context.new_page()
-            
-            try:
-                # Pour Crédit Agricole, aller directement sur la page de login
-                if bank_id == 'credit_agricole' and 'login_url' in config:
-                    logger.info(f"📡 Connexion directe à la page de login: {config['login_url']}")
-                    await page.goto(config['login_url'], wait_until='domcontentloaded', timeout=timeout * 1000)
-                else:
-                    # Aller sur la page de base
-                    logger.info(f"📡 Connexion à {config['base_url']}")
-                    await page.goto(config['base_url'], wait_until='domcontentloaded', timeout=timeout * 1000)
-                    
-                    # Chercher un lien de connexion si on n'est pas déjà sur la page de login
-                    current_url = page.url
-                    if 'login' not in current_url.lower() and 'signin' not in current_url.lower() and 'candidat' not in current_url.lower():
-                        # Chercher un lien de connexion
-                        login_links = await page.query_selector_all('a:has-text("Connexion"), a:has-text("Se connecter"), a:has-text("Sign in"), a:has-text("Login"), a[href*="login"], a[href*="candidat"]')
-                        if login_links:
-                            logger.info(f"🔗 Clic sur le lien de connexion")
-                            await login_links[0].click()
-                            await page.wait_for_load_state('domcontentloaded', timeout=15000)
-                            await asyncio.sleep(2)  # Attendre le chargement
-                
-                # Trouver les éléments de connexion
-                email_selector, password_selector, submit_selector = await find_login_elements(page, config)
-                
-                if not email_selector or not password_selector:
-                    return {
-                        'success': False,
-                        'message': 'Impossible de trouver les champs de connexion sur la page',
-                        'details': {
-                            'url': page.url,
-                            'email_found': email_selector is not None,
-                            'password_found': password_selector is not None
-                        }
-                    }
-                
-                # Remplir les champs
-                logger.info("✍️  Remplissage des champs de connexion")
-                await page.fill(email_selector, email, timeout=5000)
-                await asyncio.sleep(0.5)  # Petite pause entre les champs
-                await page.fill(password_selector, password, timeout=5000)
-                await asyncio.sleep(0.5)
-                
-                # Soumettre le formulaire
-                logger.info("📤 Soumission du formulaire...")
-                if submit_selector:
-                    await page.click(submit_selector, timeout=5000)
-                else:
-                    # Essayer d'appuyer sur Enter dans le champ password
-                    logger.info("⌨️  Utilisation de la touche Enter")
-                    await page.press(password_selector, 'Enter')
-                
-                # Attendre la réponse (soit succès, soit erreur)
-                logger.info("⏳ Attente de la réponse...")
-                wait_time = config.get('wait_after_submit', 3)
-                await asyncio.sleep(wait_time)  # Attendre que la page réagisse
-                
-                # Attendre le chargement de la page
-                try:
-                    await page.wait_for_load_state('domcontentloaded', timeout=15000)
-                except:
-                    logger.warning("Timeout lors de l'attente du chargement, continuation...")
-                
-                # Attendre un peu plus pour que les messages d'erreur/succès apparaissent
-                await asyncio.sleep(2)
-                
-                # Vérifier le résultat
-                current_url_after = page.url
-                logger.info(f"📍 URL après soumission: {current_url_after}")
-                page_text = await page.inner_text('body')
-                page_text_lower = page_text.lower()
-                
-                # Vérifier les indicateurs d'erreur
-                for error_indicator in config['error_indicators']:
-                    if error_indicator.lower() in page_text_lower:
-                        # Vérifier si c'est vraiment une erreur de connexion
-                        error_elements = await page.query_selector_all(
-                            '.error, .alert-danger, [class*="error"], [id*="error"], [class*="alert"], [class*="message"]'
-                        )
-                        if error_elements:
-                            # Vérifier le texte des éléments d'erreur
-                            for error_elem in error_elements:
-                                error_text = await error_elem.inner_text()
-                                if error_indicator.lower() in error_text.lower():
-                                    logger.warning(f"❌ Erreur détectée: {error_text[:100]}")
-                                    return {
-                                        'success': False,
-                                        'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
-                                        'details': {
-                                            'url': current_url_after,
-                                            'error_found': error_indicator,
-                                            'error_text': error_text[:200]
-                                        }
-                                    }
-                
-                # Vérifier les indicateurs de succès
-                for success_indicator in config['success_indicators']:
-                    if success_indicator.lower() in page_text_lower:
-                        # Vérifier si on est vraiment connecté (pas juste sur une page qui contient le mot)
-                        if current_url_after != config['base_url'] or 'login' not in current_url_after.lower():
-                            return {
-                                'success': True,
-                                'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                                'details': {
-                                    'url': current_url_after,
-                                    'success_indicator': success_indicator
-                                }
-                            }
-                
-                # Si on a changé d'URL et qu'on n'est plus sur la page de login, c'est probablement un succès
-                if 'login' not in current_url_after.lower() and current_url_after != config['base_url']:
-                    return {
-                        'success': True,
-                        'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                        'details': {
-                            'url': current_url_after,
-                            'reason': 'url_changed'
-                        }
-                    }
-                
-                # Si on est toujours sur la page de login, c'est probablement un échec
-                if 'login' in current_url_after.lower() or current_url_after == config['base_url']:
-                    return {
-                        'success': False,
-                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
-                        'details': {
-                            'url': current_url_after,
-                            'reason': 'still_on_login_page'
-                        }
-                    }
-                
-                # Cas indéterminé
-                return {
-                    'success': False,
-                    'message': 'Impossible de déterminer si la connexion a réussi. Veuillez vérifier manuellement.',
-                    'details': {
-                        'url': current_url_after
-                    }
-                }
-                
-            except PlaywrightTimeoutError:
-                return {
-                    'success': False,
-                    'message': 'Timeout: La page a pris trop de temps à répondre',
-                    'details': {'url': page.url}
-                }
-            except Exception as e:
-                logger.error(f"Erreur lors du test de connexion: {e}")
-                return {
-                    'success': False,
-                    'message': f'Erreur technique: {str(e)}',
-                    'details': {'error': str(e)}
-                }
-            finally:
-                await browser.close()
-                
-    except Exception as e:
-        logger.error(f"Erreur critique: {e}")
-        return {
-            'success': False,
-            'message': f'Erreur critique: {str(e)}',
-            'details': {'error': str(e)}
-        }
+    # Pour les autres banques, utiliser une méthode générique (à implémenter si nécessaire)
+    config = BANK_CONFIGS[bank_id]
+    return {
+        'success': False,
+        'message': f'Test de connexion pour {config["name"]} non encore implémenté',
+        'details': {}
+    }
 
 
 def test_connection_sync(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
     """
     Version synchrone pour être appelée depuis Flask
     """
-    return asyncio.run(test_bank_connection(bank_id, email, password, timeout))
+    return test_bank_connection(bank_id, email, password, timeout)
 
 
 if __name__ == '__main__':
