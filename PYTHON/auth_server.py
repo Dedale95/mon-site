@@ -528,6 +528,43 @@ def save_profile(user_id, user_email):
         print(f"❌ Erreur lors de la sauvegarde du profil: {e}")
         return jsonify({'error': 'Une erreur est survenue lors de l\'enregistrement'}), 500
 
+@app.route('/api/test-bank-connection', methods=['POST'])
+@verify_token
+def test_bank_connection(user_id, user_email):
+    """Endpoint pour tester une connexion bancaire"""
+    try:
+        data = request.get_json()
+        bank_id = data.get('bank_id', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        
+        # Validation
+        if not bank_id or not email or not password:
+            return jsonify({'error': 'bank_id, email et password requis'}), 400
+        
+        # Importer le module de test de connexion
+        try:
+            from test_bank_connection import test_connection_sync
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'message': 'Module de test de connexion non disponible. Vérifiez que Playwright est installé.',
+                'error': 'MODULE_NOT_FOUND'
+            }), 500
+        
+        # Tester la connexion
+        result = test_connection_sync(bank_id, email, password, timeout=30)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        print(f"❌ Erreur lors du test de connexion: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Erreur lors du test de connexion: {str(e)}',
+            'error': str(e)
+        }), 500
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Endpoint de santé pour vérifier que le serveur fonctionne"""

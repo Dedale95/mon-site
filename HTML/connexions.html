@@ -512,6 +512,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Configuration de l'API backend
+        const API_BASE_URL = 'http://localhost:5000/api'; // À adapter selon votre déploiement
+        
         // Configuration des banques
         const banks = [
             {
@@ -662,25 +665,44 @@
 
             // Afficher le statut de test
             statusDiv.className = 'connection-status show info';
-            statusDiv.innerHTML = '⏳ Test de la connexion en cours...';
+            statusDiv.innerHTML = '⏳ Test de la connexion en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Test en cours...';
 
             try {
-                // Note: En raison des restrictions CORS, nous ne pouvons pas tester directement
-                // la connexion depuis le navigateur. Dans une vraie application, cela nécessiterait
-                // un backend proxy.
-                
-                // Simuler un délai de test
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Validation basique
+                if (!email || !password || !email.includes('@')) {
+                    throw new Error('Email ou mot de passe invalide');
+                }
 
-                // Pour l'instant, on valide juste que les champs sont remplis
-                if (email && password && email.includes('@')) {
-                    // Sauvegarder les credentials (cryptés)
+                // Récupérer le token d'authentification depuis localStorage
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    throw new Error('Vous devez être connecté pour tester une connexion bancaire');
+                }
+
+                // Appeler l'API backend pour tester la connexion
+                const response = await fetch(`${API_BASE_URL}/test-bank-connection`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        bank_id: bankId,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Connexion réussie - sauvegarder les credentials (cryptés)
                     await saveConnection(bankId, email, password);
                     
                     statusDiv.className = 'connection-status show success';
-                    statusDiv.innerHTML = `✅ Connexion réussie ! Votre compte ${bank.name} est maintenant lié.<br><small>Note: La validation complète sera effectuée lors de votre première candidature.</small>`;
+                    statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
                     
                     // Mettre à jour le statut
                     userConnections[bankId] = {
@@ -693,15 +715,27 @@
                     setTimeout(() => {
                         renderBanks();
                     }, 2000);
-                    
                 } else {
-                    throw new Error('Email ou mot de passe invalide');
+                    // Connexion échouée
+                    throw new Error(result.message || 'La connexion a échoué');
                 }
 
             } catch (error) {
                 console.error('Erreur test connexion:', error);
                 statusDiv.className = 'connection-status show error';
-                statusDiv.innerHTML = `❌ Échec de la connexion : ${error.message}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
+                
+                let errorMessage = error.message || 'Une erreur est survenue';
+                
+                // Messages d'erreur plus spécifiques
+                if (error.message.includes('fetch') || error.message.includes('network')) {
+                    errorMessage = 'Impossible de contacter le serveur. Vérifiez que le serveur backend est démarré.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'Erreur CORS. Vérifiez la configuration du serveur.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
+                }
+                
+                statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '🔗 Lier mon compte';

@@ -1,0 +1,339 @@
+#!/usr/bin/env python3
+"""
+Script pour tester les connexions aux sites carrière des banques
+Utilise Playwright pour automatiser la connexion et vérifier si elle fonctionne
+"""
+
+import asyncio
+import sys
+from pathlib import Path
+from typing import Dict, Optional, Tuple
+import logging
+
+try:
+    from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeoutError
+except ImportError:
+    print("❌ Playwright n'est pas installé. Installez-le avec: pip install playwright && playwright install")
+    sys.exit(1)
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Configuration des banques avec leurs URLs de connexion
+BANK_CONFIGS = {
+    'credit_agricole': {
+        'name': 'Crédit Agricole',
+        'base_url': 'https://www.ca-recrute.fr',
+        'login_url': 'https://www.ca-recrute.fr/login',  # À adapter selon le vrai URL
+        'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"]',
+        'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"]',
+        'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter")',
+        'success_indicators': ['dashboard', 'profil', 'candidatures', 'mon compte'],
+        'error_indicators': ['erreur', 'incorrect', 'invalid', 'échec']
+    },
+    'societe_generale': {
+        'name': 'Société Générale',
+        'base_url': 'https://careers.societegenerale.com',
+        'login_url': 'https://careers.societegenerale.com/login',  # À adapter
+        'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"], input[name*="username"]',
+        'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"]',
+        'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter"), button:has-text("Sign in")',
+        'success_indicators': ['dashboard', 'profile', 'my account', 'candidatures', 'applications'],
+        'error_indicators': ['erreur', 'incorrect', 'invalid', 'failed', 'error']
+    },
+    'deloitte': {
+        'name': 'Deloitte',
+        'base_url': 'https://jobs2.deloitte.com',
+        'login_url': 'https://jobs2.deloitte.com/login',  # À adapter
+        'email_selector': 'input[type="email"], input[name*="email"], input[id*="email"], input[name*="username"]',
+        'password_selector': 'input[type="password"], input[name*="password"], input[id*="password"]',
+        'submit_selector': 'button[type="submit"], input[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter"), button:has-text("Sign in"), button:has-text("Log in")',
+        'success_indicators': ['dashboard', 'profile', 'my account', 'applications', 'jobs'],
+        'error_indicators': ['erreur', 'incorrect', 'invalid', 'failed', 'error', 'authentication failed']
+    }
+}
+
+
+async def find_login_elements(page: Page, config: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    Trouve les éléments de connexion sur la page
+    Retourne (email_selector, password_selector, submit_selector)
+    """
+    try:
+        # Attendre que la page soit chargée
+        await page.wait_for_load_state('networkidle', timeout=10000)
+        
+        # Chercher les champs email
+        email_selectors = [
+            'input[type="email"]',
+            'input[name*="email" i]',
+            'input[id*="email" i]',
+            'input[name*="username" i]',
+            'input[id*="username" i]',
+            'input[name*="login" i]',
+            'input[id*="login" i]'
+        ]
+        
+        email_element = None
+        for selector in email_selectors:
+            try:
+                element = await page.query_selector(selector)
+                if element:
+                    email_element = selector
+                    break
+            except:
+                continue
+        
+        # Chercher les champs password
+        password_selectors = [
+            'input[type="password"]',
+            'input[name*="password" i]',
+            'input[id*="password" i]',
+            'input[name*="pass" i]',
+            'input[id*="pass" i]'
+        ]
+        
+        password_element = None
+        for selector in password_selectors:
+            try:
+                element = await page.query_selector(selector)
+                if element:
+                    password_element = selector
+                    break
+            except:
+                continue
+        
+        # Chercher le bouton de soumission
+        submit_selectors = [
+            'button[type="submit"]',
+            'input[type="submit"]',
+            'button:has-text("Connexion")',
+            'button:has-text("Se connecter")',
+            'button:has-text("Sign in")',
+            'button:has-text("Log in")',
+            'button:has-text("Login")',
+            'button.button-primary',
+            'button.btn-primary',
+            'form button',
+            'form input[type="submit"]'
+        ]
+        
+        submit_element = None
+        for selector in submit_selectors:
+            try:
+                element = await page.query_selector(selector)
+                if element:
+                    submit_element = selector
+                    break
+            except:
+                continue
+        
+        return email_element, password_element, submit_element
+        
+    except Exception as e:
+        logger.error(f"Erreur lors de la recherche des éléments: {e}")
+        return None, None, None
+
+
+async def test_bank_connection(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
+    """
+    Teste la connexion à un site carrière bancaire
+    
+    Args:
+        bank_id: Identifiant de la banque (credit_agricole, societe_generale, deloitte)
+        email: Email de connexion
+        password: Mot de passe
+        timeout: Timeout en secondes
+    
+    Returns:
+        Dict avec 'success' (bool), 'message' (str), et 'details' (dict)
+    """
+    if bank_id not in BANK_CONFIGS:
+        return {
+            'success': False,
+            'message': f'Banque inconnue: {bank_id}',
+            'details': {}
+        }
+    
+    config = BANK_CONFIGS[bank_id]
+    logger.info(f"🔍 Test de connexion pour {config['name']} avec {email}")
+    
+    try:
+        async with async_playwright() as p:
+            # Lancer le navigateur en mode headless
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                viewport={'width': 1920, 'height': 1080},
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            )
+            page = await context.new_page()
+            
+            try:
+                # Aller sur la page de base
+                logger.info(f"📡 Connexion à {config['base_url']}")
+                await page.goto(config['base_url'], wait_until='domcontentloaded', timeout=timeout * 1000)
+                
+                # Chercher un lien de connexion si on n'est pas déjà sur la page de login
+                current_url = page.url
+                if 'login' not in current_url.lower() and 'signin' not in current_url.lower():
+                    # Chercher un lien de connexion
+                    login_links = await page.query_selector_all('a:has-text("Connexion"), a:has-text("Se connecter"), a:has-text("Sign in"), a:has-text("Login")')
+                    if login_links:
+                        await login_links[0].click()
+                        await page.wait_for_load_state('networkidle', timeout=10000)
+                
+                # Trouver les éléments de connexion
+                email_selector, password_selector, submit_selector = await find_login_elements(page, config)
+                
+                if not email_selector or not password_selector:
+                    return {
+                        'success': False,
+                        'message': 'Impossible de trouver les champs de connexion sur la page',
+                        'details': {
+                            'url': page.url,
+                            'email_found': email_selector is not None,
+                            'password_found': password_selector is not None
+                        }
+                    }
+                
+                # Remplir les champs
+                logger.info("✍️  Remplissage des champs de connexion")
+                await page.fill(email_selector, email)
+                await page.fill(password_selector, password)
+                
+                # Soumettre le formulaire
+                if submit_selector:
+                    await page.click(submit_selector)
+                else:
+                    # Essayer d'appuyer sur Enter dans le champ password
+                    await page.press(password_selector, 'Enter')
+                
+                # Attendre la réponse (soit succès, soit erreur)
+                logger.info("⏳ Attente de la réponse...")
+                await page.wait_for_load_state('networkidle', timeout=15000)
+                
+                # Attendre un peu pour que les messages d'erreur/succès apparaissent
+                await asyncio.sleep(2)
+                
+                # Vérifier le résultat
+                current_url_after = page.url
+                page_content = await page.content()
+                page_text = await page.inner_text('body')
+                page_text_lower = page_text.lower()
+                
+                # Vérifier les indicateurs d'erreur
+                for error_indicator in config['error_indicators']:
+                    if error_indicator.lower() in page_text_lower:
+                        # Vérifier si c'est vraiment une erreur de connexion
+                        error_elements = await page.query_selector_all(
+                            f'*:has-text("{error_indicator}"), .error, .alert-danger, [class*="error"], [id*="error"]'
+                        )
+                        if error_elements:
+                            return {
+                                'success': False,
+                                'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
+                                'details': {
+                                    'url': current_url_after,
+                                    'error_found': error_indicator
+                                }
+                            }
+                
+                # Vérifier les indicateurs de succès
+                for success_indicator in config['success_indicators']:
+                    if success_indicator.lower() in page_text_lower:
+                        # Vérifier si on est vraiment connecté (pas juste sur une page qui contient le mot)
+                        if current_url_after != config['base_url'] or 'login' not in current_url_after.lower():
+                            return {
+                                'success': True,
+                                'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                                'details': {
+                                    'url': current_url_after,
+                                    'success_indicator': success_indicator
+                                }
+                            }
+                
+                # Si on a changé d'URL et qu'on n'est plus sur la page de login, c'est probablement un succès
+                if 'login' not in current_url_after.lower() and current_url_after != config['base_url']:
+                    return {
+                        'success': True,
+                        'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                        'details': {
+                            'url': current_url_after,
+                            'reason': 'url_changed'
+                        }
+                    }
+                
+                # Si on est toujours sur la page de login, c'est probablement un échec
+                if 'login' in current_url_after.lower() or current_url_after == config['base_url']:
+                    return {
+                        'success': False,
+                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
+                        'details': {
+                            'url': current_url_after,
+                            'reason': 'still_on_login_page'
+                        }
+                    }
+                
+                # Cas indéterminé
+                return {
+                    'success': False,
+                    'message': 'Impossible de déterminer si la connexion a réussi. Veuillez vérifier manuellement.',
+                    'details': {
+                        'url': current_url_after
+                    }
+                }
+                
+            except PlaywrightTimeoutError:
+                return {
+                    'success': False,
+                    'message': 'Timeout: La page a pris trop de temps à répondre',
+                    'details': {'url': page.url}
+                }
+            except Exception as e:
+                logger.error(f"Erreur lors du test de connexion: {e}")
+                return {
+                    'success': False,
+                    'message': f'Erreur technique: {str(e)}',
+                    'details': {'error': str(e)}
+                }
+            finally:
+                await browser.close()
+                
+    except Exception as e:
+        logger.error(f"Erreur critique: {e}")
+        return {
+            'success': False,
+            'message': f'Erreur critique: {str(e)}',
+            'details': {'error': str(e)}
+        }
+
+
+def test_connection_sync(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
+    """
+    Version synchrone pour être appelée depuis Flask
+    """
+    return asyncio.run(test_bank_connection(bank_id, email, password, timeout))
+
+
+if __name__ == '__main__':
+    # Test en ligne de commande
+    if len(sys.argv) < 4:
+        print("Usage: python test_bank_connection.py <bank_id> <email> <password>")
+        print(f"Banques disponibles: {', '.join(BANK_CONFIGS.keys())}")
+        sys.exit(1)
+    
+    bank_id = sys.argv[1]
+    email = sys.argv[2]
+    password = sys.argv[3]
+    
+    result = test_connection_sync(bank_id, email, password)
+    
+    print(f"\n{'='*60}")
+    print(f"Résultat: {'✅ SUCCÈS' if result['success'] else '❌ ÉCHEC'}")
+    print(f"Message: {result['message']}")
+    if result['details']:
+        print(f"Détails: {result['details']}")
+    print(f"{'='*60}\n")
+    
+    sys.exit(0 if result['success'] else 1)
