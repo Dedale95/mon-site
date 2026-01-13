@@ -2668,13 +2668,13 @@
                 link.classList.remove('nav-link-primary');
                 const linkHref = link.getAttribute('href');
                 const linkText = link.textContent.trim();
-                
-                // Sur la page profil, mettre en surbrillance "Mon Profil"
-                if ((currentPage === 'profile.html' || currentPage.includes('profile')) && linkText === 'Mon Profil') {
+
+                // Sur la page profil, mettre en surbrillance "Mon Profil" (avec ou sans emoji)
+                if ((currentPage === 'profile.html' || currentPage.includes('profile')) && linkText.includes('Mon Profil')) {
                     link.classList.add('nav-link-primary');
                 }
                 // Pour les autres liens, mettre en surbrillance selon l'URL (sauf les liens spéciaux)
-                else if (linkHref && linkText !== 'Déconnexion' && linkText !== 'Inscription / Connexion') {
+                else if (linkHref && !linkText.includes('Déconnexion') && !linkText.includes('Inscription / Connexion')) {
                     const linkPage = linkHref.split('/').pop();
                     if (linkPage === currentPage) {
                         link.classList.add('nav-link-primary');

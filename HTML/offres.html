@@ -2745,7 +2745,8 @@
                 const linkHref = link.getAttribute('href');
                 const linkText = link.textContent.trim();
                 
-                if (linkText === 'Mon Profil' || linkText === 'Déconnexion' || linkText === 'Inscription / Connexion') {
+                // Ignorer les liens spéciaux (avec ou sans emojis)
+                if (linkText.includes('Mon Profil') || linkText.includes('Déconnexion') || linkText.includes('Inscription / Connexion')) {
                     return;
                 }
                 
