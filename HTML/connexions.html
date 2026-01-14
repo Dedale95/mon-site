@@ -365,6 +365,116 @@
             outline: none;
         }
 
+        /* Modale de confirmation personnalisée */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 24px 30px;
+            color: white;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-header h3::before {
+            content: '⚠️';
+            font-size: 2rem;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-body p {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+
+        .modal-btn-cancel {
+            background: white;
+            color: #666;
+            border: 2px solid #ddd;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #f5f5f5;
+            border-color: #bbb;
+        }
+
+        .modal-btn-confirm {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
         .form-actions {
             display: flex;
             gap: 15px;
@@ -851,16 +961,89 @@
         }
 
         // Supprimer une connexion
+        // Fonction pour afficher une modale de confirmation personnalisée
+        function showConfirmModal(message, onConfirm, onCancel) {
+            // Créer l'overlay si il n'existe pas
+            let overlay = document.getElementById('confirmModalOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'confirmModalOverlay';
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = `
+                    <div class="modal">
+                        <div class="modal-header">
+                            <h3>Confirmation</h3>
+                        </div>
+                        <div class="modal-body">
+                            <p id="confirmModalMessage"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="modal-btn modal-btn-cancel" id="confirmModalCancel">Annuler</button>
+                            <button class="modal-btn modal-btn-confirm" id="confirmModalConfirm">Confirmer</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                // Gérer les clics
+                document.getElementById('confirmModalCancel').addEventListener('click', () => {
+                    overlay.classList.remove('show');
+                    if (onCancel) onCancel();
+                });
+
+                document.getElementById('confirmModalConfirm').addEventListener('click', () => {
+                    overlay.classList.remove('show');
+                    if (onConfirm) onConfirm();
+                });
+
+                // Fermer en cliquant sur l'overlay
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.classList.remove('show');
+                        if (onCancel) onCancel();
+                    }
+                });
+            }
+
+            // Mettre à jour le message
+            document.getElementById('confirmModalMessage').textContent = message;
+            
+            // Afficher la modale
+            overlay.classList.add('show');
+        }
+
         async function disconnectBank(bankId, event) {
             if (!currentUser) {
                 console.error('❌ Pas d\'utilisateur connecté');
-                alert('Erreur: Vous devez être connecté pour délier un compte');
+                showConfirmModal(
+                    'Vous devez être connecté pour délier un compte.',
+                    () => {
+                        window.location.href = 'auth.html';
+                    },
+                    () => {}
+                );
                 return;
             }
             
-            if (!confirm('Êtes-vous sûr de vouloir délier ce compte ?')) {
-                return;
-            }
+            // Récupérer le nom de la banque
+            const bank = banks.find(b => b.id === bankId);
+            const bankName = bank ? bank.name : 'ce compte';
+            
+            // Afficher la modale de confirmation
+            showConfirmModal(
+                `Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nCette action est irréversible et vous devrez reconnecter votre compte pour postuler aux offres.`,
+                () => {
+                    // L'utilisateur a confirmé, procéder à la suppression
+                    performDisconnect(bankId, event);
+                },
+                () => {
+                    // L'utilisateur a annulé, ne rien faire
+                    console.log('Annulation de la suppression');
+                }
+            );
+        }
+
+        async function performDisconnect(bankId, event) {
 
             // Récupérer le bouton correctement
             const btn = event ? event.target : document.getElementById(`btn-disconnect-${bankId}`);
@@ -906,6 +1089,24 @@
                 if (!doc.exists) {
                     console.warn('⚠️ Document connections n\'existe pas');
                     // Si le document n'existe pas, on considère que c'est déjà supprimé
+                    delete userConnections[bankId];
+                    if (statusDiv) {
+                        statusDiv.className = 'connection-status show success';
+                        statusDiv.innerHTML = '✅ Compte délié avec succès';
+                    }
+                    setTimeout(() => {
+                        renderBanks();
+                    }, 1500);
+                    return;
+                }
+
+                // Récupérer les données actuelles
+                const currentData = doc.data();
+                
+                // Vérifier si le champ existe
+                if (!currentData || !currentData[bankId]) {
+                    console.warn(`⚠️ Le champ ${bankId} n'existe pas dans le document`);
+                    // Considérer comme déjà supprimé
                     delete userConnections[bankId];
                     if (statusDiv) {
                         statusDiv.className = 'connection-status show success';
@@ -980,7 +1181,12 @@
                     statusDiv.className = 'connection-status show error';
                     statusDiv.innerHTML = `❌ ${errorMessage}`;
                 } else {
-                    alert(errorMessage);
+                    // Si statusDiv n'existe pas, afficher une modale d'erreur
+                    showConfirmModal(
+                        errorMessage,
+                        () => {},
+                        () => {}
+                    );
                 }
                 
                 // Réactiver le bouton en cas d'erreur
