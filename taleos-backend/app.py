@@ -24,7 +24,23 @@ BANK_CONFIGS = {
         'postuler_button_selector': "button.cta.primary[data-popin='popin-application']",
         'cookie_button_selector': 'button.rgpd-btn-refuse',
         'success_indicator_id': 'form-apply-firstname',
-        'error_indicators': ['erreur', 'incorrect', 'invalid', 'échec', 'identifiant ou mot de passe incorrect']
+        'error_indicators': [
+            'erreur',
+            'incorrect',
+            'invalid',
+            'échec',
+            'identifiant ou mot de passe incorrect',
+            'email ou mot de passe incorrect',
+            'renseigner un adresse e-mail au format attendu',
+            'format attendu',
+            'tentatives',
+            'vous reste',
+            'mot de passe incorrect',
+            'adresse e-mail',
+            'format',
+            'connexion impossible',
+            'compte invalide'
+        ]
     }
 }
 
@@ -95,23 +111,75 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 
                 # Récupérer l'URL actuelle et le texte de la page
                 current_url = page.url
-                page_text = page.inner_text('body').lower()
+                
+                # Récupérer le texte de la page de manière plus complète
+                try:
+                    page_text = page.inner_text('body').lower()
+                    # Récupérer aussi le HTML pour vérifier les messages d'erreur dans les éléments spécifiques
+                    page_html = page.content().lower()
+                except:
+                    page_text = ''
+                    page_html = ''
+                
                 logger.info(f"📍 URL actuelle: {current_url}")
+                logger.info(f"📄 Texte de la page (extrait): {page_text[:200]}...")
                 
                 # PRIORITÉ 1: Vérifier les erreurs AVANT de vérifier le succès
                 logger.info("🔍 Vérification des erreurs...")
+                
+                # Vérifier dans le texte ET dans le HTML (pour capturer les messages d'erreur même s'ils sont dans des attributs)
+                combined_text = page_text + ' ' + page_html
+                
                 for error_indicator in config['error_indicators']:
-                    if error_indicator.lower() in page_text:
-                        logger.warning(f"❌ Erreur détectée: {error_indicator}")
+                    error_lower = error_indicator.lower()
+                    # Vérifier dans le texte de la page
+                    if error_lower in page_text:
+                        logger.warning(f"❌ Erreur détectée dans le texte: {error_indicator}")
                         browser.close()
                         return {
                             'success': False,
-                            'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
+                            'message': f'Connexion échouée: {error_indicator}',
                             'details': {
                                 'url': current_url,
-                                'error_found': error_indicator
+                                'error_found': error_indicator,
+                                'detection_method': 'text'
                             }
                         }
+                    # Vérifier aussi dans le HTML (pour les messages dans les attributs, aria-labels, etc.)
+                    if error_lower in page_html:
+                        logger.warning(f"❌ Erreur détectée dans le HTML: {error_indicator}")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': f'Connexion échouée: {error_indicator}',
+                            'details': {
+                                'url': current_url,
+                                'error_found': error_indicator,
+                                'detection_method': 'html'
+                            }
+                        }
+                
+                # Vérifier aussi les messages d'erreur dans les éléments de formulaire
+                try:
+                    # Chercher les messages d'erreur dans les divs, spans, et autres éléments
+                    error_elements = page.query_selector_all('.error, .alert, .warning, [role="alert"], .message-error, .form-error')
+                    for element in error_elements:
+                        element_text = element.inner_text().lower()
+                        for error_indicator in config['error_indicators']:
+                            if error_indicator.lower() in element_text:
+                                logger.warning(f"❌ Erreur détectée dans un élément: {error_indicator}")
+                                browser.close()
+                                return {
+                                    'success': False,
+                                    'message': f'Connexion échouée: {error_indicator}',
+                                    'details': {
+                                        'url': current_url,
+                                        'error_found': error_indicator,
+                                        'detection_method': 'element'
+                                    }
+                                }
+                except Exception as e:
+                    logger.info(f"⚠️ Impossible de vérifier les éléments d'erreur: {e}")
                 
                 # PRIORITÉ 2: Vérifier si on est toujours sur la page de connexion
                 if 'connexion' in current_url.lower() or 'login' in current_url.lower():
