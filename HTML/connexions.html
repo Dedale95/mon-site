@@ -946,8 +946,15 @@
                 
                 statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
             } finally {
-                btn.disabled = false;
-                btn.innerHTML = '🔗 Lier mon compte';
+                // Ne réactiver le bouton que si on n'est pas dans le cas success
+                // (le bouton est déjà réactivé dans le cas d'erreur)
+                if (btn && !btn.disabled) {
+                    // Le bouton est déjà réactivé, ne rien faire
+                } else if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🔗 Lier mon compte';
+                }
+                console.log('✅ testConnection terminée');
             }
         }
 
