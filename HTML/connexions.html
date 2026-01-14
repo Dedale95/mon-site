@@ -844,40 +844,106 @@
         }
 
         // Supprimer une connexion
-        async function disconnectBank(bankId) {
-            if (!currentUser) return;
+        async function disconnectBank(bankId, event) {
+            if (!currentUser) {
+                console.error('❌ Pas d\'utilisateur connecté');
+                alert('Erreur: Vous devez être connecté pour délier un compte');
+                return;
+            }
             
             if (!confirm('Êtes-vous sûr de vouloir délier ce compte ?')) {
                 return;
             }
 
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Suppression...';
+            // Récupérer le bouton correctement
+            const btn = event ? event.target : document.getElementById(`btn-disconnect-${bankId}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Suppression...';
+            }
+
+            const statusDiv = document.getElementById(`status-${bankId}`);
+            if (statusDiv) {
+                statusDiv.className = 'connection-status show info';
+                statusDiv.innerHTML = '⏳ Suppression en cours...';
+            }
 
             try {
-                await db.collection('profiles').doc(currentUser.uid)
+                console.log(`🗑️ Suppression de la connexion ${bankId} pour l'utilisateur ${currentUser.uid}`);
+                
+                // Récupérer le document actuel pour vérifier qu'il existe
+                const docRef = db.collection('profiles').doc(currentUser.uid)
                     .collection('career_connections')
-                    .doc('connections')
-                    .update({
-                        [bankId]: firebase.firestore.FieldValue.delete()
-                    });
+                    .doc('connections');
+                
+                const doc = await docRef.get();
+                
+                if (!doc.exists) {
+                    console.warn('⚠️ Document connections n\'existe pas');
+                    // Si le document n'existe pas, on considère que c'est déjà supprimé
+                    delete userConnections[bankId];
+                    if (statusDiv) {
+                        statusDiv.className = 'connection-status show success';
+                        statusDiv.innerHTML = '✅ Compte délié avec succès';
+                    }
+                    setTimeout(() => {
+                        renderBanks();
+                    }, 1500);
+                    return;
+                }
 
+                // Supprimer le champ spécifique
+                await docRef.update({
+                    [bankId]: firebase.firestore.FieldValue.delete()
+                });
+
+                console.log(`✅ Connexion ${bankId} supprimée avec succès`);
+
+                // Mettre à jour l'objet local
                 delete userConnections[bankId];
                 
-                const statusDiv = document.getElementById(`status-${bankId}`);
-                statusDiv.className = 'connection-status show info';
-                statusDiv.innerHTML = '✅ Compte délié avec succès';
+                if (statusDiv) {
+                    statusDiv.className = 'connection-status show success';
+                    statusDiv.innerHTML = '✅ Compte délié avec succès';
+                }
 
+                // Réafficher la liste
                 setTimeout(() => {
                     renderBanks();
                 }, 1500);
 
             } catch (error) {
-                console.error('Erreur suppression connexion:', error);
-                alert('Erreur lors de la suppression');
-                btn.disabled = false;
-                btn.innerHTML = '✕ Délier';
+                console.error('❌ Erreur suppression connexion:', error);
+                console.error('❌ Détails de l\'erreur:', {
+                    code: error.code,
+                    message: error.message,
+                    stack: error.stack
+                });
+                
+                let errorMessage = 'Erreur lors de la suppression';
+                
+                // Messages d'erreur plus spécifiques
+                if (error.code === 'permission-denied') {
+                    errorMessage = 'Erreur de permissions. Vérifiez les règles Firestore pour career_connections.';
+                } else if (error.code === 'not-found') {
+                    errorMessage = 'La connexion n\'existe pas ou a déjà été supprimée.';
+                } else if (error.message) {
+                    errorMessage = `Erreur: ${error.message}`;
+                }
+                
+                const statusDiv = document.getElementById(`status-${bankId}`);
+                if (statusDiv) {
+                    statusDiv.className = 'connection-status show error';
+                    statusDiv.innerHTML = `❌ ${errorMessage}`;
+                } else {
+                    alert(errorMessage);
+                }
+                
+                // Réactiver le bouton en cas d'erreur
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '✕ Délier ce compte';
+                }
             }
         }
 
