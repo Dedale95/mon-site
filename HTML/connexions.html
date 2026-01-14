@@ -907,10 +907,16 @@
 
                 const result = await response.json();
                 
-                console.log('📥 Résultat du backend:', result);
-                console.log('✅ Success:', result.success);
+                console.log('📥 Résultat COMPLET du backend:', JSON.stringify(result, null, 2));
+                console.log('✅ Success value:', result.success);
+                console.log('✅ Success type:', typeof result.success);
+                console.log('✅ Success === true:', result.success === true);
+                console.log('✅ Success === false:', result.success === false);
+                console.log('✅ !result.success:', !result.success);
 
+                // Vérification STRICTE : success doit être explicitement true
                 if (result.success === true) {
+                    console.log('✅ Entrée dans le bloc SUCCESS');
                     // Connexion réussie - sauvegarder les credentials (cryptés)
                     try {
                         await saveConnection(bankId, email, password);
@@ -936,17 +942,29 @@
                         statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie !`}<br><small style="color: #dc2626;">⚠️ Attention: La connexion a été testée avec succès, mais la sauvegarde a échoué. Vérifiez les règles Firestore pour career_connections.</small>`;
                     }
                 } else {
-                    // Connexion échouée
-                    console.error('❌ Backend a retourné success=false');
-                    console.error('❌ Message:', result.message);
+                    // Connexion échouée - TOUJOURS afficher l'erreur
+                    console.error('❌❌❌ BACKEND A RETOURNÉ SUCCESS=FALSE');
+                    console.error('❌ Message du backend:', result.message);
+                    console.error('❌ Détails du backend:', result.details);
                     
-                    // Afficher l'erreur
-                    statusDiv.className = 'connection-status show error';
-                    statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
+                    // FORCER l'affichage de l'erreur
+                    if (statusDiv) {
+                        statusDiv.className = 'connection-status show error';
+                        statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
+                        console.log('✅ Message d\'erreur affiché dans statusDiv');
+                    } else {
+                        console.error('❌ statusDiv est null !');
+                    }
                     
                     // Réactiver le bouton
-                    btn.disabled = false;
-                    btn.innerHTML = '🔗 Lier mon compte';
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '🔗 Lier mon compte';
+                        console.log('✅ Bouton réactivé');
+                    }
+                    
+                    // NE PAS continuer - sortir de la fonction
+                    return;
                 }
 
             } catch (error) {
