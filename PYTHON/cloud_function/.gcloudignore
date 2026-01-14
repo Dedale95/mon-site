@@ -1,0 +1,23 @@
+# Fichiers à ignorer lors du déploiement Cloud Functions
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.db
+*.log
+*.csv
+*.ipynb
+*.md
+.git/
+.gitignore
+README*
+*.txt
+!requirements.txt
+test_*.py
+*_test.py
+*.pem
+.env
+venv/
+env/
+.venv/

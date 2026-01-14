@@ -1,0 +1,9 @@
+# Requirements pour Google Cloud Functions
+# Le script test_bank_connection.py et ses dépendances
+
+# Selenium et gestionnaire de driver
+selenium==4.15.2
+webdriver-manager==4.0.1
+
+# Note: test_bank_connection.py est importé depuis le répertoire parent
+# Assurez-vous que toutes ses dépendances sont listées ici
