@@ -713,6 +713,7 @@
         // Tester la connexion à un site carrière
         async function testConnection(bankId, email, password) {
             // LOG ULTRA-VISIBLE pour confirmer que le code est à jour
+            alert('TESTCONNECTION APPELÉE - VERSION AVEC LOGS'); // ALERT pour forcer l'affichage
             console.log('═══════════════════════════════════════════════════════');
             console.log('🚀🚀🚀 TESTCONNECTION APPELÉE - VERSION AVEC LOGS 🚀🚀🚀');
             console.log('═══════════════════════════════════════════════════════');
@@ -919,7 +920,7 @@
                                     <p style="color: #666; margin-bottom: 20px;">
                                         Connectez votre compte <strong>${bank.name}</strong> pour postuler automatiquement aux offres.
                                     </p>
-                                    <form onsubmit="console.log('🔴 FORM SUBMIT DÉTECTÉ'); event.preventDefault(); console.log('🔴 AVANT APPEL testConnection'); testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value); console.log('🔴 APRÈS APPEL testConnection');">
+                                    <form onsubmit="alert('FORM SUBMIT DÉTECTÉ'); console.log('🔴 FORM SUBMIT DÉTECTÉ'); event.preventDefault(); console.log('🔴 AVANT APPEL testConnection'); testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value); console.log('🔴 APRÈS APPEL testConnection'); return false;">
                                         <div class="form-group">
                                             <label for="email-${bank.id}">📧 Email</label>
                                             <input type="email" id="email-${bank.id}" placeholder="votre.email@exemple.com" required>
