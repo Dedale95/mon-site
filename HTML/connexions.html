@@ -712,9 +712,13 @@
 
         // Tester la connexion à un site carrière
         async function testConnection(bankId, email, password) {
+            console.log('🚀 testConnection appelée avec:', { bankId, email: email.substring(0, 10) + '...', password: '***' });
+            
             const bank = banks.find(b => b.id === bankId);
             const statusDiv = document.getElementById(`status-${bankId}`);
             const btn = document.getElementById(`btn-${bankId}`);
+
+            console.log('📋 Éléments trouvés:', { bank: !!bank, statusDiv: !!statusDiv, btn: !!btn });
 
             // Afficher le statut de test
             statusDiv.className = 'connection-status show info';
@@ -724,11 +728,14 @@
 
             try {
                 // Validation basique
+                console.log('✅ Validation des données...');
                 if (!email || !password || !email.includes('@')) {
+                    console.error('❌ Validation échouée:', { email: !!email, password: !!password, hasAt: email.includes('@') });
                     throw new Error('Email ou mot de passe invalide');
                 }
 
                 // Appeler l'API backend pour tester la connexion
+                console.log('🌐 API_BASE_URL:', API_BASE_URL);
                 const apiUrl = `${API_BASE_URL}/test-bank-connection`;
                 console.log('🔗 Appel API:', apiUrl);
                 console.log('📦 Données envoyées:', { bank_id: bankId, email: email, password: '***' });
@@ -786,7 +793,8 @@
                 }
 
             } catch (error) {
-                console.error('Erreur test connexion:', error);
+                console.error('❌ ERREUR dans testConnection:', error);
+                console.error('❌ Stack trace:', error.stack);
                 statusDiv.className = 'connection-status show error';
                 
                 let errorMessage = error.message || 'Une erreur est survenue';
