@@ -174,6 +174,7 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 # PRIORITÉ 1: Vérifier les erreurs AVANT de vérifier le succès
                 logger.info("🔍 Vérification des erreurs...")
                 logger.info(f"📄 Longueur du texte de la page: {len(page_text)} caractères")
+                logger.info(f"📄 Extrait du texte (200 premiers caractères): {page_text[:200]}")
                 
                 # Vérifier dans le texte ET dans le HTML (pour capturer les messages d'erreur même s'ils sont dans des attributs)
                 combined_text = page_text + ' ' + page_html
@@ -184,17 +185,19 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     error_lower = error_indicator.lower()
                     # Vérifier dans le texte de la page
                     if error_lower in page_text:
-                        logger.warning(f"❌ ERREUR DÉTECTÉE dans le texte: '{error_indicator}'")
+                        logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte: '{error_indicator}'")
+                        logger.error(f"📄 Contexte trouvé: {page_text[max(0, page_text.find(error_lower)-50):page_text.find(error_lower)+100]}")
                         errors_found.append(('text', error_indicator))
                     # Vérifier aussi dans le HTML
                     elif error_lower in page_html:
-                        logger.warning(f"❌ ERREUR DÉTECTÉE dans le HTML: '{error_indicator}'")
+                        logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le HTML: '{error_indicator}'")
                         errors_found.append(('html', error_indicator))
                 
                 # Si on trouve des erreurs, on retourne immédiatement un échec
                 if errors_found:
                     error_method, error_text = errors_found[0]
                     logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée: {error_text}")
+                    logger.error(f"❌❌❌ Toutes les erreurs trouvées: {errors_found}")
                     browser.close()
                     return {
                         'success': False,
@@ -203,7 +206,8 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                             'url': current_url,
                             'error_found': error_text,
                             'detection_method': error_method,
-                            'all_errors': errors_found
+                            'all_errors': errors_found,
+                            'page_text_sample': page_text[:500]
                         }
                     }
                 
