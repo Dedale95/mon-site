@@ -947,11 +947,23 @@
                     console.error('❌ Message du backend:', result.message);
                     console.error('❌ Détails du backend:', result.details);
                     
+                    // S'ASSURER que userConnections n'est PAS mis à jour
+                    if (userConnections[bankId]) {
+                        console.log('⚠️ Suppression de userConnections[' + bankId + '] car connexion échouée');
+                        delete userConnections[bankId];
+                    }
+                    
                     // FORCER l'affichage de l'erreur
                     if (statusDiv) {
                         statusDiv.className = 'connection-status show error';
                         statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
                         console.log('✅ Message d\'erreur affiché dans statusDiv');
+                        
+                        // Forcer le re-render pour mettre à jour l'affichage
+                        setTimeout(() => {
+                            renderBanks();
+                            console.log('✅ Re-render effectué après erreur');
+                        }, 500);
                     } else {
                         console.error('❌ statusDiv est null !');
                     }
