@@ -156,20 +156,9 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 try:
                     # Attendre soit un changement d'URL, soit l'apparition du formulaire de candidature
                     # soit l'apparition d'un message d'erreur
-                    page.wait_for_function(
-                        f"""
-                        () => {{
-                            const url = window.location.href;
-                            const hasSuccessForm = document.getElementById('form-apply-firstname') !== null;
-                            const hasError = document.body.innerText.toLowerCase().includes('incorrect') || 
-                                           document.body.innerText.toLowerCase().includes('erreur') ||
-                                           document.body.innerText.toLowerCase().includes('tentatives');
-                            const urlChanged = url !== '{url_before_submit}';
-                            return hasSuccessForm || hasError || urlChanged;
-                        }}
-                        """,
-                        timeout=15000
-                    )
+                    # Utiliser une fonction JavaScript simple sans arguments
+                    js_function = f"() => {{ const url = window.location.href; const hasSuccessForm = document.getElementById('form-apply-firstname') !== null; const hasError = document.body.innerText.toLowerCase().includes('incorrect') || document.body.innerText.toLowerCase().includes('erreur') || document.body.innerText.toLowerCase().includes('tentatives'); const urlChanged = url !== '{url_before_submit}'; return hasSuccessForm || hasError || urlChanged; }}"
+                    page.wait_for_function(js_function, timeout=15000)
                     logger.info("✅ Page a réagi (URL ou contenu changé)")
                 except PlaywrightTimeout:
                     logger.warning("⚠️ Timeout en attendant la réaction de la page")
