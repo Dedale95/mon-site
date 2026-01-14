@@ -874,7 +874,25 @@
                 btn.innerHTML = '<span class="spinner"></span> Suppression...';
             }
 
-            const statusDiv = document.getElementById(`status-${bankId}`);
+            // Récupérer ou créer le statusDiv
+            let statusDiv = document.getElementById(`status-${bankId}`);
+            if (!statusDiv) {
+                // Si l'élément n'existe pas (banque connectée), le créer
+                const bankContent = document.querySelector(`#bank-${bankId} .bank-content`);
+                if (bankContent) {
+                    statusDiv = document.createElement('div');
+                    statusDiv.id = `status-${bankId}`;
+                    statusDiv.className = 'connection-status';
+                    // Insérer avant le bouton de déliaison
+                    const disconnectBtn = document.getElementById(`btn-disconnect-${bankId}`);
+                    if (disconnectBtn && disconnectBtn.parentElement) {
+                        disconnectBtn.parentElement.insertBefore(statusDiv, disconnectBtn);
+                    } else {
+                        bankContent.appendChild(statusDiv);
+                    }
+                }
+            }
+            
             if (statusDiv) {
                 statusDiv.className = 'connection-status show info';
                 statusDiv.innerHTML = '⏳ Suppression en cours...';
@@ -943,7 +961,11 @@
                     errorMessage = `Erreur: ${error.message}`;
                 }
                 
-                const statusDiv = document.getElementById(`status-${bankId}`);
+                // Réutiliser statusDiv défini au début de la fonction, ou le récupérer
+                if (!statusDiv) {
+                    statusDiv = document.getElementById(`status-${bankId}`);
+                }
+                
                 if (statusDiv) {
                     statusDiv.className = 'connection-status show error';
                     statusDiv.innerHTML = `❌ ${errorMessage}`;
@@ -991,6 +1013,7 @@
                                         <p style="color: #065f46; font-weight: 600; margin-bottom: 5px;">✓ Compte lié</p>
                                         <p style="color: #065f46; font-size: 0.9rem;">Email: ${connectedEmail}</p>
                                     </div>
+                                    <div class="connection-status" id="status-${bank.id}"></div>
                                     <div class="form-actions">
                                         <button class="btn btn-danger" id="btn-disconnect-${bank.id}" onclick="disconnectBank('${bank.id}', event)">✕ Délier ce compte</button>
                                     </div>
