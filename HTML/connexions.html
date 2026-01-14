@@ -886,8 +886,14 @@
                 
                 console.log('📥 Résultat du backend:', result);
                 console.log('✅ Success:', result.success);
+                console.log('✅ Type de success:', typeof result.success);
+                console.log('✅ Success === true:', result.success === true);
+                console.log('✅ Success === false:', result.success === false);
 
-                if (result.success) {
+                // S'assurer que success est un boolean
+                const isSuccess = result.success === true || result.success === 'true';
+                
+                if (isSuccess) {
                     // Connexion réussie - sauvegarder les credentials (cryptés)
                     try {
                         await saveConnection(bankId, email, password);
@@ -917,7 +923,16 @@
                     console.error('❌ Backend a retourné success=false');
                     console.error('❌ Message:', result.message);
                     console.error('❌ Détails:', result.details);
-                    throw new Error(result.message || 'La connexion a échoué');
+                    
+                    // Afficher directement l'erreur sans passer par le catch
+                    statusDiv.className = 'connection-status show error';
+                    statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
+                    
+                    // Réactiver le bouton
+                    btn.disabled = false;
+                    btn.innerHTML = '🔗 Lier mon compte';
+                    
+                    return; // Sortir de la fonction sans lancer d'erreur
                 }
 
             } catch (error) {
