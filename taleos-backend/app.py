@@ -52,31 +52,44 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
     try:
         with sync_playwright() as p:
             # Lancer le navigateur en mode headless
-            # Playwright devrait trouver automatiquement le navigateur installé
-            try:
-                browser = p.chromium.launch(headless=True)
-            except Exception as launch_error:
-                logger.error(f"❌ Erreur lors du lancement de Chromium: {launch_error}")
-                # Essayer avec le chemin par défaut de Playwright
-                import os
-                from pathlib import Path
-                home = Path.home()
-                playwright_cache = home / '.cache' / 'ms-playwright'
-                chromium_path = playwright_cache / 'chromium-1091' / 'chrome-linux' / 'chrome'
-                
-                if chromium_path.exists():
+            # Sur Render, Playwright installe dans un chemin spécifique
+            import os
+            from pathlib import Path
+            
+            # Essayer plusieurs chemins possibles pour Chromium
+            possible_paths = [
+                # Chemin Render standard
+                Path('/opt/render/.cache/ms-playwright/chromium-1091/chrome-linux/chrome'),
+                # Chemin home
+                Path.home() / '.cache' / 'ms-playwright' / 'chromium-1091' / 'chrome-linux' / 'chrome',
+                # Chemin avec variable d'environnement
+                Path(os.environ.get('PLAYWRIGHT_BROWSERS_PATH', '')) / 'chromium-1091' / 'chrome-linux' / 'chrome' if os.environ.get('PLAYWRIGHT_BROWSERS_PATH') else None,
+            ]
+            
+            browser = None
+            chromium_found = False
+            
+            for chromium_path in possible_paths:
+                if chromium_path and chromium_path.exists():
                     logger.info(f"✅ Chromium trouvé à: {chromium_path}")
-                    browser = p.chromium.launch(headless=True, executable_path=str(chromium_path))
-                else:
-                    # Essayer le chemin Render
-                    render_path = Path('/opt/render/.cache/ms-playwright/chromium-1091/chrome-linux/chrome')
-                    if render_path.exists():
-                        logger.info(f"✅ Chromium trouvé à: {render_path}")
-                        browser = p.chromium.launch(headless=True, executable_path=str(render_path))
-                    else:
-                        logger.error("❌ Chromium non trouvé, tentative avec chemin par défaut")
-                        # Dernière tentative : laisser Playwright gérer
-                        browser = p.chromium.launch(headless=True)
+                    try:
+                        browser = p.chromium.launch(headless=True, executable_path=str(chromium_path))
+                        chromium_found = True
+                        break
+                    except Exception as e:
+                        logger.warning(f"⚠️ Impossible de lancer Chromium depuis {chromium_path}: {e}")
+                        continue
+            
+            # Si aucun chemin explicite n'a fonctionné, laisser Playwright trouver automatiquement
+            if not chromium_found:
+                logger.info("🔍 Tentative de lancement Chromium avec chemin automatique de Playwright")
+                try:
+                    browser = p.chromium.launch(headless=True)
+                    chromium_found = True
+                except Exception as launch_error:
+                    logger.error(f"❌ Erreur lors du lancement de Chromium: {launch_error}")
+                    # Dernière tentative : installer Playwright à la volée (ne fonctionnera pas sur Render mais on essaie)
+                    raise Exception(f"Chromium non disponible. Erreur: {launch_error}. Vérifiez que 'playwright install chromium' a été exécuté dans le build command.")
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
