@@ -1,11 +1,27 @@
 # Dockerfile pour Render avec Playwright
-FROM python:3.11-slim
+# Utiliser Debian Bookworm (mieux supporté par Playwright que Trixie)
+FROM python:3.11-slim-bookworm
 
-# Installer les dépendances système de base nécessaires
+# Installer les dépendances système nécessaires pour Playwright/Chromium
+# Basé sur la documentation officielle de Playwright pour Debian
 RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    ca-certificates \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libatspi2.0-0 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    fonts-unifont \
     && rm -rf /var/lib/apt/lists/*
 
 # Définir le répertoire de travail
@@ -20,9 +36,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Installer Playwright et Chromium
-# playwright install-deps installe automatiquement toutes les dépendances système nécessaires
-RUN playwright install chromium && \
-    playwright install-deps chromium
+# Les dépendances système sont déjà installées manuellement ci-dessus
+RUN playwright install chromium
 
 # Exposer le port (Render définit $PORT)
 ENV PORT=10000
