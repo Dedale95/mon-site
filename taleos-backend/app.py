@@ -52,7 +52,13 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
     try:
         with sync_playwright() as p:
             # Lancer le navigateur en mode headless
-            browser = p.chromium.launch(headless=True)
+            # Spécifier le chemin explicite pour Render
+            import os
+            browser_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH', None)
+            launch_options = {'headless': True}
+            if browser_path:
+                launch_options['executable_path'] = f'{browser_path}/chromium-1091/chrome-linux/chrome'
+            browser = p.chromium.launch(**launch_options)
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
