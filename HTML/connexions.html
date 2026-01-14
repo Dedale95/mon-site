@@ -914,6 +914,9 @@
                     }
                 } else {
                     // Connexion échouée
+                    console.error('❌ Backend a retourné success=false');
+                    console.error('❌ Message:', result.message);
+                    console.error('❌ Détails:', result.details);
                     throw new Error(result.message || 'La connexion a échoué');
                 }
 
