@@ -107,27 +107,52 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 url_before_submit = page.url
                 logger.info(f"📍 URL avant soumission: {url_before_submit}")
                 
+                # Capturer l'état des champs avant soumission
+                email_value_before = email_field.input_value()
+                logger.info(f"📧 Email saisi: {email_value_before}")
+                
                 submit_button.click()
                 logger.info("✅ Formulaire soumis, attente de la réponse...")
                 
-                # Attendre que la page change OU qu'un élément apparaisse/disparaisse
-                # Utiliser wait_for_load_state pour s'assurer que la page a réagi
+                # Attendre que la page réagisse - utiliser plusieurs méthodes
+                # 1. Attendre que l'URL change OU qu'un élément apparaisse/disparaisse
                 try:
-                    # Attendre que la navigation se termine (si elle se produit)
+                    # Attendre soit un changement d'URL, soit l'apparition du formulaire de candidature
+                    # soit l'apparition d'un message d'erreur
+                    page.wait_for_function(
+                        """
+                        () => {
+                            const url = window.location.href;
+                            const hasSuccessForm = document.getElementById('form-apply-firstname') !== null;
+                            const hasError = document.body.innerText.toLowerCase().includes('incorrect') || 
+                                           document.body.innerText.toLowerCase().includes('erreur') ||
+                                           document.body.innerText.toLowerCase().includes('tentatives');
+                            return hasSuccessForm || hasError || url !== arguments[0];
+                        }
+                        """,
+                        url_before_submit,
+                        timeout=15000
+                    )
+                    logger.info("✅ Page a réagi (URL ou contenu changé)")
+                except PlaywrightTimeout:
+                    logger.warning("⚠️ Timeout en attendant la réaction de la page")
+                
+                # Attendre que le réseau soit idle
+                try:
                     page.wait_for_load_state('networkidle', timeout=10000)
                     logger.info("✅ État réseau idle atteint")
                 except PlaywrightTimeout:
-                    logger.warning("⚠️ Timeout sur networkidle, mais on continue")
+                    logger.warning("⚠️ Timeout sur networkidle")
                 
                 # Attendre un peu plus pour que les messages d'erreur/succès apparaissent
-                time.sleep(3)
+                time.sleep(4)  # Augmenté à 4 secondes
                 
                 # Vérifier si l'URL a changé
                 url_after_submit = page.url
                 logger.info(f"📍 URL après soumission: {url_after_submit}")
                 
                 if url_before_submit == url_after_submit:
-                    logger.info("⚠️ URL n'a pas changé après soumission")
+                    logger.warning("⚠️ URL n'a PAS changé après soumission - probable échec")
                 else:
                     logger.info("✅ URL a changé après soumission")
                 
@@ -148,38 +173,41 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 
                 # PRIORITÉ 1: Vérifier les erreurs AVANT de vérifier le succès
                 logger.info("🔍 Vérification des erreurs...")
+                logger.info(f"📄 Longueur du texte de la page: {len(page_text)} caractères")
                 
                 # Vérifier dans le texte ET dans le HTML (pour capturer les messages d'erreur même s'ils sont dans des attributs)
                 combined_text = page_text + ' ' + page_html
                 
+                # Vérifier chaque indicateur d'erreur
+                errors_found = []
                 for error_indicator in config['error_indicators']:
                     error_lower = error_indicator.lower()
                     # Vérifier dans le texte de la page
                     if error_lower in page_text:
-                        logger.warning(f"❌ Erreur détectée dans le texte: {error_indicator}")
-                        browser.close()
-                        return {
-                            'success': False,
-                            'message': f'Connexion échouée: {error_indicator}',
-                            'details': {
-                                'url': current_url,
-                                'error_found': error_indicator,
-                                'detection_method': 'text'
-                            }
+                        logger.warning(f"❌ ERREUR DÉTECTÉE dans le texte: '{error_indicator}'")
+                        errors_found.append(('text', error_indicator))
+                    # Vérifier aussi dans le HTML
+                    elif error_lower in page_html:
+                        logger.warning(f"❌ ERREUR DÉTECTÉE dans le HTML: '{error_indicator}'")
+                        errors_found.append(('html', error_indicator))
+                
+                # Si on trouve des erreurs, on retourne immédiatement un échec
+                if errors_found:
+                    error_method, error_text = errors_found[0]
+                    logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée: {error_text}")
+                    browser.close()
+                    return {
+                        'success': False,
+                        'message': f'Connexion échouée: {error_text}',
+                        'details': {
+                            'url': current_url,
+                            'error_found': error_text,
+                            'detection_method': error_method,
+                            'all_errors': errors_found
                         }
-                    # Vérifier aussi dans le HTML (pour les messages dans les attributs, aria-labels, etc.)
-                    if error_lower in page_html:
-                        logger.warning(f"❌ Erreur détectée dans le HTML: {error_indicator}")
-                        browser.close()
-                        return {
-                            'success': False,
-                            'message': f'Connexion échouée: {error_indicator}',
-                            'details': {
-                                'url': current_url,
-                                'error_found': error_indicator,
-                                'detection_method': 'html'
-                            }
-                        }
+                    }
+                
+                logger.info("✅ Aucune erreur détectée dans le texte/HTML")
                 
                 # Vérifier aussi les messages d'erreur dans les éléments de formulaire
                 try:
@@ -204,23 +232,31 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     logger.info(f"⚠️ Impossible de vérifier les éléments d'erreur: {e}")
                 
                 # PRIORITÉ 2: Vérifier si on est toujours sur la page de connexion
+                # C'est un INDICATEUR FORT d'échec
                 if 'connexion' in current_url.lower() or 'login' in current_url.lower():
+                    logger.warning("⚠️ URL contient 'connexion' ou 'login' - probable échec")
                     # Vérifier si les champs de connexion sont toujours présents
                     try:
                         email_field_check = page.query_selector(f"#{config['email_id']}")
-                        if email_field_check:
-                            logger.warning("❌ Toujours sur la page de connexion avec les champs visibles")
+                        password_field_check = page.query_selector(f"#{config['password_id']}")
+                        submit_button_check = page.query_selector(f"#{config['submit_id']}")
+                        
+                        if email_field_check or password_field_check or submit_button_check:
+                            logger.error("❌❌❌ CONNEXION ÉCHOUÉE - Toujours sur la page de connexion avec les champs visibles")
                             browser.close()
                             return {
                                 'success': False,
                                 'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
                                 'details': {
                                     'url': current_url,
-                                    'reason': 'still_on_login_page_with_fields'
+                                    'reason': 'still_on_login_page_with_fields',
+                                    'email_field_present': email_field_check is not None,
+                                    'password_field_present': password_field_check is not None,
+                                    'submit_button_present': submit_button_check is not None
                                 }
                             }
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"⚠️ Erreur lors de la vérification des champs: {e}")
                 
                 # PRIORITÉ 3: Vérifier si on est sur le formulaire de candidature (succès)
                 # MAIS SEULEMENT si on n'a PAS détecté d'erreur
@@ -257,30 +293,57 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         form_visible = False
                     
                     # TOUTES les conditions doivent être remplies pour un succès
+                    # Vérification ULTRA-STRICTE
                     if url_check and fields_gone and form_visible:
-                        logger.info("✅✅✅ CONNEXION RÉUSSIE - Toutes les vérifications passées !")
-                        browser.close()
-                        return {
-                            'success': True,
-                            'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                            'details': {
-                                'url': current_url,
-                                'reason': 'application_form_detected',
-                                'checks': {
-                                    'url_ok': url_check,
-                                    'fields_gone': fields_gone,
-                                    'form_visible': form_visible
+                        # Vérification supplémentaire : s'assurer que l'URL a vraiment changé
+                        if url_before_submit != url_after_submit:
+                            logger.info("✅✅✅ CONNEXION RÉUSSIE - Toutes les vérifications passées !")
+                            browser.close()
+                            return {
+                                'success': True,
+                                'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                                'details': {
+                                    'url': current_url,
+                                    'url_before': url_before_submit,
+                                    'url_after': url_after_submit,
+                                    'reason': 'application_form_detected',
+                                    'checks': {
+                                        'url_ok': url_check,
+                                        'fields_gone': fields_gone,
+                                        'form_visible': form_visible,
+                                        'url_changed': url_before_submit != url_after_submit
+                                    }
                                 }
                             }
-                        }
+                        else:
+                            logger.error("❌❌❌ URL n'a pas changé malgré le formulaire détecté - ÉCHEC")
+                            browser.close()
+                            return {
+                                'success': False,
+                                'message': 'Connexion échouée: impossible de confirmer la connexion (URL inchangée)',
+                                'details': {
+                                    'url': current_url,
+                                    'url_before': url_before_submit,
+                                    'url_after': url_after_submit,
+                                    'reason': 'url_not_changed',
+                                    'checks': {
+                                        'url_ok': url_check,
+                                        'fields_gone': fields_gone,
+                                        'form_visible': form_visible,
+                                        'url_changed': False
+                                    }
+                                }
+                            }
                     else:
-                        logger.warning(f"⚠️ Formulaire détecté mais vérifications échouées: url={url_check}, fields={fields_gone}, visible={form_visible}")
+                        logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Vérifications échouées: url={url_check}, fields={fields_gone}, visible={form_visible}")
                         browser.close()
                         return {
                             'success': False,
                             'message': 'Connexion échouée: impossible de confirmer la connexion',
                             'details': {
                                 'url': current_url,
+                                'url_before': url_before_submit,
+                                'url_after': url_after_submit,
                                 'reason': 'verification_failed',
                                 'checks': {
                                     'url_ok': url_check,
