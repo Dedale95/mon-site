@@ -745,19 +745,31 @@
                 console.log('🔗 Appel API:', apiUrl);
                 console.log('📦 Données envoyées:', { bank_id: bankId, email: email, password: '***' });
                 
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        bank_id: bankId,
-                        email: email,
-                        password: password
-                    })
-                });
+                // Log avant le fetch
+                console.log('⏳ Début du fetch vers:', apiUrl);
                 
-                console.log('📥 Réponse reçue:', response.status, response.statusText);
+                let response;
+                try {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            bank_id: bankId,
+                            email: email,
+                            password: password
+                        })
+                    });
+                    console.log('📥 Réponse reçue:', response.status, response.statusText);
+                    console.log('📥 Headers de la réponse:', Object.fromEntries(response.headers.entries()));
+                } catch (fetchError) {
+                    console.error('❌ ERREUR FETCH:', fetchError);
+                    console.error('❌ Type d\'erreur:', fetchError.name);
+                    console.error('❌ Message:', fetchError.message);
+                    console.error('❌ Stack:', fetchError.stack);
+                    throw new Error(`Erreur réseau: ${fetchError.message}`);
+                }
 
                 // Vérifier si la réponse est ok
                 if (!response.ok) {
