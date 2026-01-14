@@ -751,22 +751,29 @@
 
                 if (result.success) {
                     // Connexion réussie - sauvegarder les credentials (cryptés)
-                    await saveConnection(bankId, email, password);
-                    
-                    statusDiv.className = 'connection-status show success';
-                    statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
-                    
-                    // Mettre à jour le statut
-                    userConnections[bankId] = {
-                        email: email,
-                        connected: true,
-                        connectedAt: new Date().toISOString()
-                    };
-                    
-                    // Re-render pour mettre à jour le badge
-                    setTimeout(() => {
-                        renderBanks();
-                    }, 2000);
+                    try {
+                        await saveConnection(bankId, email, password);
+                        
+                        statusDiv.className = 'connection-status show success';
+                        statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
+                        
+                        // Mettre à jour le statut
+                        userConnections[bankId] = {
+                            email: email,
+                            connected: true,
+                            connectedAt: new Date().toISOString()
+                        };
+                        
+                        // Re-render pour mettre à jour le badge
+                        setTimeout(() => {
+                            renderBanks();
+                        }, 2000);
+                    } catch (saveError) {
+                        // Erreur lors de la sauvegarde dans Firestore
+                        console.error('Erreur sauvegarde Firestore:', saveError);
+                        statusDiv.className = 'connection-status show success';
+                        statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie !`}<br><small style="color: #dc2626;">⚠️ Attention: La connexion a été testée avec succès, mais la sauvegarde a échoué. Vérifiez les règles Firestore pour career_connections.</small>`;
+                    }
                 } else {
                     // Connexion échouée
                     throw new Error(result.message || 'La connexion a échoué');
@@ -782,9 +789,11 @@
                 if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
                     errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
                 } else if (error.message.includes('CORS')) {
-                    errorMessage = 'Erreur CORS. Vérifiez la configuration du script Google Apps Script.';
+                    errorMessage = 'Erreur CORS. Vérifiez la configuration du backend.';
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
+                } else if (error.message.includes('permissions') || error.message.includes('Permission')) {
+                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité pour career_connections.';
                 }
                 
                 statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
