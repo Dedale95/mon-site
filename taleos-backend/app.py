@@ -52,13 +52,31 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
     try:
         with sync_playwright() as p:
             # Lancer le navigateur en mode headless
-            # Spécifier le chemin explicite pour Render
-            import os
-            browser_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH', None)
-            launch_options = {'headless': True}
-            if browser_path:
-                launch_options['executable_path'] = f'{browser_path}/chromium-1091/chrome-linux/chrome'
-            browser = p.chromium.launch(**launch_options)
+            # Playwright devrait trouver automatiquement le navigateur installé
+            try:
+                browser = p.chromium.launch(headless=True)
+            except Exception as launch_error:
+                logger.error(f"❌ Erreur lors du lancement de Chromium: {launch_error}")
+                # Essayer avec le chemin par défaut de Playwright
+                import os
+                from pathlib import Path
+                home = Path.home()
+                playwright_cache = home / '.cache' / 'ms-playwright'
+                chromium_path = playwright_cache / 'chromium-1091' / 'chrome-linux' / 'chrome'
+                
+                if chromium_path.exists():
+                    logger.info(f"✅ Chromium trouvé à: {chromium_path}")
+                    browser = p.chromium.launch(headless=True, executable_path=str(chromium_path))
+                else:
+                    # Essayer le chemin Render
+                    render_path = Path('/opt/render/.cache/ms-playwright/chromium-1091/chrome-linux/chrome')
+                    if render_path.exists():
+                        logger.info(f"✅ Chromium trouvé à: {render_path}")
+                        browser = p.chromium.launch(headless=True, executable_path=str(render_path))
+                    else:
+                        logger.error("❌ Chromium non trouvé, tentative avec chemin par défaut")
+                        # Dernière tentative : laisser Playwright gérer
+                        browser = p.chromium.launch(headless=True)
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
