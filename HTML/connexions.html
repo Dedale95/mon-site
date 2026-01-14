@@ -712,6 +712,10 @@
 
         // Tester la connexion à un site carrière
         async function testConnection(bankId, email, password) {
+            // LOG ULTRA-VISIBLE pour confirmer que le code est à jour
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('🚀🚀🚀 TESTCONNECTION APPELÉE - VERSION AVEC LOGS 🚀🚀🚀');
+            console.log('═══════════════════════════════════════════════════════');
             console.log('🚀 testConnection appelée avec:', { bankId, email: email.substring(0, 10) + '...', password: '***' });
             
             const bank = banks.find(b => b.id === bankId);
