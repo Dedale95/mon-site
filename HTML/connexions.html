@@ -914,7 +914,7 @@
                                         <p style="color: #065f46; font-size: 0.9rem;">Email: ${connectedEmail}</p>
                                     </div>
                                     <div class="form-actions">
-                                        <button class="btn btn-danger" onclick="disconnectBank('${bank.id}')">✕ Délier ce compte</button>
+                                        <button class="btn btn-danger" id="btn-disconnect-${bank.id}" onclick="disconnectBank('${bank.id}', event)">✕ Délier ce compte</button>
                                     </div>
                                 ` : `
                                     <p style="color: #666; margin-bottom: 20px;">
