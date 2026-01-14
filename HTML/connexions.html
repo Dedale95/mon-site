@@ -729,7 +729,11 @@
                 }
 
                 // Appeler l'API backend pour tester la connexion
-                const response = await fetch(`${API_BASE_URL}/test-bank-connection`, {
+                const apiUrl = `${API_BASE_URL}/test-bank-connection`;
+                console.log('🔗 Appel API:', apiUrl);
+                console.log('📦 Données envoyées:', { bank_id: bankId, email: email, password: '***' });
+                
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -740,6 +744,8 @@
                         password: password
                     })
                 });
+                
+                console.log('📥 Réponse reçue:', response.status, response.statusText);
 
                 // Vérifier si la réponse est ok
                 if (!response.ok) {

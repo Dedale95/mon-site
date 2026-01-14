@@ -436,14 +436,30 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
 @app.route('/health', methods=['GET'])
 def health():
     """Endpoint de santé"""
+    logger.info("🏥 Health check appelé")
     return jsonify({'status': 'ok', 'message': 'Taleos Connection Tester API is running'}), 200
+
+@app.route('/', methods=['GET'])
+def root():
+    """Endpoint racine pour tester"""
+    logger.info("🏠 Root endpoint appelé")
+    return jsonify({'status': 'ok', 'message': 'Taleos Connection Tester API', 'endpoints': ['/health', '/api/test-bank-connection']}), 200
 
 
 @app.route('/api/test-bank-connection', methods=['POST', 'OPTIONS'])
 def test_bank_connection():
     """Endpoint pour tester une connexion bancaire"""
+    # LOG IMMÉDIAT pour voir si la requête arrive
+    logger.info("=" * 80)
+    logger.info("🚀 REQUÊTE REÇUE sur /api/test-bank-connection")
+    logger.info(f"📍 Méthode: {request.method}")
+    logger.info(f"📍 Headers: {dict(request.headers)}")
+    logger.info(f"📍 Remote Address: {request.remote_addr}")
+    logger.info("=" * 80)
+    
     # Gérer CORS preflight
     if request.method == 'OPTIONS':
+        logger.info("✅ OPTIONS preflight - retour CORS")
         return '', 200, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -452,7 +468,9 @@ def test_bank_connection():
         }
     
     try:
+        logger.info("📥 Récupération des données JSON...")
         data = request.get_json()
+        logger.info(f"📦 Données reçues: {data}")
         
         if not data:
             return jsonify({
@@ -465,27 +483,34 @@ def test_bank_connection():
         password = data.get('password', '')
         
         # Validation
+        logger.info(f"🔍 Validation des données: bank_id={bank_id}, email={email[:10]}...")
         if not bank_id or not email or not password:
+            logger.warning("❌ Données manquantes")
             return jsonify({
                 'success': False,
                 'message': 'bank_id, email et password requis'
             }), 400
         
         if '@' not in email:
+            logger.warning(f"❌ Format email invalide: {email}")
             return jsonify({
                 'success': False,
                 'message': 'Format email invalide'
             }), 400
         
         # Tester la connexion
+        logger.info(f"🚀 Démarrage du test de connexion pour {bank_id}")
         if bank_id == 'credit_agricole':
             result = test_credit_agricole_connection(email, password, timeout=30)
+            logger.info(f"✅ Test terminé: success={result.get('success')}")
         else:
+            logger.warning(f"❌ Banque non implémentée: {bank_id}")
             return jsonify({
                 'success': False,
                 'message': f'Banque {bank_id} non encore implémentée'
             }), 400
         
+        logger.info("📤 Envoi de la réponse au client")
         return jsonify(result), 200
     
     except Exception as e:
