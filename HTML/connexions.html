@@ -547,8 +547,8 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Configuration de l'API backend
-        const API_BASE_URL = 'http://localhost:5000/api'; // À adapter selon votre déploiement
+        // Configuration de l'API backend (Google Apps Script)
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFH6s0s6IvKmzjw5wKnEtH3ytupd3iiPC3kE254DiG02FpBgunkdP5rsGUD_hjiwgF/exec';
         
         // Configuration des banques
         const banks = [
@@ -724,18 +724,11 @@
                     throw new Error('Email ou mot de passe invalide');
                 }
 
-                // Récupérer le token d'authentification depuis localStorage
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    throw new Error('Vous devez être connecté pour tester une connexion bancaire');
-                }
-
-                // Appeler l'API backend pour tester la connexion
-                const response = await fetch(`${API_BASE_URL}/test-bank-connection`, {
+                // Appeler Google Apps Script pour tester la connexion
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         bank_id: bankId,
@@ -743,6 +736,11 @@
                         password: password
                     })
                 });
+
+                // Vérifier si la réponse est ok
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
 
                 const result = await response.json();
 
@@ -776,10 +774,10 @@
                 let errorMessage = error.message || 'Une erreur est survenue';
                 
                 // Messages d'erreur plus spécifiques
-                if (error.message.includes('fetch') || error.message.includes('network')) {
-                    errorMessage = 'Impossible de contacter le serveur. Vérifiez que le serveur backend est démarré.';
+                if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
                 } else if (error.message.includes('CORS')) {
-                    errorMessage = 'Erreur CORS. Vérifiez la configuration du serveur.';
+                    errorMessage = 'Erreur CORS. Vérifiez la configuration du script Google Apps Script.';
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
                 }
