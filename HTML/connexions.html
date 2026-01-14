@@ -547,8 +547,12 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Configuration de l'API backend (Google Apps Script)
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFH6s0s6IvKmzjw5wKnEtH3ytupd3iiPC3kE254DiG02FpBgunkdP5rsGUD_hjiwgF/exec';
+        // Configuration de l'API backend (Render.com)
+        // URL de votre backend déployé sur Render
+        // Vous obtiendrez cette URL après le déploiement
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000/api'  // En développement local
+            : 'https://taleos-connection-tester.onrender.com/api';  // En production
         
         // Configuration des banques
         const banks = [
@@ -724,8 +728,8 @@
                     throw new Error('Email ou mot de passe invalide');
                 }
 
-                // Appeler Google Apps Script pour tester la connexion
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                // Appeler l'API backend pour tester la connexion
+                const response = await fetch(`${API_BASE_URL}/test-bank-connection`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -739,7 +743,8 @@
 
                 // Vérifier si la réponse est ok
                 if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
                 }
 
                 const result = await response.json();
