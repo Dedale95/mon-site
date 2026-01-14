@@ -151,24 +151,17 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 submit_button.click()
                 logger.info("✅ Formulaire soumis, attente de la réponse...")
                 
-                # Attendre que la page réagisse - utiliser plusieurs méthodes
-                # 1. Attendre que l'URL change OU qu'un élément apparaisse/disparaisse
-                try:
-                    # Attendre soit un changement d'URL, soit l'apparition du formulaire de candidature
-                    # soit l'apparition d'un message d'erreur
-                    # Utiliser une fonction JavaScript simple sans arguments
-                    js_function = f"() => {{ const url = window.location.href; const hasSuccessForm = document.getElementById('form-apply-firstname') !== null; const hasError = document.body.innerText.toLowerCase().includes('incorrect') || document.body.innerText.toLowerCase().includes('erreur') || document.body.innerText.toLowerCase().includes('tentatives'); const urlChanged = url !== '{url_before_submit}'; return hasSuccessForm || hasError || urlChanged; }}"
-                    page.wait_for_function(js_function, timeout=15000)
-                    logger.info("✅ Page a réagi (URL ou contenu changé)")
-                except PlaywrightTimeout:
-                    logger.warning("⚠️ Timeout en attendant la réaction de la page")
+                # Attendre que la page réagisse après soumission
+                # Utiliser une approche simple avec time.sleep et vérifications manuelles
+                logger.info("⏳ Attente de la réaction de la page (5 secondes)...")
+                time.sleep(5)
                 
                 # Attendre que le réseau soit idle
                 try:
                     page.wait_for_load_state('networkidle', timeout=10000)
                     logger.info("✅ État réseau idle atteint")
                 except PlaywrightTimeout:
-                    logger.warning("⚠️ Timeout sur networkidle")
+                    logger.warning("⚠️ Timeout sur networkidle, continuation...")
                 
                 # Attendre un peu plus pour que les messages d'erreur/succès apparaissent
                 time.sleep(4)  # Augmenté à 4 secondes
