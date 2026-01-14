@@ -16,8 +16,10 @@ Lors de la création du service dans l'interface web, configurez manuellement :
 
 2. **Build Command** :
    ```bash
-   pip install --upgrade pip && pip install -r requirements.txt && playwright install chromium && playwright install-deps chromium
+   pip install --upgrade pip && pip install -r requirements.txt && playwright install chromium
    ```
+   
+   **Note** : `playwright install-deps chromium` n'est pas nécessaire sur Render car les dépendances système sont déjà présentes.
 
 3. **Start Command** :
    ```bash
