@@ -854,11 +854,26 @@
                 console.log('⏳ Début du fetch vers:', apiUrl);
                 console.log('⏳ Timestamp:', new Date().toISOString());
                 
+                // Réveiller le backend Render (cold start) en appelant d'abord /health
+                try {
+                    console.log('🔔 Réveil du backend Render...');
+                    const healthUrl = API_BASE_URL.replace('/api', '/health');
+                    await fetch(healthUrl, { method: 'GET', signal: AbortSignal.timeout(10000) }).catch(() => {
+                        console.log('⚠️ Health check échoué, continuation quand même...');
+                    });
+                    console.log('✅ Backend réveillé (ou déjà actif)');
+                } catch (e) {
+                    console.log('⚠️ Erreur réveil backend, continuation:', e.message);
+                }
+                
                 let response;
                 try {
-                    // Timeout de 60 secondes pour le cold start Render
+                    // Timeout de 90 secondes pour le cold start Render + test de connexion
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 60000);
+                    const timeoutId = setTimeout(() => {
+                        console.error('❌ Timeout après 90 secondes');
+                        controller.abort();
+                    }, 90000);
                     
                     response = await fetch(apiUrl, {
                         method: 'POST',
