@@ -954,16 +954,31 @@
                 
                 // Messages d'erreur plus spécifiques
                 if (error.code === 'permission-denied') {
-                    errorMessage = 'Erreur de permissions. Vérifiez les règles Firestore pour career_connections.';
+                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles pour career_connections dans Firebase Console.';
                 } else if (error.code === 'not-found') {
                     errorMessage = 'La connexion n\'existe pas ou a déjà été supprimée.';
                 } else if (error.message) {
                     errorMessage = `Erreur: ${error.message}`;
                 }
                 
-                // Réutiliser statusDiv défini au début de la fonction, ou le récupérer
+                // Réutiliser statusDiv défini au début de la fonction, ou le récupérer/créer
                 if (!statusDiv) {
                     statusDiv = document.getElementById(`status-${bankId}`);
+                    // Si toujours pas trouvé, le créer
+                    if (!statusDiv) {
+                        const bankContent = document.querySelector(`#bank-${bankId} .bank-content`);
+                        if (bankContent) {
+                            statusDiv = document.createElement('div');
+                            statusDiv.id = `status-${bankId}`;
+                            statusDiv.className = 'connection-status';
+                            const disconnectBtn = document.getElementById(`btn-disconnect-${bankId}`);
+                            if (disconnectBtn && disconnectBtn.parentElement) {
+                                disconnectBtn.parentElement.insertBefore(statusDiv, disconnectBtn);
+                            } else {
+                                bankContent.appendChild(statusDiv);
+                            }
+                        }
+                    }
                 }
                 
                 if (statusDiv) {

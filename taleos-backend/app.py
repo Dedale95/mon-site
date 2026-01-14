@@ -260,15 +260,16 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     logger.info(f"⚠️ Impossible de vérifier les éléments d'erreur: {e}")
                 
                 # PRIORITÉ 2: Vérifier si on est toujours sur la page de connexion
-                # C'est un INDICATEUR FORT d'échec
+                # C'est un ÉCHEC ABSOLU - pas de négociation possible
                 if 'connexion' in current_url.lower() or 'login' in current_url.lower():
-                    logger.warning("⚠️ URL contient 'connexion' ou 'login' - probable échec")
+                    logger.error("❌❌❌ URL contient 'connexion' ou 'login' - ÉCHEC ABSOLU")
                     # Vérifier si les champs de connexion sont toujours présents
                     try:
                         email_field_check = page.query_selector(f"#{config['email_id']}")
                         password_field_check = page.query_selector(f"#{config['password_id']}")
                         submit_button_check = page.query_selector(f"#{config['submit_id']}")
                         
+                        # Si AU MOINS UN champ est présent, c'est un échec
                         if email_field_check or password_field_check or submit_button_check:
                             logger.error("❌❌❌ CONNEXION ÉCHOUÉE - Toujours sur la page de connexion avec les champs visibles")
                             browser.close()
@@ -283,11 +284,49 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                                     'submit_button_present': submit_button_check is not None
                                 }
                             }
+                        else:
+                            # Même si les champs ne sont pas visibles, si l'URL contient connexion/login, c'est un échec
+                            logger.error("❌❌❌ CONNEXION ÉCHOUÉE - URL contient 'connexion' ou 'login'")
+                            browser.close()
+                            return {
+                                'success': False,
+                                'message': 'Connexion échouée: identifiants incorrects',
+                                'details': {
+                                    'url': current_url,
+                                    'reason': 'url_contains_login_or_connexion'
+                                }
+                            }
                     except Exception as e:
                         logger.warning(f"⚠️ Erreur lors de la vérification des champs: {e}")
+                        # Même en cas d'erreur, si l'URL contient connexion/login, c'est un échec
+                        logger.error("❌❌❌ CONNEXION ÉCHOUÉE - URL contient 'connexion' ou 'login' (erreur vérification)")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': 'Connexion échouée: identifiants incorrects',
+                            'details': {
+                                'url': current_url,
+                                'reason': 'url_contains_login_or_connexion_after_error'
+                            }
+                        }
+                
+                # Vérification supplémentaire : si l'URL n'a PAS changé, c'est un échec
+                if url_before_submit == url_after_submit:
+                    logger.error("❌❌❌ CONNEXION ÉCHOUÉE - URL n'a PAS changé après soumission")
+                    browser.close()
+                    return {
+                        'success': False,
+                        'message': 'Connexion échouée: identifiants incorrects (URL inchangée)',
+                        'details': {
+                            'url': current_url,
+                            'url_before': url_before_submit,
+                            'url_after': url_after_submit,
+                            'reason': 'url_not_changed_after_submit'
+                        }
+                    }
                 
                 # PRIORITÉ 3: Vérifier si on est sur le formulaire de candidature (succès)
-                # MAIS SEULEMENT si on n'a PAS détecté d'erreur
+                # SEULEMENT si on a passé toutes les vérifications précédentes
                 logger.info("🔍 Vérification du formulaire de candidature...")
                 
                 # Vérification STRICTE : on doit être ABSOLUMENT sûr que c'est un succès
@@ -297,12 +336,29 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     logger.info("✅ Élément de succès trouvé")
                     
                     # Vérifications supplémentaires STRICTES :
-                    # 1. L'URL ne doit PAS contenir "connexion" ou "login"
+                    # 1. L'URL ne doit PAS contenir "connexion" ou "login" (déjà vérifié, mais on re-vérifie)
                     # 2. Les champs de connexion ne doivent PLUS être présents
                     # 3. Le formulaire de candidature doit être visible
+                    # 4. L'URL DOIT avoir changé
                     
                     url_check = 'connexion' not in current_url.lower() and 'login' not in current_url.lower()
-                    logger.info(f"✅ Vérification URL: {url_check} (URL: {current_url})")
+                    url_changed = url_before_submit != url_after_submit
+                    logger.info(f"✅ Vérification URL: {url_check}, URL changée: {url_changed} (URL: {current_url})")
+                    
+                    # Si l'URL n'a pas changé, c'est un ÉCHEC ABSOLU
+                    if not url_changed:
+                        logger.error("❌❌❌ CONNEXION ÉCHOUÉE - URL n'a PAS changé (obligatoire pour succès)")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': 'Connexion échouée: identifiants incorrects (URL inchangée)',
+                            'details': {
+                                'url': current_url,
+                                'url_before': url_before_submit,
+                                'url_after': url_after_submit,
+                                'reason': 'url_must_change_for_success'
+                            }
+                        }
                     
                     # Vérifier que les champs de connexion ne sont PLUS présents
                     try:
@@ -310,8 +366,24 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         password_field_after = page.query_selector(f"#{config['password_id']}")
                         fields_gone = email_field_after is None and password_field_after is None
                         logger.info(f"✅ Champs de connexion absents: {fields_gone}")
-                    except:
-                        fields_gone = True  # Si on ne peut pas vérifier, on assume qu'ils sont absents
+                        
+                        # Si les champs sont toujours présents, c'est un échec
+                        if not fields_gone:
+                            logger.error("❌❌❌ CONNEXION ÉCHOUÉE - Champs de connexion toujours présents")
+                            browser.close()
+                            return {
+                                'success': False,
+                                'message': 'Connexion échouée: identifiants incorrects',
+                                'details': {
+                                    'url': current_url,
+                                    'reason': 'login_fields_still_present_despite_form',
+                                    'email_field_present': email_field_after is not None,
+                                    'password_field_present': password_field_after is not None
+                                }
+                            }
+                    except Exception as e:
+                        logger.warning(f"⚠️ Erreur vérification champs: {e}")
+                        fields_gone = False  # En cas de doute, on considère comme échec
                     
                     # Vérifier que le formulaire de candidature est bien visible
                     try:
@@ -321,49 +393,27 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         form_visible = False
                     
                     # TOUTES les conditions doivent être remplies pour un succès
-                    # Vérification ULTRA-STRICTE
-                    if url_check and fields_gone and form_visible:
-                        # Vérification supplémentaire : s'assurer que l'URL a vraiment changé
-                        if url_before_submit != url_after_submit:
-                            logger.info("✅✅✅ CONNEXION RÉUSSIE - Toutes les vérifications passées !")
-                            browser.close()
-                            return {
-                                'success': True,
-                                'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                                'details': {
-                                    'url': current_url,
-                                    'url_before': url_before_submit,
-                                    'url_after': url_after_submit,
-                                    'reason': 'application_form_detected',
-                                    'checks': {
-                                        'url_ok': url_check,
-                                        'fields_gone': fields_gone,
-                                        'form_visible': form_visible,
-                                        'url_changed': url_before_submit != url_after_submit
-                                    }
+                    if url_check and fields_gone and form_visible and url_changed:
+                        logger.info("✅✅✅ CONNEXION RÉUSSIE - Toutes les vérifications passées !")
+                        browser.close()
+                        return {
+                            'success': True,
+                            'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                            'details': {
+                                'url': current_url,
+                                'url_before': url_before_submit,
+                                'url_after': url_after_submit,
+                                'reason': 'application_form_detected',
+                                'checks': {
+                                    'url_ok': url_check,
+                                    'fields_gone': fields_gone,
+                                    'form_visible': form_visible,
+                                    'url_changed': url_changed
                                 }
                             }
-                        else:
-                            logger.error("❌❌❌ URL n'a pas changé malgré le formulaire détecté - ÉCHEC")
-                            browser.close()
-                            return {
-                                'success': False,
-                                'message': 'Connexion échouée: impossible de confirmer la connexion (URL inchangée)',
-                                'details': {
-                                    'url': current_url,
-                                    'url_before': url_before_submit,
-                                    'url_after': url_after_submit,
-                                    'reason': 'url_not_changed',
-                                    'checks': {
-                                        'url_ok': url_check,
-                                        'fields_gone': fields_gone,
-                                        'form_visible': form_visible,
-                                        'url_changed': False
-                                    }
-                                }
-                            }
+                        }
                     else:
-                        logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Vérifications échouées: url={url_check}, fields={fields_gone}, visible={form_visible}")
+                        logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Vérifications échouées: url={url_check}, fields={fields_gone}, visible={form_visible}, changed={url_changed}")
                         browser.close()
                         return {
                             'success': False,
@@ -376,53 +426,21 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                                 'checks': {
                                     'url_ok': url_check,
                                     'fields_gone': fields_gone,
-                                    'form_visible': form_visible
+                                    'form_visible': form_visible,
+                                    'url_changed': url_changed
                                 }
                             }
                         }
                 except PlaywrightTimeout:
                     # Si le formulaire de candidature n'est pas trouvé, c'est un ÉCHEC
-                    logger.warning("❌ Formulaire de candidature NON trouvé - ÉCHEC")
-                    
-                    # Vérification finale: si on est toujours sur la page de connexion
-                    if 'connexion' in current_url.lower() or 'login' in current_url.lower():
-                        logger.warning("❌ Toujours sur la page de connexion - ÉCHEC")
-                        browser.close()
-                        return {
-                            'success': False,
-                            'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
-                            'details': {
-                                'url': current_url,
-                                'reason': 'still_on_login_page'
-                            }
-                        }
-                    
-                    # Vérifier une dernière fois si les champs de connexion sont toujours là
-                    try:
-                        email_field_final = page.query_selector(f"#{config['email_id']}")
-                        if email_field_final:
-                            logger.warning("❌ Champs de connexion toujours présents - ÉCHEC")
-                            browser.close()
-                            return {
-                                'success': False,
-                                'message': 'Connexion échouée: identifiants incorrects',
-                                'details': {
-                                    'url': current_url,
-                                    'reason': 'login_fields_still_present'
-                                }
-                            }
-                    except:
-                        pass
-                    
-                    # Cas indéterminé mais on considère comme ÉCHEC par défaut
-                    logger.warning("⚠️ Impossible de confirmer le succès - ÉCHEC par défaut")
+                    logger.error("❌ Formulaire de candidature NON trouvé - ÉCHEC")
                     browser.close()
                     return {
                         'success': False,
-                        'message': 'Connexion échouée: impossible de confirmer la connexion. Vérifiez vos identifiants.',
+                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
                         'details': {
                             'url': current_url,
-                            'reason': 'cannot_confirm_success'
+                            'reason': 'application_form_not_found'
                         }
                     }
             
