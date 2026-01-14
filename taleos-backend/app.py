@@ -89,42 +89,83 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 submit_button.click()
                 logger.info("✅ Formulaire soumis")
                 
-                # Attendre la réponse
+                # Attendre la réponse (augmenter le temps d'attente)
                 logger.info("⏳ Attente de la réponse...")
-                time.sleep(3)
+                time.sleep(5)  # Augmenté de 3 à 5 secondes
                 
-                # Vérifier si on est sur le formulaire de candidature (succès)
-                try:
-                    success_element = page.wait_for_selector(f"#{config['success_indicator_id']}", timeout=10000)
-                    logger.info("✅ Connexion réussie ! Formulaire de candidature détecté")
-                    browser.close()
-                    return {
-                        'success': True,
-                        'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                        'details': {
-                            'url': page.url,
-                            'reason': 'application_form_detected'
+                # Récupérer l'URL actuelle et le texte de la page
+                current_url = page.url
+                page_text = page.inner_text('body').lower()
+                logger.info(f"📍 URL actuelle: {current_url}")
+                
+                # PRIORITÉ 1: Vérifier les erreurs AVANT de vérifier le succès
+                logger.info("🔍 Vérification des erreurs...")
+                for error_indicator in config['error_indicators']:
+                    if error_indicator.lower() in page_text:
+                        logger.warning(f"❌ Erreur détectée: {error_indicator}")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
+                            'details': {
+                                'url': current_url,
+                                'error_found': error_indicator
+                            }
                         }
-                    }
-                except PlaywrightTimeout:
-                    # Vérifier s'il y a des erreurs
-                    page_text = page.inner_text('body').lower()
-                    
-                    for error_indicator in config['error_indicators']:
-                        if error_indicator.lower() in page_text:
-                            logger.warning(f"❌ Erreur détectée: {error_indicator}")
+                
+                # PRIORITÉ 2: Vérifier si on est toujours sur la page de connexion
+                if 'connexion' in current_url.lower() or 'login' in current_url.lower():
+                    # Vérifier si les champs de connexion sont toujours présents
+                    try:
+                        email_field_check = page.query_selector(f"#{config['email_id']}")
+                        if email_field_check:
+                            logger.warning("❌ Toujours sur la page de connexion avec les champs visibles")
                             browser.close()
                             return {
                                 'success': False,
-                                'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
+                                'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
                                 'details': {
-                                    'url': page.url,
-                                    'error_found': error_indicator
+                                    'url': current_url,
+                                    'reason': 'still_on_login_page_with_fields'
                                 }
                             }
+                    except:
+                        pass
+                
+                # PRIORITÉ 3: Vérifier si on est sur le formulaire de candidature (succès)
+                logger.info("🔍 Vérification du formulaire de candidature...")
+                try:
+                    # Attendre un peu plus pour être sûr que la page a chargé
+                    success_element = page.wait_for_selector(f"#{config['success_indicator_id']}", timeout=8000)
                     
-                    # Si on est toujours sur la page de login, c'est un échec
-                    current_url = page.url
+                    # Vérification supplémentaire: s'assurer qu'on n'est plus sur la page de connexion
+                    if 'connexion' not in current_url.lower() and 'login' not in current_url.lower():
+                        logger.info("✅ Connexion réussie ! Formulaire de candidature détecté")
+                        browser.close()
+                        return {
+                            'success': True,
+                            'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
+                            'details': {
+                                'url': current_url,
+                                'reason': 'application_form_detected'
+                            }
+                        }
+                    else:
+                        logger.warning("⚠️ Formulaire détecté mais URL suspecte (connexion)")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': 'Connexion échouée: impossible de confirmer la connexion',
+                            'details': {
+                                'url': current_url,
+                                'reason': 'suspicious_url'
+                            }
+                        }
+                except PlaywrightTimeout:
+                    # Si le formulaire de candidature n'est pas trouvé, c'est un échec
+                    logger.warning("❌ Formulaire de candidature non trouvé")
+                    
+                    # Vérification finale: si on est toujours sur la page de connexion
                     if 'connexion' in current_url.lower() or 'login' in current_url.lower():
                         logger.warning("❌ Toujours sur la page de connexion")
                         browser.close()
@@ -137,14 +178,15 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                             }
                         }
                     
-                    # Cas indéterminé
-                    logger.warning("⚠️ Impossible de déterminer le résultat")
+                    # Cas indéterminé mais probablement un échec
+                    logger.warning("⚠️ Impossible de déterminer le résultat (probable échec)")
                     browser.close()
                     return {
                         'success': False,
-                        'message': 'Impossible de déterminer si la connexion a réussi. Veuillez vérifier manuellement.',
+                        'message': 'Connexion échouée: impossible de confirmer la connexion. Vérifiez vos identifiants.',
                         'details': {
-                            'url': page.url
+                            'url': current_url,
+                            'reason': 'cannot_confirm_success'
                         }
                     }
             
