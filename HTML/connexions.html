@@ -928,8 +928,9 @@
                 console.log('✅ Boolean(result.success):', Boolean(result.success));
 
                 // Vérification STRICTE : success doit être explicitement true
+                // ALERTE VISUELLE si on entre dans le bloc success avec false
                 if (result.success === true) {
-                    console.log('⚠️⚠️⚠️ ENTREE DANS LE BLOC SUCCESS - SUCCESS EST TRUE');
+                    console.log('✅✅✅ ENTREE DANS LE BLOC SUCCESS - SUCCESS EST TRUE');
                     // Connexion réussie - sauvegarder les credentials (cryptés)
                     try {
                         await saveConnection(bankId, email, password);
@@ -959,9 +960,14 @@
                     console.error('❌❌❌❌❌ BACKEND A RETOURNÉ SUCCESS=FALSE ❌❌❌❌❌');
                     console.error('❌ Success value reçu:', result.success);
                     console.error('❌ Success type:', typeof result.success);
+                    console.error('❌ Success === false:', result.success === false);
+                    console.error('❌ Success == false:', result.success == false);
                     console.error('❌ Message du backend:', result.message);
                     console.error('❌ Détails du backend:', result.details);
-                    console.error('❌ Résultat complet:', result);
+                    console.error('❌ Résultat complet:', JSON.stringify(result, null, 2));
+                    
+                    // ALERTE VISUELLE
+                    alert('ERREUR DÉTECTÉE: Le backend a retourné success=false. Vérifiez la console.');
                     
                     // S'ASSURER que userConnections n'est PAS mis à jour
                     if (userConnections[bankId]) {
