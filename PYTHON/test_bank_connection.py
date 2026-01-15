@@ -48,7 +48,21 @@ BANK_CONFIGS = {
         'postuler_button_selector': "button.cta.primary[data-popin='popin-application']",
         'cookie_button_selector': 'button.rgpd-btn-refuse',
         'success_indicator_id': 'form-apply-firstname',  # Formulaire de candidature après connexion
-        'error_indicators': ['erreur', 'incorrect', 'invalid', 'échec', 'identifiant ou mot de passe incorrect']
+        'error_indicators': [
+            'email ou mot de passe incorrect',
+            'identifiant ou mot de passe incorrect',
+            'renseigner un adresse e-mail au format attendu',
+            'format attendu',
+            'tentatives',
+            'vous reste',
+            'mot de passe incorrect',
+            'erreur',
+            'incorrect',
+            'invalid',
+            'échec',
+            'connexion impossible',
+            'compte invalide'
+        ]
     },
     'societe_generale': {
         'name': 'Société Générale',
@@ -176,20 +190,123 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
         
         # ---------- Soumettre le formulaire ----------
         logger.info("📤 Soumission du formulaire")
+        url_before_submit = driver.current_url
         submit_button = wait.until(EC.element_to_be_clickable((By.ID, config['submit_id'])))
         safe_click(driver, submit_button)
         logger.info("✅ Formulaire soumis")
         
-        # ---------- Attendre la réponse ----------
-        logger.info("⏳ Attente de la réponse...")
-        time.sleep(3)  # Attendre que la page réagisse
+        # ---------- PRIORITÉ 1: Vérifier les erreurs IMMÉDIATEMENT ----------
+        # Les messages d'erreur apparaissent très rapidement (1-3 secondes)
+        logger.info("🔍 Vérification IMMÉDIATE des erreurs...")
         
-        # Vérifier si on est sur le formulaire de candidature (succès)
+        # Vérifier plusieurs fois avec des intervalles courts
+        max_checks = 6
+        check_interval = 1
+        
+        for check_num in range(1, max_checks + 1):
+            logger.info(f"🔍 Vérification #{check_num}/{max_checks} des erreurs (après {check_num * check_interval}s)...")
+            time.sleep(check_interval)
+            
+            # Récupérer le texte de la page
+            try:
+                page_text = driver.find_element(By.TAG_NAME, 'body').text.lower()
+                page_html = driver.page_source.lower()
+                current_url = driver.current_url
+            except:
+                page_text = ''
+                page_html = ''
+                current_url = driver.current_url
+            
+            # Vérifier chaque indicateur d'erreur (triés par longueur, messages complets en premier)
+            sorted_indicators = sorted(config['error_indicators'], key=len, reverse=True)
+            
+            for error_indicator in sorted_indicators:
+                error_lower = error_indicator.lower()
+                # Vérifier dans le texte de la page
+                if error_lower in page_text:
+                    logger.error(f"❌❌❌ ERREUR DÉTECTÉE (check #{check_num}): '{error_indicator}'")
+                    logger.error(f"📄 URL actuelle: {current_url}")
+                    
+                    # Construire un message d'erreur descriptif
+                    if 'email ou mot de passe incorrect' in error_indicator.lower():
+                        error_message = 'Connexion échouée: email ou mot de passe incorrect'
+                    elif 'tentatives' in error_indicator.lower() or 'vous reste' in error_indicator.lower():
+                        error_message = 'Connexion échouée: identifiants incorrects'
+                    else:
+                        error_message = f'Connexion échouée: {error_indicator}'
+                    
+                    driver.quit()
+                    return {
+                        'success': False,
+                        'message': error_message,
+                        'details': {
+                            'url': current_url,
+                            'error_found': error_indicator,
+                            'check_number': check_num
+                        }
+                    }
+                # Vérifier aussi dans le HTML
+                elif error_lower in page_html:
+                    logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans HTML (check #{check_num}): '{error_indicator}'")
+                    driver.quit()
+                    return {
+                        'success': False,
+                        'message': f'Connexion échouée: {error_indicator}',
+                        'details': {
+                            'url': current_url,
+                            'error_found': error_indicator,
+                            'check_number': check_num
+                        }
+                    }
+            
+            # Vérifier si l'URL a changé (signe de succès potentiel)
+            if current_url != url_before_submit and 'connexion' not in current_url.lower() and 'login' not in current_url.lower():
+                logger.info(f"✅ URL a changé et ne contient pas 'connexion' - probable succès, arrêt des vérifications d'erreur")
+                break
+        
+        logger.info("✅ Aucune erreur détectée après vérifications répétées")
+        
+        # ---------- PRIORITÉ 2: Vérifier si on est toujours sur la page de connexion ----------
+        current_url = driver.current_url
+        if 'connexion' in current_url.lower() or 'login' in current_url.lower():
+            logger.error("❌❌❌ Toujours sur la page de connexion - ÉCHEC")
+            # Vérifier si les champs de connexion sont toujours présents
+            try:
+                email_field = driver.find_elements(By.ID, config['email_id'])
+                password_field = driver.find_elements(By.ID, config['password_id'])
+                if email_field or password_field:
+                    logger.error("❌❌❌ Champs de connexion toujours présents - ÉCHEC")
+                    driver.quit()
+                    return {
+                        'success': False,
+                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
+                        'details': {
+                            'url': current_url,
+                            'reason': 'still_on_login_page_with_fields'
+                        }
+                    }
+            except:
+                pass
+            
+            driver.quit()
+            return {
+                'success': False,
+                'message': 'Connexion échouée: identifiants incorrects',
+                'details': {
+                    'url': current_url,
+                    'reason': 'still_on_login_page'
+                }
+            }
+        
+        # ---------- PRIORITÉ 3: Vérifier si on est sur le formulaire de candidature (succès) ----------
+        logger.info("🔍 Vérification du formulaire de candidature...")
         try:
-            success_element = wait.until(
+            # Timeout court pour éviter d'attendre trop longtemps
+            success_element = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.ID, config['success_indicator_id']))
             )
             logger.info("✅ Connexion réussie ! Formulaire de candidature détecté")
+            driver.quit()
             return {
                 'success': True,
                 'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
@@ -199,40 +316,14 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 }
             }
         except TimeoutException:
-            # Vérifier s'il y a des erreurs
-            page_text = driver.find_element(By.TAG_NAME, 'body').text.lower()
-            
-            for error_indicator in config['error_indicators']:
-                if error_indicator.lower() in page_text:
-                    logger.warning(f"❌ Erreur détectée: {error_indicator}")
-                    return {
-                        'success': False,
-                        'message': f'Connexion échouée: identifiants incorrects ou compte invalide',
-                        'details': {
-                            'url': driver.current_url,
-                            'error_found': error_indicator
-                        }
-                    }
-            
-            # Si on est toujours sur la page de login, c'est un échec
-            if 'connexion' in driver.current_url.lower() or 'login' in driver.current_url.lower():
-                logger.warning("❌ Toujours sur la page de connexion")
-                return {
-                    'success': False,
-                    'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
-                    'details': {
-                        'url': driver.current_url,
-                        'reason': 'still_on_login_page'
-                    }
-                }
-            
-            # Cas indéterminé
-            logger.warning("⚠️ Impossible de déterminer le résultat")
+            logger.error("❌❌❌ Formulaire de candidature non trouvé après 5s - ÉCHEC")
+            driver.quit()
             return {
                 'success': False,
-                'message': 'Impossible de déterminer si la connexion a réussi. Veuillez vérifier manuellement.',
+                'message': 'Connexion échouée: identifiants incorrects (formulaire de candidature non accessible)',
                 'details': {
-                    'url': driver.current_url
+                    'url': driver.current_url,
+                    'reason': 'application_form_not_found_timeout'
                 }
             }
         
