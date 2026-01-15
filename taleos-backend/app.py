@@ -173,17 +173,28 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         current_url = page.url
                     
                     # Vérifier chaque indicateur d'erreur
-                    for error_indicator in config['error_indicators']:
+                    # PRIORITÉ aux messages complets d'abord, puis aux mots-clés courts
+                    sorted_indicators = sorted(config['error_indicators'], key=len, reverse=True)
+                    
+                    for error_indicator in sorted_indicators:
                         error_lower = error_indicator.lower()
                         # Vérifier dans le texte de la page
                         if error_lower in page_text:
                             logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte (check #{check_num}): '{error_indicator}'")
-                            logger.error(f"📄 Contexte trouvé: {page_text[max(0, page_text.find(error_lower)-50):page_text.find(error_lower)+100]}")
+                            # Extraire le contexte complet du message d'erreur
+                            error_pos = page_text.find(error_lower)
+                            context_start = max(0, error_pos - 100)
+                            context_end = min(len(page_text), error_pos + len(error_indicator) + 200)
+                            context = page_text[context_start:context_end]
+                            logger.error(f"📄 Contexte complet trouvé: {context}")
                             errors_found.append(('text', error_indicator))
+                            # Ne pas continuer à chercher d'autres erreurs une fois qu'on en a trouvé une
+                            break
                         # Vérifier aussi dans le HTML
                         elif error_lower in page_html:
                             logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le HTML (check #{check_num}): '{error_indicator}'")
                             errors_found.append(('html', error_indicator))
+                            break
                     
                     # Si on trouve des erreurs, on retourne IMMÉDIATEMENT
                     if errors_found:
@@ -191,10 +202,19 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée au check #{check_num}: {error_text}")
                         logger.error(f"❌❌❌ Toutes les erreurs trouvées: {errors_found}")
                         logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Pas de vérification supplémentaire")
+                        
+                        # Construire un message d'erreur plus descriptif
+                        if 'email ou mot de passe incorrect' in error_text.lower() or 'incorrect' in error_text.lower():
+                            error_message = 'Connexion échouée: email ou mot de passe incorrect'
+                        elif 'tentatives' in error_text.lower() or 'vous reste' in error_text.lower():
+                            error_message = 'Connexion échouée: identifiants incorrects'
+                        else:
+                            error_message = f'Connexion échouée: {error_text}'
+                        
                         browser.close()
                         return {
                             'success': False,
-                            'message': f'Connexion échouée: {error_text}',
+                            'message': error_message,
                             'details': {
                                 'url': current_url,
                                 'error_found': error_text,
