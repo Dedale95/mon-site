@@ -432,14 +432,17 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         }
                 except PlaywrightTimeout:
                     # Si le formulaire de candidature n'est pas trouvé, c'est un ÉCHEC
-                    logger.error("❌ Formulaire de candidature NON trouvé - ÉCHEC")
+                    logger.error("❌❌❌ TIMEOUT - Formulaire de candidature NON trouvé après 5s - ÉCHEC")
+                    logger.error(f"❌❌❌ URL actuelle: {current_url}")
+                    logger.error(f"❌❌❌ URL avant soumission: {url_before_submit}")
                     browser.close()
                     return {
                         'success': False,
-                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
+                        'message': 'Connexion échouée: identifiants incorrects (formulaire de candidature non accessible)',
                         'details': {
                             'url': current_url,
-                            'reason': 'application_form_not_found'
+                            'url_before': url_before_submit,
+                            'reason': 'application_form_not_found_timeout'
                         }
                     }
             
