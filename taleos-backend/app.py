@@ -149,89 +149,85 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 logger.info(f"📧 Email saisi: {email_value_before}")
                 
                 submit_button.click()
-                logger.info("✅ Formulaire soumis, attente de la réponse...")
+                logger.info("✅ Formulaire soumis, vérification IMMÉDIATE des erreurs...")
                 
-                # Attendre que la page réagisse après soumission
-                # Utiliser une approche simple avec time.sleep et vérifications manuelles
-                logger.info("⏳ Attente de la réaction de la page (5 secondes)...")
-                time.sleep(5)
+                # PRIORITÉ ABSOLUE : Vérifier les erreurs IMMÉDIATEMENT après soumission
+                # Les messages d'erreur apparaissent très rapidement (1-2 secondes)
+                # On vérifie plusieurs fois avec des intervalles courts pour ne pas manquer l'erreur
+                errors_found = []
+                max_checks = 6  # Vérifier 6 fois maximum
+                check_interval = 1  # Toutes les 1 seconde
                 
-                # Attendre que le réseau soit idle
+                for check_num in range(1, max_checks + 1):
+                    logger.info(f"🔍 Vérification #{check_num}/{max_checks} des erreurs (après {check_num * check_interval}s)...")
+                    time.sleep(check_interval)
+                    
+                    # Récupérer le texte et HTML actuels
+                    try:
+                        current_url = page.url
+                        page_text = page.inner_text('body').lower()
+                        page_html = page.content().lower()
+                    except:
+                        page_text = ''
+                        page_html = ''
+                        current_url = page.url
+                    
+                    # Vérifier chaque indicateur d'erreur
+                    for error_indicator in config['error_indicators']:
+                        error_lower = error_indicator.lower()
+                        # Vérifier dans le texte de la page
+                        if error_lower in page_text:
+                            logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte (check #{check_num}): '{error_indicator}'")
+                            logger.error(f"📄 Contexte trouvé: {page_text[max(0, page_text.find(error_lower)-50):page_text.find(error_lower)+100]}")
+                            errors_found.append(('text', error_indicator))
+                        # Vérifier aussi dans le HTML
+                        elif error_lower in page_html:
+                            logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le HTML (check #{check_num}): '{error_indicator}'")
+                            errors_found.append(('html', error_indicator))
+                    
+                    # Si on trouve des erreurs, on retourne IMMÉDIATEMENT
+                    if errors_found:
+                        error_method, error_text = errors_found[0]
+                        logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée au check #{check_num}: {error_text}")
+                        logger.error(f"❌❌❌ Toutes les erreurs trouvées: {errors_found}")
+                        logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Pas de vérification supplémentaire")
+                        browser.close()
+                        return {
+                            'success': False,
+                            'message': f'Connexion échouée: {error_text}',
+                            'details': {
+                                'url': current_url,
+                                'error_found': error_text,
+                                'detection_method': error_method,
+                                'all_errors': errors_found,
+                                'check_number': check_num,
+                                'page_text_sample': page_text[:500]
+                            }
+                        }
+                    
+                    # Vérifier aussi si l'URL a changé (signe de succès potentiel)
+                    if current_url != url_before_submit and 'connexion' not in current_url.lower() and 'login' not in current_url.lower():
+                        logger.info(f"✅ URL a changé et ne contient pas 'connexion' - probable succès, arrêt des vérifications d'erreur")
+                        break
+                
+                logger.info("✅ Aucune erreur détectée après vérifications répétées - continuation des vérifications")
+                
+                # Attendre que le réseau soit idle (seulement si pas d'erreur détectée)
                 try:
-                    page.wait_for_load_state('networkidle', timeout=10000)
+                    page.wait_for_load_state('networkidle', timeout=5000)
                     logger.info("✅ État réseau idle atteint")
                 except PlaywrightTimeout:
                     logger.warning("⚠️ Timeout sur networkidle, continuation...")
                 
-                # Attendre un peu plus pour que les messages d'erreur/succès apparaissent
-                time.sleep(4)  # Augmenté à 4 secondes
-                
-                # Vérifier si l'URL a changé
+                # Récupérer l'URL finale
                 url_after_submit = page.url
+                current_url = page.url
                 logger.info(f"📍 URL après soumission: {url_after_submit}")
                 
                 if url_before_submit == url_after_submit:
                     logger.warning("⚠️ URL n'a PAS changé après soumission - probable échec")
                 else:
                     logger.info("✅ URL a changé après soumission")
-                
-                # Récupérer l'URL actuelle et le texte de la page
-                current_url = page.url
-                
-                # Récupérer le texte de la page de manière plus complète
-                try:
-                    page_text = page.inner_text('body').lower()
-                    # Récupérer aussi le HTML pour vérifier les messages d'erreur dans les éléments spécifiques
-                    page_html = page.content().lower()
-                except:
-                    page_text = ''
-                    page_html = ''
-                
-                logger.info(f"📍 URL actuelle: {current_url}")
-                logger.info(f"📄 Texte de la page (extrait): {page_text[:200]}...")
-                
-                # PRIORITÉ 1: Vérifier les erreurs AVANT de vérifier le succès
-                logger.info("🔍 Vérification des erreurs...")
-                logger.info(f"📄 Longueur du texte de la page: {len(page_text)} caractères")
-                logger.info(f"📄 Extrait du texte (200 premiers caractères): {page_text[:200]}")
-                
-                # Vérifier dans le texte ET dans le HTML (pour capturer les messages d'erreur même s'ils sont dans des attributs)
-                combined_text = page_text + ' ' + page_html
-                
-                # Vérifier chaque indicateur d'erreur
-                errors_found = []
-                for error_indicator in config['error_indicators']:
-                    error_lower = error_indicator.lower()
-                    # Vérifier dans le texte de la page
-                    if error_lower in page_text:
-                        logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte: '{error_indicator}'")
-                        logger.error(f"📄 Contexte trouvé: {page_text[max(0, page_text.find(error_lower)-50):page_text.find(error_lower)+100]}")
-                        errors_found.append(('text', error_indicator))
-                    # Vérifier aussi dans le HTML
-                    elif error_lower in page_html:
-                        logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le HTML: '{error_indicator}'")
-                        errors_found.append(('html', error_indicator))
-                
-                # Si on trouve des erreurs, on retourne immédiatement un échec
-                if errors_found:
-                    error_method, error_text = errors_found[0]
-                    logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée: {error_text}")
-                    logger.error(f"❌❌❌ Toutes les erreurs trouvées: {errors_found}")
-                    logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Pas de vérification supplémentaire")
-                    browser.close()
-                    return {
-                        'success': False,
-                        'message': f'Connexion échouée: {error_text}',
-                        'details': {
-                            'url': current_url,
-                            'error_found': error_text,
-                            'detection_method': error_method,
-                            'all_errors': errors_found,
-                            'page_text_sample': page_text[:500]
-                        }
-                    }
-                
-                logger.info("✅ Aucune erreur détectée dans le texte/HTML - continuation des vérifications")
                 
                 # Vérifier aussi les messages d'erreur dans les éléments de formulaire
                 try:
