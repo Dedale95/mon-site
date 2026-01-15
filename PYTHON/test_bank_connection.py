@@ -274,29 +274,45 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
         
         # Chercher les messages d'erreur dans des éléments spécifiques d'abord
         try:
-            error_elements = driver.find_elements(By.CSS_SELECTOR, '.error, .alert, .warning, [role="alert"], .message-error, .form-error, .alert-danger, .alert-error')
+            error_elements = driver.find_elements(By.CSS_SELECTOR, '.error, .alert, .warning, [role="alert"], .message-error, .form-error, .alert-danger, .alert-error, .popin-error, .modal-error')
             for error_element in error_elements:
                 try:
                     error_text = error_element.text.lower()
+                    logger.info(f"🔍 Élément d'erreur trouvé, texte: {error_text[:100]}")
                     # Vérifier les messages d'erreur complets dans ces éléments
                     for error_indicator in sorted(config['error_indicators'], key=len, reverse=True):
                         if error_indicator.lower() in error_text:
                             logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans élément d'erreur: '{error_indicator}'")
                             logger.error(f"📄 Texte de l'élément: {error_text[:200]}")
-                            driver.quit()
+                            
+                            # Construire un message d'erreur descriptif
+                            if 'email ou mot de passe incorrect' in error_indicator.lower():
+                                error_message = 'Connexion échouée: email ou mot de passe incorrect'
+                            elif 'tentatives' in error_indicator.lower() or 'vous reste' in error_indicator.lower():
+                                error_message = 'Connexion échouée: identifiants incorrects'
+                            else:
+                                error_message = f'Connexion échouée: {error_indicator}'
+                            
+                            # Fermer le driver proprement
+                            try:
+                                driver.quit()
+                            except:
+                                pass
+                            
                             return {
                                 'success': False,
-                                'message': f'Connexion échouée: {error_indicator}',
+                                'message': error_message,
                                 'details': {
                                     'url': current_url,
                                     'error_found': error_indicator,
                                     'detection_method': 'error_element'
                                 }
                             }
-                except:
+                except Exception as e:
+                    logger.warning(f"⚠️ Erreur lors de l'analyse d'un élément: {e}")
                     continue
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"⚠️ Erreur lors de la recherche d'éléments d'erreur: {e}")
         
         # Vérifier dans le texte de la page seulement pour les messages complets
         for error_indicator in sorted(config['error_indicators'], key=len, reverse=True):
@@ -311,10 +327,24 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     if 'erreur' in context or 'incorrect' in context or 'tentatives' in context:
                         logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte: '{error_indicator}'")
                         logger.error(f"📄 Contexte: {context}")
-                        driver.quit()
+                        
+                        # Construire un message d'erreur descriptif
+                        if 'email ou mot de passe incorrect' in error_indicator.lower():
+                            error_message = 'Connexion échouée: email ou mot de passe incorrect'
+                        elif 'tentatives' in error_indicator.lower() or 'vous reste' in error_indicator.lower():
+                            error_message = 'Connexion échouée: identifiants incorrects'
+                        else:
+                            error_message = f'Connexion échouée: {error_indicator}'
+                        
+                        # Fermer le driver proprement
+                        try:
+                            driver.quit()
+                        except:
+                            pass
+                        
                         return {
                             'success': False,
-                            'message': f'Connexion échouée: {error_indicator}',
+                            'message': error_message,
                             'details': {
                                 'url': current_url,
                                 'error_found': error_indicator,
@@ -403,7 +433,13 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
         }
     finally:
         if driver:
-            driver.quit()
+            try:
+                driver.quit()
+            except:
+                try:
+                    driver.close()
+                except:
+                    pass
 
 
 def test_bank_connection(bank_id: str, email: str, password: str, timeout: int = 30) -> Dict:
