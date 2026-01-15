@@ -905,18 +905,31 @@
                     throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
                 }
 
-                const result = await response.json();
+                const resultText = await response.text();
+                console.log('📥 RÉPONSE BRUTE DU BACKEND (texte):', resultText);
                 
-                console.log('📥 Résultat COMPLET du backend:', JSON.stringify(result, null, 2));
+                let result;
+                try {
+                    result = JSON.parse(resultText);
+                } catch (e) {
+                    console.error('❌ ERREUR PARSING JSON:', e);
+                    console.error('❌ Texte reçu:', resultText);
+                    throw new Error('Réponse invalide du serveur');
+                }
+                
+                console.log('📥 Résultat PARSÉ du backend:', JSON.stringify(result, null, 2));
                 console.log('✅ Success value:', result.success);
                 console.log('✅ Success type:', typeof result.success);
                 console.log('✅ Success === true:', result.success === true);
                 console.log('✅ Success === false:', result.success === false);
+                console.log('✅ result.success == true:', result.success == true);
+                console.log('✅ result.success == false:', result.success == false);
                 console.log('✅ !result.success:', !result.success);
+                console.log('✅ Boolean(result.success):', Boolean(result.success));
 
                 // Vérification STRICTE : success doit être explicitement true
                 if (result.success === true) {
-                    console.log('✅ Entrée dans le bloc SUCCESS');
+                    console.log('⚠️⚠️⚠️ ENTREE DANS LE BLOC SUCCESS - SUCCESS EST TRUE');
                     // Connexion réussie - sauvegarder les credentials (cryptés)
                     try {
                         await saveConnection(bankId, email, password);
@@ -943,9 +956,12 @@
                     }
                 } else {
                     // Connexion échouée - TOUJOURS afficher l'erreur
-                    console.error('❌❌❌ BACKEND A RETOURNÉ SUCCESS=FALSE');
+                    console.error('❌❌❌❌❌ BACKEND A RETOURNÉ SUCCESS=FALSE ❌❌❌❌❌');
+                    console.error('❌ Success value reçu:', result.success);
+                    console.error('❌ Success type:', typeof result.success);
                     console.error('❌ Message du backend:', result.message);
                     console.error('❌ Détails du backend:', result.details);
+                    console.error('❌ Résultat complet:', result);
                     
                     // S'ASSURER que userConnections n'est PAS mis à jour
                     if (userConnections[bankId]) {
