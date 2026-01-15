@@ -272,18 +272,33 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             page_text = ''
             page_html = ''
         
+        logger.info(f"🔍 Recherche d'éléments d'erreur sur la page (URL: {current_url})")
+        
         # Chercher les messages d'erreur dans des éléments spécifiques d'abord
+        # Inclure les popups/modals qui peuvent contenir les messages d'erreur
         try:
-            error_elements = driver.find_elements(By.CSS_SELECTOR, '.error, .alert, .warning, [role="alert"], .message-error, .form-error, .alert-danger, .alert-error, .popin-error, .modal-error')
+            error_elements = driver.find_elements(By.CSS_SELECTOR, 
+                '.error, .alert, .warning, [role="alert"], .message-error, .form-error, '
+                '.alert-danger, .alert-error, .popin-error, .modal-error, '
+                '.popin, .modal, [class*="error"], [class*="alert"], [id*="error"], [id*="alert"]')
+            logger.info(f"🔍 {len(error_elements)} éléments potentiels d'erreur trouvés")
             for error_element in error_elements:
                 try:
+                    # Vérifier si l'élément est visible
+                    if not error_element.is_displayed():
+                        continue
+                    
                     error_text = error_element.text.lower()
-                    logger.info(f"🔍 Élément d'erreur trouvé, texte: {error_text[:100]}")
+                    if not error_text or len(error_text.strip()) < 5:
+                        continue
+                    
+                    logger.info(f"🔍 Élément d'erreur visible trouvé, texte: {error_text[:150]}")
+                    
                     # Vérifier les messages d'erreur complets dans ces éléments
                     for error_indicator in sorted(config['error_indicators'], key=len, reverse=True):
                         if error_indicator.lower() in error_text:
                             logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans élément d'erreur: '{error_indicator}'")
-                            logger.error(f"📄 Texte de l'élément: {error_text[:200]}")
+                            logger.error(f"📄 Texte complet de l'élément: {error_text[:300]}")
                             
                             # Construire un message d'erreur descriptif
                             if 'email ou mot de passe incorrect' in error_indicator.lower():
@@ -293,19 +308,28 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                             else:
                                 error_message = f'Connexion échouée: {error_indicator}'
                             
+                            # Sauvegarder l'URL avant de fermer
+                            final_url = driver.current_url
+                            
                             # Fermer le driver proprement
                             try:
                                 driver.quit()
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.warning(f"⚠️ Erreur lors de la fermeture du driver: {e}")
+                                try:
+                                    driver.close()
+                                except:
+                                    pass
                             
+                            logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Retour de l'erreur")
                             return {
                                 'success': False,
                                 'message': error_message,
                                 'details': {
-                                    'url': current_url,
+                                    'url': final_url,
                                     'error_found': error_indicator,
-                                    'detection_method': 'error_element'
+                                    'detection_method': 'error_element',
+                                    'element_text': error_text[:200]
                                 }
                             }
                 except Exception as e:
@@ -336,19 +360,28 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         else:
                             error_message = f'Connexion échouée: {error_indicator}'
                         
+                        # Sauvegarder l'URL avant de fermer
+                        final_url = driver.current_url
+                        
                         # Fermer le driver proprement
                         try:
                             driver.quit()
-                        except:
-                            pass
+                        except Exception as e:
+                            logger.warning(f"⚠️ Erreur lors de la fermeture du driver: {e}")
+                            try:
+                                driver.close()
+                            except:
+                                pass
                         
+                        logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Retour de l'erreur")
                         return {
                             'success': False,
                             'message': error_message,
                             'details': {
-                                'url': current_url,
+                                'url': final_url,
                                 'error_found': error_indicator,
-                                'detection_method': 'page_text_with_context'
+                                'detection_method': 'page_text_with_context',
+                                'context': context
                             }
                         }
         
