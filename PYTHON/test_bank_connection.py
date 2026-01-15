@@ -141,12 +141,13 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
         wait = WebDriverWait(driver, timeout)
         config = BANK_CONFIGS['credit_agricole']
         
-        # ---------- Ouvrir une page d'offre d'emploi ----------
-        logger.info(f"📡 Ouverture de la page d'offre: {config['test_job_url']}")
-        driver.get(config['test_job_url'])
+        # ---------- Aller DIRECTEMENT sur la page de connexion ----------
+        login_url = 'https://groupecreditagricole.jobs/fr/connexion/'
+        logger.info(f"📡 Ouverture directe de la page de connexion: {login_url}")
+        driver.get(login_url)
         time.sleep(2)
         
-        # ---------- Gérer les cookies ----------
+        # ---------- Gérer les cookies (si présents) ----------
         try:
             cookie_button = wait.until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, config['cookie_button_selector']))
@@ -156,24 +157,6 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             logger.info("✅ Bannière de cookies refusée")
         except (TimeoutException, NoSuchElementException):
             logger.info("⚠️ Bannière de cookies non trouvée")
-        
-        # ---------- Cliquer sur "Je postule" ----------
-        logger.info("🔘 Clic sur 'Je postule'")
-        postuler = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, config['postuler_button_selector']))
-        )
-        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", postuler)
-        safe_click(driver, postuler)
-        time.sleep(2)
-        logger.info("✅ 'Je postule' cliqué")
-        
-        # ---------- Cliquer sur le lien de connexion ----------
-        logger.info("🔗 Clic sur le lien de connexion")
-        connexion = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, config['connexion_link_selector']))
-        )
-        safe_click(driver, connexion)
-        time.sleep(2)
         
         # ---------- Remplir le formulaire de connexion ----------
         logger.info("✍️  Remplissage du formulaire de connexion")

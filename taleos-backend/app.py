@@ -98,12 +98,13 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             config = BANK_CONFIGS['credit_agricole']
             
             try:
-                # Ouvrir la page d'offre d'emploi
-                logger.info(f"📡 Ouverture de la page d'offre: {config['test_job_url']}")
-                page.goto(config['test_job_url'], wait_until='domcontentloaded', timeout=timeout * 1000)
+                # Aller DIRECTEMENT sur la page de connexion
+                login_url = 'https://groupecreditagricole.jobs/fr/connexion/'
+                logger.info(f"📡 Ouverture directe de la page de connexion: {login_url}")
+                page.goto(login_url, wait_until='domcontentloaded', timeout=timeout * 1000)
                 time.sleep(2)
                 
-                # Gérer les cookies
+                # Gérer les cookies (si présents)
                 try:
                     cookie_button = page.wait_for_selector(config['cookie_button_selector'], timeout=5000)
                     cookie_button.click()
@@ -111,20 +112,6 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     logger.info("✅ Bannière de cookies refusée")
                 except PlaywrightTimeout:
                     logger.info("⚠️ Bannière de cookies non trouvée")
-                
-                # Cliquer sur "Je postule"
-                logger.info("🔘 Clic sur 'Je postule'")
-                postuler = page.wait_for_selector(config['postuler_button_selector'], timeout=10000)
-                page.evaluate("element => element.scrollIntoView({block: 'center'})", postuler)
-                postuler.click()
-                time.sleep(2)
-                logger.info("✅ 'Je postule' cliqué")
-                
-                # Cliquer sur le lien de connexion
-                logger.info("🔗 Clic sur le lien de connexion")
-                connexion = page.wait_for_selector(config['connexion_link_selector'], timeout=10000)
-                connexion.click()
-                time.sleep(2)
                 
                 # Remplir le formulaire de connexion
                 logger.info("✍️  Remplissage du formulaire de connexion")
