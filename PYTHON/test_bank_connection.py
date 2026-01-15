@@ -31,8 +31,8 @@ except ImportError:
     print("❌ Selenium n'est pas installé. Installez-le avec: pip install selenium webdriver-manager")
     sys.exit(1)
 
-# Configuration du logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configuration du logging (silencieux)
+logging.basicConfig(level=logging.WARNING, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 # Configuration des banques avec leurs URLs de connexion
@@ -108,233 +108,120 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
     
     Le navigateur reste visible pour que vous puissiez voir ce qui se passe.
     """
-    logger.info(f"🔍 Test de connexion pour Crédit Agricole avec {email}")
-    
     # Configuration Chrome
     chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")  # Fenêtre maximisée
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")  # Masquer l'automation
-    
-    # Mode headless désactivé pour voir ce qui se passe pendant les tests
-    # Le navigateur Chrome s'ouvrira et vous pourrez voir toutes les actions
-    # chrome_options.add_argument("--headless")  # Décommenter pour activer le mode headless (invisible)
-    
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     
     driver = None
     try:
         # Initialiser le driver Chrome
-        # webdriver-manager télécharge automatiquement le bon ChromeDriver si nécessaire
         if ChromeDriverManager:
-            logger.info("🌐 Ouverture du navigateur Chrome...")
             driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()),
                 options=chrome_options
             )
         else:
-            # Fallback si webdriver_manager n'est pas disponible
-            # Nécessite que ChromeDriver soit dans le PATH
-            logger.info("🌐 Ouverture du navigateur Chrome (sans webdriver-manager)...")
             driver = webdriver.Chrome(options=chrome_options)
         
         wait = WebDriverWait(driver, timeout)
         config = BANK_CONFIGS['credit_agricole']
         
-        # ---------- Aller DIRECTEMENT sur la page de connexion ----------
+        # Aller directement sur la page de connexion
         login_url = 'https://groupecreditagricole.jobs/fr/connexion/'
-        logger.info(f"📡 Ouverture directe de la page de connexion: {login_url}")
         driver.get(login_url)
-        time.sleep(2)
         
-        # ---------- Gérer les cookies (si présents) ----------
+        # Attendre que la page soit chargée (pas de time.sleep)
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, config['email_id'])))
+        
+        # Gérer les cookies IMMÉDIATEMENT (timeout court)
         try:
-            cookie_button = wait.until(
+            cookie_button = WebDriverWait(driver, 1).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, config['cookie_button_selector']))
             )
-            safe_click(driver, cookie_button)
-            time.sleep(1)
-            logger.info("✅ Bannière de cookies refusée")
+            driver.execute_script("arguments[0].click();", cookie_button)  # JavaScript = plus rapide
         except (TimeoutException, NoSuchElementException):
-            logger.info("⚠️ Bannière de cookies non trouvée")
+            pass  # Pas de bannière cookies
         
-        # ---------- Remplir le formulaire de connexion ----------
-        logger.info("✍️  Remplissage du formulaire de connexion")
-        email_field = wait.until(EC.element_to_be_clickable((By.ID, config['email_id'])))
-        password_field = wait.until(EC.element_to_be_clickable((By.ID, config['password_id'])))
+        # Remplir le formulaire avec JavaScript (plus rapide)
+        email_field = wait.until(EC.presence_of_element_located((By.ID, config['email_id'])))
+        password_field = driver.find_element(By.ID, config['password_id'])
         
-        email_field.clear()
-        email_field.send_keys(email)
-        time.sleep(0.5)
+        driver.execute_script("arguments[0].value = ''; arguments[0].value = arguments[1];", email_field, email)
+        driver.execute_script("arguments[0].value = ''; arguments[0].value = arguments[1];", password_field, password)
         
-        password_field.clear()
-        password_field.send_keys(password)
-        time.sleep(0.5)
-        
-        # ---------- Soumettre le formulaire ----------
-        logger.info("📤 Soumission du formulaire")
+        # Soumettre le formulaire
         url_before_submit = driver.current_url
-        submit_button = wait.until(EC.element_to_be_clickable((By.ID, config['submit_id'])))
-        safe_click(driver, submit_button)
-        logger.info("✅ Formulaire soumis")
+        submit_button = driver.find_element(By.ID, config['submit_id'])
+        driver.execute_script("arguments[0].click();", submit_button)  # JavaScript = plus rapide
         
-        # ---------- PRIORITÉ 1: Vérifier les ERREURS IMMÉDIATEMENT (elles apparaissent en 1-2 secondes) ----------
-        logger.info("🔍 Vérification IMMÉDIATE des erreurs...")
+        # Vérifier les erreurs immédiatement (intervalles courts)
+        time.sleep(0.5)  # Attendre que la page réagisse
         
-        # Attendre 1 seconde que le message d'erreur apparaisse
-        time.sleep(1)
+        max_error_checks = 3
+        check_interval = 0.5  # Réduit de 1s à 0.5s
         
-        # Vérifier plusieurs fois avec des intervalles courts (max 4 secondes)
-        max_error_checks = 4
-        check_interval = 1
-        
-        for error_check in range(1, max_error_checks + 1):
-            logger.info(f"🔍 Vérification erreurs #{error_check}/{max_error_checks} (après {error_check * check_interval}s)...")
-            
+        for error_check in range(max_error_checks):
             current_url = driver.current_url
             
-            # Récupérer le texte de la page
-            try:
-                page_text = driver.find_element(By.TAG_NAME, 'body').text.lower()
-                page_html = driver.page_source.lower()
-            except:
-                page_text = ''
-                page_html = ''
-            
-            # Chercher les messages d'erreur dans des éléments spécifiques d'abord
+            # Chercher les erreurs dans les éléments spécifiques
             try:
                 error_elements = driver.find_elements(By.CSS_SELECTOR, 
-                    '.error, .alert, .warning, [role="alert"], .message-error, .form-error, '
-                    '.alert-danger, .alert-error, .popin-error, .modal-error, '
-                    '.popin, .modal, [class*="error"], [class*="alert"], [id*="error"], [id*="alert"]')
+                    '.error, .alert, .warning, [role="alert"], .popin, .modal, [class*="error"], [class*="alert"]')
                 
                 for error_element in error_elements:
                     try:
-                        # Vérifier si l'élément est visible
                         if not error_element.is_displayed():
                             continue
-                        
                         error_text = error_element.text.lower()
-                        if not error_text or len(error_text.strip()) < 5:
+                        if len(error_text.strip()) < 5:
                             continue
                         
-                        logger.info(f"🔍 Élément d'erreur visible trouvé (check #{error_check}), texte: {error_text[:150]}")
-                        
-                        # Vérifier les messages d'erreur complets dans ces éléments
+                        # Vérifier les messages d'erreur
                         for error_indicator in sorted(config['error_indicators'], key=len, reverse=True):
                             if error_indicator.lower() in error_text:
-                                logger.error(f"❌❌❌ ERREUR DÉTECTÉE (check #{error_check}): '{error_indicator}'")
-                                logger.error(f"📄 Texte complet: {error_text[:300]}")
-                                
-                                # Construire un message d'erreur descriptif
                                 if 'email ou mot de passe incorrect' in error_indicator.lower():
                                     error_message = 'Connexion échouée: email ou mot de passe incorrect'
-                                elif 'tentatives' in error_indicator.lower() or 'vous reste' in error_indicator.lower():
-                                    error_message = 'Connexion échouée: identifiants incorrects'
                                 else:
-                                    error_message = f'Connexion échouée: {error_indicator}'
+                                    error_message = 'Connexion échouée: identifiants incorrects'
                                 
                                 final_url = driver.current_url
-                                
-                                # Fermer le driver proprement
                                 try:
                                     driver.quit()
-                                except Exception as e:
-                                    logger.warning(f"⚠️ Erreur lors de la fermeture du driver: {e}")
+                                except:
                                     try:
                                         driver.close()
                                     except:
                                         pass
                                 
-                                logger.error(f"❌❌❌ ARRÊT IMMÉDIAT après {error_check} seconde(s)")
                                 return {
                                     'success': False,
                                     'message': error_message,
-                                    'details': {
-                                        'url': final_url,
-                                        'error_found': error_indicator,
-                                        'detection_method': 'error_element',
-                                        'check_number': error_check,
-                                        'element_text': error_text[:200]
-                                    }
+                                    'details': {'url': final_url}
                                 }
-                    except Exception as e:
-                        logger.warning(f"⚠️ Erreur lors de l'analyse d'un élément: {e}")
+                    except:
                         continue
-            except Exception as e:
-                logger.warning(f"⚠️ Erreur lors de la recherche d'éléments d'erreur: {e}")
+            except:
+                pass
             
-            # Si on a trouvé une erreur, on arrête
-            # Sinon, vérifier aussi dans le texte de la page pour les messages complets
-            for error_indicator in sorted(config['error_indicators'], key=len, reverse=True):
-                if len(error_indicator) > 10:  # Messages complets uniquement
-                    error_lower = error_indicator.lower()
-                    if error_lower in page_text:
-                        error_pos = page_text.find(error_lower)
-                        context = page_text[max(0, error_pos-50):min(len(page_text), error_pos+len(error_indicator)+50)]
-                        if 'erreur' in context or 'incorrect' in context or 'tentatives' in context:
-                            logger.error(f"❌❌❌ ERREUR DÉTECTÉE dans le texte (check #{error_check}): '{error_indicator}'")
-                            
-                            if 'email ou mot de passe incorrect' in error_indicator.lower():
-                                error_message = 'Connexion échouée: email ou mot de passe incorrect'
-                            elif 'tentatives' in error_indicator.lower() or 'vous reste' in error_indicator.lower():
-                                error_message = 'Connexion échouée: identifiants incorrects'
-                            else:
-                                error_message = f'Connexion échouée: {error_indicator}'
-                            
-                            final_url = driver.current_url
-                            
-                            try:
-                                driver.quit()
-                            except Exception as e:
-                                logger.warning(f"⚠️ Erreur lors de la fermeture du driver: {e}")
-                                try:
-                                    driver.close()
-                                except:
-                                    pass
-                            
-                            logger.error(f"❌❌❌ ARRÊT IMMÉDIAT après {error_check} seconde(s)")
-                            return {
-                                'success': False,
-                                'message': error_message,
-                                'details': {
-                                    'url': final_url,
-                                    'error_found': error_indicator,
-                                    'detection_method': 'page_text_with_context',
-                                    'check_number': error_check
-                                }
-                            }
-            
-            # Vérifier si l'URL a changé (signe de succès potentiel)
+            # Vérifier si l'URL a changé (succès)
             if current_url != url_before_submit and 'connexion' not in current_url.lower() and 'login' not in current_url.lower():
-                logger.info(f"✅ URL a changé et ne contient pas 'connexion' - probable succès, arrêt des vérifications d'erreur")
                 break
             
-            if error_check < max_error_checks:
+            if error_check < max_error_checks - 1:
                 time.sleep(check_interval)
         
-        logger.info("✅ Aucune erreur détectée après vérifications - vérification du succès...")
-        
-        # ---------- PRIORITÉ 2: Vérifier le SUCCÈS ----------
-        # Après une connexion réussie, on est redirigé (vers la page d'accueil ou une autre page)
-        # On ne cherche PAS le formulaire de candidature car on n'a pas cliqué sur "Je postule"
-        # Le succès se détecte par :
-        # 1. URL a changé et ne contient plus "connexion" ni "login"
-        # 2. Champs de connexion ne sont plus présents
-        # 3. Optionnel: présence d'éléments indiquant qu'on est connecté
-        
+        # Vérifier le succès
         current_url = driver.current_url
-        logger.info(f"🔍 Vérification du succès - URL actuelle: {current_url}")
         
-        # Vérifier si on est toujours sur la page de connexion
+        # Si toujours sur la page de connexion → échec
         if 'connexion' in current_url.lower() or 'login' in current_url.lower():
-            logger.error("❌❌❌ Toujours sur la page de connexion - ÉCHEC")
-            # Vérifier si les champs de connexion sont toujours présents
             try:
                 email_field = driver.find_elements(By.ID, config['email_id'])
                 password_field = driver.find_elements(By.ID, config['password_id'])
                 if email_field or password_field:
-                    logger.error("❌❌❌ Champs de connexion toujours présents - ÉCHEC")
                     final_url = driver.current_url
                     try:
                         driver.quit()
@@ -345,11 +232,8 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                             pass
                     return {
                         'success': False,
-                        'message': 'Connexion échouée: identifiants incorrects ou problème de connexion',
-                        'details': {
-                            'url': final_url,
-                            'reason': 'still_on_login_page_with_fields'
-                        }
+                        'message': 'Connexion échouée: identifiants incorrects',
+                        'details': {'url': final_url}
                     }
             except:
                 pass
@@ -365,14 +249,8 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             return {
                 'success': False,
                 'message': 'Connexion échouée: identifiants incorrects',
-                'details': {
-                    'url': final_url,
-                    'reason': 'still_on_login_page'
-                }
+                'details': {'url': final_url}
             }
-        
-        # Si l'URL a changé et ne contient plus "connexion" ni "login", c'est un bon signe
-        logger.info("✅ URL a changé et ne contient pas 'connexion' - vérification des champs de connexion...")
         
         # Vérifier que les champs de connexion ne sont plus présents
         try:
@@ -380,23 +258,7 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             password_field = driver.find_elements(By.ID, config['password_id'])
             
             if not email_field and not password_field:
-                logger.info("✅ Champs de connexion absents - SUCCÈS confirmé !")
                 final_url = driver.current_url
-                
-                # Optionnel: vérifier la présence d'éléments indiquant qu'on est connecté
-                try:
-                    # Chercher des éléments communs qui indiquent qu'on est connecté
-                    # (profil, déconnexion, menu utilisateur, etc.)
-                    connected_indicators = driver.find_elements(By.CSS_SELECTOR, 
-                        '[href*="deconnexion"], [href*="logout"], [href*="profil"], '
-                        '[href*="profile"], [href*="mon-compte"], [href*="mon-compte"], '
-                        '.user-menu, .account-menu, [class*="user"], [id*="user"]')
-                    
-                    if connected_indicators:
-                        logger.info(f"✅ Éléments de profil/utilisateur trouvés: {len(connected_indicators)} - SUCCÈS confirmé !")
-                except:
-                    pass  # Ce n'est pas critique si on ne trouve pas ces éléments
-                
                 try:
                     driver.quit()
                 except:
@@ -404,28 +266,20 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         driver.close()
                     except:
                         pass
-                
                 return {
                     'success': True,
                     'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                    'details': {
-                        'url': final_url,
-                        'reason': 'redirected_from_login_and_fields_absent'
-                    }
+                    'details': {'url': final_url}
                 }
-            else:
-                logger.warning(f"⚠️ Champs de connexion encore présents - email: {len(email_field)}, password: {len(password_field)}")
-        except Exception as e:
-            logger.warning(f"⚠️ Erreur lors de la vérification des champs: {e}")
+        except:
+            pass
         
-        # Si on arrive ici, essayer quand même de vérifier le formulaire de candidature (au cas où on serait passé par "Je postule")
-        logger.info("🔍 Vérification optionnelle du formulaire de candidature (si on a cliqué sur 'Je postule')...")
+        # Formulaire de candidature (si on a cliqué sur "Je postule")
         try:
-            success_element = WebDriverWait(driver, 2).until(
+            success_element = WebDriverWait(driver, 1).until(
                 EC.presence_of_element_located((By.ID, config['success_indicator_id']))
             )
             if success_element.is_displayed():
-                logger.info("✅✅✅ SUCCÈS ! Formulaire de candidature détecté")
                 final_url = driver.current_url
                 try:
                     driver.quit()
@@ -437,22 +291,14 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 return {
                     'success': True,
                     'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                    'details': {
-                        'url': final_url,
-                        'reason': 'application_form_detected'
-                    }
+                    'details': {'url': final_url}
                 }
-        except TimeoutException:
-            # Ce n'est pas un échec si le formulaire n'est pas trouvé car on n'a pas forcément cliqué sur "Je postule"
-            logger.info("ℹ️ Formulaire de candidature non trouvé (normal si on n'a pas cliqué sur 'Je postule')")
+        except:
+            pass
         
-        # Si on arrive ici sans succès ni échec clair, c'est suspect
-        logger.warning("⚠️ État ambigu - vérification finale...")
+        # Si URL a changé (pas de "connexion") → succès
         final_url = driver.current_url
-        
-        # Si l'URL ne contient pas "connexion" et qu'on n'est pas sur une page d'erreur, considérer comme succès
         if 'connexion' not in final_url.lower() and 'login' not in final_url.lower():
-            logger.info("✅ URL ne contient pas 'connexion' - considéré comme SUCCÈS")
             try:
                 driver.quit()
             except:
@@ -463,14 +309,10 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
             return {
                 'success': True,
                 'message': f'Connexion réussie ! Votre compte {config["name"]} est maintenant lié.',
-                'details': {
-                    'url': final_url,
-                    'reason': 'url_changed_no_login_keywords'
-                }
+                'details': {'url': final_url}
             }
         
-        # Si rien ne fonctionne, échec
-        logger.error("❌❌❌ Impossible de déterminer le statut de la connexion - ÉCHEC")
+        # Échec par défaut
         try:
             driver.quit()
         except:
@@ -480,31 +322,21 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 pass
         return {
             'success': False,
-            'message': 'Connexion échouée: impossible de déterminer le statut de la connexion',
-            'details': {
-                'url': final_url,
-                'reason': 'ambiguous_state'
-            }
+            'message': 'Connexion échouée: impossible de déterminer le statut',
+            'details': {'url': final_url}
         }
         
     except TimeoutException as e:
-        logger.error(f"❌ Timeout: {str(e)}")
         return {
             'success': False,
             'message': 'Timeout: La page a pris trop de temps à répondre',
-            'details': {
-                'url': driver.current_url if driver else 'unknown',
-                'error': str(e)
-            }
+            'details': {'url': driver.current_url if driver else 'unknown'}
         }
     except Exception as e:
-        logger.error(f"❌ Erreur lors du test de connexion: {e}")
         return {
             'success': False,
             'message': f'Erreur technique: {str(e)}',
-            'details': {
-                'error': str(e)
-            }
+            'details': {'error': str(e)}
         }
     finally:
         if driver:
