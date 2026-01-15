@@ -217,6 +217,7 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                     error_method, error_text = errors_found[0]
                     logger.error(f"❌❌❌ CONNEXION ÉCHOUÉE - Erreur détectée: {error_text}")
                     logger.error(f"❌❌❌ Toutes les erreurs trouvées: {errors_found}")
+                    logger.error(f"❌❌❌ ARRÊT IMMÉDIAT - Pas de vérification supplémentaire")
                     browser.close()
                     return {
                         'success': False,
@@ -230,7 +231,7 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                         }
                     }
                 
-                logger.info("✅ Aucune erreur détectée dans le texte/HTML")
+                logger.info("✅ Aucune erreur détectée dans le texte/HTML - continuation des vérifications")
                 
                 # Vérifier aussi les messages d'erreur dans les éléments de formulaire
                 try:
@@ -326,8 +327,11 @@ def test_credit_agricole_connection(email: str, password: str, timeout: int = 30
                 
                 # Vérification STRICTE : on doit être ABSOLUMENT sûr que c'est un succès
                 try:
-                    # Attendre le formulaire de candidature avec un timeout plus court
+                    # Attendre le formulaire de candidature avec un timeout COURT
+                    # Si pas trouvé en 5 secondes, c'est un échec
+                    logger.info(f"⏳ Attente du formulaire de candidature (timeout: 5s)...")
                     success_element = page.wait_for_selector(f"#{config['success_indicator_id']}", timeout=5000)
+                    logger.info("✅ Formulaire de candidature trouvé")
                     logger.info("✅ Élément de succès trouvé")
                     
                     # Vérifications supplémentaires STRICTES :
