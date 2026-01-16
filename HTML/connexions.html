@@ -737,9 +737,11 @@
                 return;
             }
 
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Suppression...';
+            const btn = document.getElementById(`btn-disconnect-${bankId}`) || document.querySelector(`[onclick*="disconnectBank('${bankId}')"]`);
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Suppression...';
+            }
 
             try {
                 await db.collection('profiles').doc(currentUser.uid)
@@ -762,8 +764,10 @@
             } catch (error) {
                 console.error('Erreur suppression connexion:', error);
                 alert('Erreur lors de la suppression');
-                btn.disabled = false;
-                btn.innerHTML = '✕ Délier';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '✕ Délier ce compte';
+                }
             }
         }
 
