@@ -19,6 +19,7 @@
 
         html {
             height: 100%;
+            scroll-behavior: auto; /* Désactiver le smooth scroll automatique */
         }
 
         body {
@@ -28,6 +29,7 @@
             color: #1a1a1a;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden; /* Empêcher le scroll horizontal */
         }
 
         .main-content {
@@ -2719,6 +2721,9 @@
 
         // Restaurer l'état de l'accordéon au chargement
         window.addEventListener('DOMContentLoaded', () => {
+            // Empêcher le scroll automatique au chargement de la page
+            window.scrollTo(0, 0);
+            
             const wasCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
             if (wasCollapsed) {
                 const filtersContent = document.getElementById('filtersContainer');
