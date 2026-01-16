@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+
     <style>
         * {
             margin: 0;
@@ -552,8 +553,13 @@
 
         /* Spinner */
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .spinner {
@@ -577,6 +583,7 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+
             .nav-container,
             .nav-links {
                 flex-direction: column;
@@ -595,6 +602,7 @@
         }
     </style>
 </head>
+
 <body>
     <nav>
         <div class="nav-container">
@@ -606,11 +614,14 @@
                 <a href="landing_page_finance.html" class="nav-link">🏠 Présentation</a>
                 <a href="offres.html" class="nav-link">💼 Offres</a>
                 <a href="filtres.html" class="nav-link">🔍 Recherche avancée</a>
-                <a href="mes-candidatures.html" class="nav-link" id="navCandidatures" style="display: none;">📋 Mes candidatures</a>
-                <a href="connexions.html" class="nav-link active" id="navConnexions" style="display: none;">🔗 Connexions</a>
+                <a href="mes-candidatures.html" class="nav-link" id="navCandidatures" style="display: none;">📋 Mes
+                    candidatures</a>
+                <a href="connexions.html" class="nav-link active" id="navConnexions" style="display: none;">🔗
+                    Connexions</a>
                 <a href="auth.html" class="nav-link" id="navAuth">🔐 Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="navProfile" style="display: none;">👤 Mon Profil</a>
-                <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">🚪 Déconnexion</button>
+                <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">🚪
+                    Déconnexion</button>
             </div>
         </div>
     </nav>
@@ -629,7 +640,8 @@
                 <li><strong>Synchroniser vos candidatures</strong> entre les plateformes</li>
                 <li><strong>Suivre l'état</strong> de vos candidatures directement depuis votre espace</li>
             </ul>
-            <p style="margin-top: 15px;"><strong>🔒 Sécurité :</strong> Vos identifiants sont cryptés et stockés de manière sécurisée. Nous ne les utilisons que pour les actions que vous autorisez.</p>
+            <p style="margin-top: 15px;"><strong>🔒 Sécurité :</strong> Vos identifiants sont cryptés et stockés de
+                manière sécurisée. Nous ne les utilisons que pour les actions que vous autorisez.</p>
         </div>
 
         <div class="banks-container" id="banksContainer">
@@ -658,9 +670,9 @@
         const db = firebase.firestore();
 
         // Configuration de l'API backend (AWS)
-        const API_BASE_URL = 'http://51.44.11.78';
+        const API_BASE_URL = 'https://api.taleos.co'; // ✅ Utilise HTTPS et le domaine
         const API_KEY = 'Thibault_Secure_987654321_Validator';
-        
+
         // Configuration des banques
         const banks = [
             {
@@ -776,7 +788,7 @@
             try {
                 const docRef = db.collection('profiles').doc(currentUser.uid).collection('career_connections').doc('connections');
                 const doc = await docRef.get();
-                
+
                 if (doc.exists) {
                     userConnections = doc.data();
                 }
@@ -791,7 +803,7 @@
         function togglePassword(inputId, button) {
             const input = document.getElementById(inputId);
             const toggleIcon = button.querySelector('span');
-            
+
             if (input.type === 'password') {
                 input.type = 'text';
                 toggleIcon.textContent = '🙈';
@@ -805,7 +817,7 @@
         function toggleBank(bankId) {
             const module = document.getElementById(`bank-${bankId}`);
             const isExpanded = module.classList.contains('expanded');
-            
+
             // Fermer tous les autres modules
             document.querySelectorAll('.bank-module').forEach(m => {
                 m.classList.remove('expanded');
@@ -904,7 +916,7 @@
                     // Validation échouée
                     statusDiv.className = 'connection-status show error';
                     statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
-                    
+
                     // Réactiver le bouton
                     btn.disabled = false;
                     btn.innerHTML = '🔗 Lier mon compte';
@@ -913,9 +925,9 @@
             } catch (error) {
                 console.error('Erreur dans testConnection:', error);
                 statusDiv.className = 'connection-status show error';
-                
+
                 let errorMessage = error.message || 'Une erreur est survenue';
-                
+
                 // Messages d'erreur plus spécifiques
                 if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
                     errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
@@ -926,9 +938,9 @@
                 } else if (error.message.includes('permissions') || error.message.includes('Permission')) {
                     errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité.';
                 }
-                
+
                 statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
-                
+
                 // Réactiver le bouton
                 btn.disabled = false;
                 btn.innerHTML = '🔗 Lier mon compte';
@@ -1003,7 +1015,7 @@
 
             // Mettre à jour le message
             document.getElementById('confirmModalMessage').textContent = message;
-            
+
             // Afficher la modale
             overlay.classList.add('show');
         }
@@ -1016,15 +1028,15 @@
                     () => {
                         window.location.href = 'auth.html';
                     },
-                    () => {}
+                    () => { }
                 );
                 return;
             }
-            
+
             // Récupérer le nom de la banque
             const bank = banks.find(b => b.id === bankId);
             const bankName = bank ? bank.name : 'ce compte';
-            
+
             // Afficher la modale de confirmation
             showConfirmModal(
                 `Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nCette action est irréversible et vous devrez reconnecter votre compte pour postuler aux offres.`,
@@ -1066,7 +1078,7 @@
                     }
                 }
             }
-            
+
             if (statusDiv) {
                 statusDiv.className = 'connection-status show info';
                 statusDiv.innerHTML = '⏳ Suppression en cours...';
@@ -1074,14 +1086,14 @@
 
             try {
                 console.log(`🗑️ Suppression de la connexion ${bankId} pour l'utilisateur ${currentUser.uid}`);
-                
+
                 // Récupérer le document actuel pour vérifier qu'il existe
                 const docRef = db.collection('profiles').doc(currentUser.uid)
                     .collection('career_connections')
                     .doc('connections');
-                
+
                 const doc = await docRef.get();
-                
+
                 if (!doc.exists) {
                     console.warn('⚠️ Document connections n\'existe pas');
                     // Si le document n'existe pas, on considère que c'est déjà supprimé
@@ -1098,7 +1110,7 @@
 
                 // Récupérer les données actuelles
                 const currentData = doc.data();
-                
+
                 // Vérifier si le champ existe
                 if (!currentData || !currentData[bankId]) {
                     console.warn(`⚠️ Le champ ${bankId} n'existe pas dans le document`);
@@ -1123,7 +1135,7 @@
 
                 // Mettre à jour l'objet local
                 delete userConnections[bankId];
-                
+
                 if (statusDiv) {
                     statusDiv.className = 'connection-status show success';
                     statusDiv.innerHTML = '✅ Compte délié avec succès';
@@ -1141,9 +1153,9 @@
                     message: error.message,
                     stack: error.stack
                 });
-                
+
                 let errorMessage = 'Erreur lors de la suppression';
-                
+
                 // Messages d'erreur plus spécifiques
                 if (error.code === 'permission-denied') {
                     errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles pour career_connections dans Firebase Console.';
@@ -1152,7 +1164,7 @@
                 } else if (error.message) {
                     errorMessage = `Erreur: ${error.message}`;
                 }
-                
+
                 // Réutiliser statusDiv défini au début de la fonction, ou le récupérer/créer
                 if (!statusDiv) {
                     statusDiv = document.getElementById(`status-${bankId}`);
@@ -1172,7 +1184,7 @@
                         }
                     }
                 }
-                
+
                 if (statusDiv) {
                     statusDiv.className = 'connection-status show error';
                     statusDiv.innerHTML = `❌ ${errorMessage}`;
@@ -1180,11 +1192,11 @@
                     // Si statusDiv n'existe pas, afficher une modale d'erreur
                     showConfirmModal(
                         errorMessage,
-                        () => {},
-                        () => {}
+                        () => { },
+                        () => { }
                     );
                 }
-                
+
                 // Réactiver le bouton en cas d'erreur
                 if (btn) {
                     btn.disabled = false;
@@ -1196,7 +1208,7 @@
         // Render des modules banques
         function renderBanks() {
             const container = document.getElementById('banksContainer');
-            
+
             container.innerHTML = banks.map(bank => {
                 const isConnected = userConnections[bank.id]?.connected || false;
                 const connectedEmail = userConnections[bank.id]?.email || '';
@@ -1264,7 +1276,7 @@
         (function checkAuthImmediate() {
             const token = localStorage.getItem('authToken');
             const email = localStorage.getItem('userEmail');
-            
+
             if (!token || !email) {
                 console.log('❌ Page Connexions - Accès refusé');
                 console.log('🔄 Redirection vers la page de connexion...');
@@ -1287,7 +1299,7 @@
                 // Vérifier localStorage en cas de connexion persistante
                 const token = localStorage.getItem('authToken');
                 const email = localStorage.getItem('userEmail');
-                
+
                 if (token && email) {
                     // Attendre un peu que Firebase charge la session
                     setTimeout(async () => {
@@ -1312,4 +1324,5 @@
         });
     </script>
 </body>
+
 </html>
