@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
+    
     <style>
         * {
             margin: 0;
@@ -331,151 +330,6 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .password-input-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .password-input-wrapper input {
-            padding-right: 50px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #666;
-            font-size: 1.2rem;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: color 0.3s;
-            z-index: 10;
-        }
-
-        .password-toggle:hover {
-            color: #667eea;
-        }
-
-        .password-toggle:focus {
-            outline: none;
-        }
-
-        /* Modale de confirmation personnalisée */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 16px;
-            padding: 0;
-            max-width: 480px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            transform: scale(0.9) translateY(20px);
-            transition: transform 0.3s ease;
-            overflow: hidden;
-        }
-
-        .modal-overlay.show .modal {
-            transform: scale(1) translateY(0);
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 24px 30px;
-            color: white;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .modal-header h3::before {
-            content: '⚠️';
-            font-size: 2rem;
-        }
-
-        .modal-body {
-            padding: 30px;
-        }
-
-        .modal-body p {
-            margin: 0;
-            font-size: 1.1rem;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .modal-footer {
-            padding: 20px 30px;
-            background: #f8f9fa;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            min-width: 120px;
-        }
-
-        .modal-btn-cancel {
-            background: white;
-            color: #666;
-            border: 2px solid #ddd;
-        }
-
-        .modal-btn-cancel:hover {
-            background: #f5f5f5;
-            border-color: #bbb;
-        }
-
-        .modal-btn-confirm {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .modal-btn-confirm:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
         .form-actions {
             display: flex;
             gap: 15px;
@@ -513,13 +367,13 @@
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
         }
 
         .btn-danger:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
         }
 
         .connection-status {
@@ -553,13 +407,8 @@
 
         /* Spinner */
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .spinner {
@@ -581,22 +430,8 @@
             margin-top: auto;
         }
 
-        footer p {
-            opacity: 0.7;
-        }
-
-        .footer-love {
-            margin-top: 15px;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
-
             .nav-container,
             .nav-links {
                 flex-direction: column;
@@ -615,7 +450,6 @@
         }
     </style>
 </head>
-
 <body>
     <nav>
         <div class="nav-container">
@@ -627,14 +461,11 @@
                 <a href="landing_page_finance.html" class="nav-link">🏠 Présentation</a>
                 <a href="offres.html" class="nav-link">💼 Offres</a>
                 <a href="filtres.html" class="nav-link">🔍 Recherche avancée</a>
-                <a href="mes-candidatures.html" class="nav-link" id="navCandidatures" style="display: none;">📋 Mes
-                    candidatures</a>
-                <a href="connexions.html" class="nav-link active" id="navConnexions" style="display: none;">🔗
-                    Connexions</a>
+                <a href="mes-candidatures.html" class="nav-link" id="navCandidatures" style="display: none;">📋 Mes candidatures</a>
+                <a href="connexions.html" class="nav-link active" id="navConnexions" style="display: none;">🔗 Connexions</a>
                 <a href="auth.html" class="nav-link" id="navAuth">🔐 Inscription / Connexion</a>
                 <a href="profile.html" class="nav-link" id="navProfile" style="display: none;">👤 Mon Profil</a>
-                <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">🚪
-                    Déconnexion</button>
+                <button class="nav-link logout-btn" id="btnLogout" style="display: none;" onclick="logout()">🚪 Déconnexion</button>
             </div>
         </div>
     </nav>
@@ -653,8 +484,7 @@
                 <li><strong>Synchroniser vos candidatures</strong> entre les plateformes</li>
                 <li><strong>Suivre l'état</strong> de vos candidatures directement depuis votre espace</li>
             </ul>
-            <p style="margin-top: 15px;"><strong>🔒 Sécurité :</strong> Vos identifiants sont cryptés et stockés de
-                manière sécurisée. Nous ne les utilisons que pour les actions que vous autorisez.</p>
+            <p style="margin-top: 15px;"><strong>🔒 Sécurité :</strong> Vos identifiants sont cryptés et stockés de manière sécurisée. Nous ne les utilisons que pour les actions que vous autorisez.</p>
         </div>
 
         <div class="banks-container" id="banksContainer">
@@ -663,14 +493,7 @@
     </div>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2026 Taleos. Tous droits réservés.</p>
-            <div class="footer-love">
-                <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
-                <span>•</span>
-                <span>🇫🇷 Fièrement Made in France</span>
-            </div>
-        </div>
+        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
     </footer>
 
     <script>
@@ -688,10 +511,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-
-        // Configuration de l'API backend (AWS)
-        const API_BASE_URL = 'https://api.taleos.co'; // ✅ Utilise HTTPS et le domaine
-        const API_KEY = 'Thibault_Secure_987654321_Validator';
 
         // Configuration des banques
         const banks = [
@@ -806,27 +625,12 @@
             if (!currentUser) return;
 
             try {
-                // Charger tous les documents de la sous-collection career_connections
-                const snapshot = await db.collection('profiles')
-                    .doc(currentUser.uid)
-                    .collection('career_connections')
-                    .where('status', '==', 'connected')
-                    .get();
-
-                // Réinitialiser userConnections
-                userConnections = {};
-
-                // Parcourir les documents et les indexer par bankId
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.bankId) {
-                        userConnections[data.bankId] = {
-                            email: data.email,
-                            connected: true,
-                            connectedAt: data.timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString()
-                        };
-                    }
-                });
+                const docRef = db.collection('profiles').doc(currentUser.uid).collection('career_connections').doc('connections');
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    userConnections = doc.data();
+                }
             } catch (error) {
                 console.error('Erreur chargement connexions:', error);
             }
@@ -834,25 +638,11 @@
             renderBanks();
         }
 
-        // Fonction pour afficher/masquer le mot de passe
-        function togglePassword(inputId, button) {
-            const input = document.getElementById(inputId);
-            const toggleIcon = button.querySelector('span');
-
-            if (input.type === 'password') {
-                input.type = 'text';
-                toggleIcon.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                toggleIcon.textContent = '👁️';
-            }
-        }
-
         // Toggle module banque
         function toggleBank(bankId) {
             const module = document.getElementById(`bank-${bankId}`);
             const isExpanded = module.classList.contains('expanded');
-
+            
             // Fermer tous les autres modules
             document.querySelectorAll('.bank-module').forEach(m => {
                 m.classList.remove('expanded');
@@ -865,138 +655,54 @@
         }
 
         // Tester la connexion à un site carrière
-        async function testConnection(bankId, email, password, event) {
-            // Empêcher le rechargement de la page
-            if (event) {
-                event.preventDefault();
-            }
-
+        async function testConnection(bankId, email, password) {
             const bank = banks.find(b => b.id === bankId);
             const statusDiv = document.getElementById(`status-${bankId}`);
             const btn = document.getElementById(`btn-${bankId}`);
 
-            if (!bank || !statusDiv || !btn) {
-                console.error('Éléments manquants pour la banque:', bankId);
-                return;
-            }
-
-            // Désactiver le bouton et afficher le message de progression
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Validation en cours...';
+            // Afficher le statut de test
             statusDiv.className = 'connection-status show info';
-            statusDiv.innerHTML = '⏳ Validation Selenium en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
+            statusDiv.innerHTML = '⏳ Test de la connexion en cours...';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Test en cours...';
 
             try {
-                // Validation basique
-                if (!email || !password || !email.includes('@')) {
+                // Note: En raison des restrictions CORS, nous ne pouvons pas tester directement
+                // la connexion depuis le navigateur. Dans une vraie application, cela nécessiterait
+                // un backend proxy.
+                
+                // Simuler un délai de test
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Pour l'instant, on valide juste que les champs sont remplis
+                if (email && password && email.includes('@')) {
+                    // Sauvegarder les credentials (cryptés)
+                    await saveConnection(bankId, email, password);
+                    
+                    statusDiv.className = 'connection-status show success';
+                    statusDiv.innerHTML = `✅ Connexion réussie ! Votre compte ${bank.name} est maintenant lié.<br><small>Note: La validation complète sera effectuée lors de votre première candidature.</small>`;
+                    
+                    // Mettre à jour le statut
+                    userConnections[bankId] = {
+                        email: email,
+                        connected: true,
+                        connectedAt: new Date().toISOString()
+                    };
+                    
+                    // Re-render pour mettre à jour le badge
+                    setTimeout(() => {
+                        renderBanks();
+                    }, 2000);
+                    
+                } else {
                     throw new Error('Email ou mot de passe invalide');
                 }
 
-                // Appeler l'API backend AWS Selenium
-                console.log("🚀 Envoi de la requête à l'API...");
-                const response = await fetch(`${API_BASE_URL}/validate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': API_KEY
-                    },
-                    body: JSON.stringify({
-                        url: bank.url,
-                        email: email,
-                        password: password
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || 'Erreur de réponse serveur');
-                }
-
-                const data = await response.json();
-
-                // Si la validation réussit (vérifier le "status" envoyé par AWS)
-                if (data.status === "success") {
-                    // RÉCUPÉRER l'ID de l'utilisateur actuel
-                    const uid = firebase.auth().currentUser.uid;
-                    
-                    if (uid) {
-                        try {
-                            // ÉCRIRE au bon endroit pour valider les règles
-                            await db.collection('profiles')
-                                    .doc(uid)                       // <--- C'est le {userId} de ta règle ligne 6
-                                    .collection('career_connections') // <--- C'est la sous-collection de la ligne 18
-                                    .add({
-                                        bankName: bank.name,
-                                        bankId: bankId, // Ajouter bankId pour faciliter la recherche
-                                        email: email,
-                                        password: encryptData(password), // ✅ Ajout du mot de passe crypté
-                                        status: 'connected',
-                                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                                    });
-                            
-                            // Mettre à jour l'état local
-                            userConnections[bankId] = {
-                                email: email,
-                                connected: true,
-                                connectedAt: new Date().toISOString()
-                            };
-                            
-                            // ✅ AU LIEU DE alert() : On utilise la div de statut existante
-                            statusDiv.className = 'connection-status show success';
-                            statusDiv.innerHTML = `✅ <strong>Succès !</strong> Votre compte ${bank.name} est maintenant lié.`;
-                            
-                            // On cache le bouton pour éviter les doubles clics
-                            btn.style.display = 'none';
-
-                            // Rafraîchir l'affichage de manière élégante sans recharger la page
-                            setTimeout(() => {
-                                // Mettre à jour l'UI de manière fluide
-                                renderBanks();
-                                
-                                // Réouvrir le module pour montrer l'état connecté
-                                const bankModule = document.getElementById(`bank-${bankId}`);
-                                if (bankModule) {
-                                    bankModule.classList.add('expanded');
-                                }
-                            }, 1000);
-                        } catch (firebaseError) {
-                            console.error("Erreur Firebase:", firebaseError);
-                            alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
-                        }
-                    } else {
-                        statusDiv.className = 'connection-status show error';
-                        statusDiv.innerHTML = '❌ Vous devez être connecté pour enregistrer la connexion.';
-                    }
-                } else {
-                    // Validation échouée
-                    statusDiv.className = 'connection-status show error';
-                    statusDiv.innerHTML = `❌ ${data.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
-
-                    // Réactiver le bouton
-                    btn.disabled = false;
-                    btn.innerHTML = '🔗 Lier mon compte';
-                }
-
             } catch (error) {
-                console.error('Erreur dans testConnection:', error);
+                console.error('Erreur test connexion:', error);
                 statusDiv.className = 'connection-status show error';
-
-                let errorMessage = error.message || 'Une erreur est survenue';
-
-                // Messages d'erreur plus spécifiques
-                if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
-                } else if (error.message.includes('CORS')) {
-                    errorMessage = 'Erreur CORS. Vérifiez la configuration du backend.';
-                } else if (error.message.includes('timeout')) {
-                    errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
-                } else if (error.message.includes('permissions') || error.message.includes('Permission')) {
-                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité.';
-                }
-
-                statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
-
-                // Réactiver le bouton
+                statusDiv.innerHTML = `❌ Échec de la connexion : ${error.message}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
+            } finally {
                 btn.disabled = false;
                 btn.innerHTML = '🔗 Lier mon compte';
             }
@@ -1024,228 +730,47 @@
         }
 
         // Supprimer une connexion
-        // Fonction pour afficher une modale de confirmation personnalisée
-        function showConfirmModal(message, onConfirm, onCancel) {
-            // Créer l'overlay si il n'existe pas
-            let overlay = document.getElementById('confirmModalOverlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'confirmModalOverlay';
-                overlay.className = 'modal-overlay';
-                overlay.innerHTML = `
-                    <div class="modal">
-                        <div class="modal-header">
-                            <h3>Confirmation</h3>
-                        </div>
-                        <div class="modal-body">
-                            <p id="confirmModalMessage"></p>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="modal-btn modal-btn-cancel" id="confirmModalCancel">Annuler</button>
-                            <button class="modal-btn modal-btn-confirm" id="confirmModalConfirm">Confirmer</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(overlay);
-
-                // Gérer les clics
-                document.getElementById('confirmModalCancel').addEventListener('click', () => {
-                    overlay.classList.remove('show');
-                    if (onCancel) onCancel();
-                });
-
-                document.getElementById('confirmModalConfirm').addEventListener('click', () => {
-                    overlay.classList.remove('show');
-                    if (onConfirm) onConfirm();
-                });
-
-                // Fermer en cliquant sur l'overlay
-                overlay.addEventListener('click', (e) => {
-                    if (e.target === overlay) {
-                        overlay.classList.remove('show');
-                        if (onCancel) onCancel();
-                    }
-                });
-            }
-
-            // Mettre à jour le message
-            document.getElementById('confirmModalMessage').textContent = message;
-
-            // Afficher la modale
-            overlay.classList.add('show');
-        }
-
-        async function disconnectBank(bankId, event) {
-            if (!currentUser) {
-                console.error('❌ Pas d\'utilisateur connecté');
-                showConfirmModal(
-                    'Vous devez être connecté pour délier un compte.',
-                    () => {
-                        window.location.href = 'auth.html';
-                    },
-                    () => { }
-                );
+        async function disconnectBank(bankId) {
+            if (!currentUser) return;
+            
+            if (!confirm('Êtes-vous sûr de vouloir délier ce compte ?')) {
                 return;
             }
 
-            // Récupérer le nom de la banque
-            const bank = banks.find(b => b.id === bankId);
-            const bankName = bank ? bank.name : 'ce compte';
-
-            // Afficher la modale de confirmation
-            showConfirmModal(
-                `Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nVous devrez reconnecter votre compte pour postuler aux offres. Vous pourrez le faire à tout moment.`,
-                () => {
-                    // L'utilisateur a confirmé, procéder à la suppression
-                    performDisconnect(bankId, event);
-                },
-                () => {
-                    // L'utilisateur a annulé, ne rien faire
-                    console.log('Annulation de la suppression');
-                }
-            );
-        }
-
-        async function performDisconnect(bankId, event) {
-
-            // Récupérer le bouton correctement
-            const btn = event ? event.target : document.getElementById(`btn-disconnect-${bankId}`);
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner"></span> Suppression...';
-            }
-
-            // Récupérer ou créer le statusDiv
-            let statusDiv = document.getElementById(`status-${bankId}`);
-            if (!statusDiv) {
-                // Si l'élément n'existe pas (banque connectée), le créer
-                const bankContent = document.querySelector(`#bank-${bankId} .bank-content`);
-                if (bankContent) {
-                    statusDiv = document.createElement('div');
-                    statusDiv.id = `status-${bankId}`;
-                    statusDiv.className = 'connection-status';
-                    // Insérer avant le bouton de déliaison
-                    const disconnectBtn = document.getElementById(`btn-disconnect-${bankId}`);
-                    if (disconnectBtn && disconnectBtn.parentElement) {
-                        disconnectBtn.parentElement.insertBefore(statusDiv, disconnectBtn);
-                    } else {
-                        bankContent.appendChild(statusDiv);
-                    }
-                }
-            }
-
-            if (statusDiv) {
-                statusDiv.className = 'connection-status show info';
-                statusDiv.innerHTML = '⏳ Suppression en cours...';
-            }
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Suppression...';
 
             try {
-                console.log(`🗑️ Suppression de la connexion ${bankId} pour l'utilisateur ${currentUser.uid}`);
-
-                // Trouver et supprimer le document correspondant à bankId dans la sous-collection
-                // (car on utilise .add() qui crée des documents avec des IDs auto-générés)
-                const snapshot = await db.collection('profiles')
-                    .doc(currentUser.uid)
+                await db.collection('profiles').doc(currentUser.uid)
                     .collection('career_connections')
-                    .where('bankId', '==', bankId)
-                    .get();
+                    .doc('connections')
+                    .update({
+                        [bankId]: firebase.firestore.FieldValue.delete()
+                    });
 
-                if (snapshot.empty) {
-                    console.warn(`⚠️ Aucun document trouvé pour bankId: ${bankId}`);
-                    // Si le document n'existe pas, on considère que c'est déjà supprimé
-                    delete userConnections[bankId];
-                    if (statusDiv) {
-                        statusDiv.className = 'connection-status show success';
-                        statusDiv.innerHTML = '✅ Compte délié avec succès';
-                    }
-                    setTimeout(() => {
-                        renderBanks();
-                    }, 1500);
-                    return;
-                }
-
-                // Supprimer tous les documents trouvés (normalement il n'y en a qu'un)
-                const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
-                await Promise.all(deletePromises);
-
-                console.log(`✅ Connexion ${bankId} supprimée avec succès (${snapshot.docs.length} document(s) supprimé(s))`);
-
-                // Mettre à jour l'objet local
                 delete userConnections[bankId];
+                
+                const statusDiv = document.getElementById(`status-${bankId}`);
+                statusDiv.className = 'connection-status show info';
+                statusDiv.innerHTML = '✅ Compte délié avec succès';
 
-                if (statusDiv) {
-                    statusDiv.className = 'connection-status show success';
-                    statusDiv.innerHTML = '✅ Compte délié avec succès';
-                }
-
-                // Réafficher la liste de manière élégante
                 setTimeout(() => {
                     renderBanks();
                 }, 1500);
 
             } catch (error) {
-                console.error('❌ Erreur suppression connexion:', error);
-                console.error('❌ Détails de l\'erreur:', {
-                    code: error.code,
-                    message: error.message,
-                    stack: error.stack
-                });
-
-                let errorMessage = 'Erreur lors de la suppression';
-
-                // Messages d'erreur plus spécifiques
-                if (error.code === 'permission-denied') {
-                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles pour career_connections dans Firebase Console.';
-                } else if (error.code === 'not-found') {
-                    errorMessage = 'La connexion n\'existe pas ou a déjà été supprimée.';
-                } else if (error.message) {
-                    errorMessage = `Erreur: ${error.message}`;
-                }
-
-                // Réutiliser statusDiv défini au début de la fonction, ou le récupérer/créer
-                if (!statusDiv) {
-                    statusDiv = document.getElementById(`status-${bankId}`);
-                    // Si toujours pas trouvé, le créer
-                    if (!statusDiv) {
-                        const bankContent = document.querySelector(`#bank-${bankId} .bank-content`);
-                        if (bankContent) {
-                            statusDiv = document.createElement('div');
-                            statusDiv.id = `status-${bankId}`;
-                            statusDiv.className = 'connection-status';
-                            const disconnectBtn = document.getElementById(`btn-disconnect-${bankId}`);
-                            if (disconnectBtn && disconnectBtn.parentElement) {
-                                disconnectBtn.parentElement.insertBefore(statusDiv, disconnectBtn);
-                            } else {
-                                bankContent.appendChild(statusDiv);
-                            }
-                        }
-                    }
-                }
-
-                if (statusDiv) {
-                    statusDiv.className = 'connection-status show error';
-                    statusDiv.innerHTML = `❌ ${errorMessage}`;
-                } else {
-                    // Si statusDiv n'existe pas, afficher une modale d'erreur
-                    showConfirmModal(
-                        errorMessage,
-                        () => { },
-                        () => { }
-                    );
-                }
-
-                // Réactiver le bouton en cas d'erreur
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '✕ Délier ce compte';
-                }
+                console.error('Erreur suppression connexion:', error);
+                alert('Erreur lors de la suppression');
+                btn.disabled = false;
+                btn.innerHTML = '✕ Délier';
             }
         }
 
         // Render des modules banques
         function renderBanks() {
             const container = document.getElementById('banksContainer');
-
+            
             container.innerHTML = banks.map(bank => {
                 const isConnected = userConnections[bank.id]?.connected || false;
                 const connectedEmail = userConnections[bank.id]?.email || '';
@@ -1274,27 +799,21 @@
                                         <p style="color: #065f46; font-weight: 600; margin-bottom: 5px;">✓ Compte lié</p>
                                         <p style="color: #065f46; font-size: 0.9rem;">Email: ${connectedEmail}</p>
                                     </div>
-                                    <div class="connection-status" id="status-${bank.id}"></div>
                                     <div class="form-actions">
-                                        <button class="btn btn-danger" id="btn-disconnect-${bank.id}" onclick="disconnectBank('${bank.id}', event)">✕ Délier ce compte</button>
+                                        <button class="btn btn-danger" onclick="disconnectBank('${bank.id}')">✕ Délier ce compte</button>
                                     </div>
                                 ` : `
                                     <p style="color: #666; margin-bottom: 20px;">
                                         Connectez votre compte <strong>${bank.name}</strong> pour postuler automatiquement aux offres.
                                     </p>
-                                    <form onsubmit="testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value, event); return false;">
+                                    <form onsubmit="event.preventDefault(); testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value);">
                                         <div class="form-group">
                                             <label for="email-${bank.id}">📧 Email</label>
                                             <input type="email" id="email-${bank.id}" placeholder="votre.email@exemple.com" required>
                                         </div>
                                         <div class="form-group">
                                             <label for="password-${bank.id}">🔒 Mot de passe</label>
-                                            <div class="password-input-wrapper">
-                                                <input type="password" id="password-${bank.id}" placeholder="Votre mot de passe" required>
-                                                <button type="button" class="password-toggle" onclick="togglePassword('password-${bank.id}', this)" aria-label="Afficher/Masquer le mot de passe">
-                                                    <span>👁️</span>
-                                                </button>
-                                            </div>
+                                            <input type="password" id="password-${bank.id}" placeholder="Votre mot de passe" required>
                                         </div>
                                         <div class="connection-status" id="status-${bank.id}"></div>
                                         <div class="form-actions">
@@ -1313,7 +832,7 @@
         (function checkAuthImmediate() {
             const token = localStorage.getItem('authToken');
             const email = localStorage.getItem('userEmail');
-
+            
             if (!token || !email) {
                 console.log('❌ Page Connexions - Accès refusé');
                 console.log('🔄 Redirection vers la page de connexion...');
@@ -1336,7 +855,7 @@
                 // Vérifier localStorage en cas de connexion persistante
                 const token = localStorage.getItem('authToken');
                 const email = localStorage.getItem('userEmail');
-
+                
                 if (token && email) {
                     // Attendre un peu que Firebase charge la session
                     setTimeout(async () => {
@@ -1361,5 +880,4 @@
         });
     </script>
 </body>
-
 </html>
