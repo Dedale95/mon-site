@@ -220,15 +220,22 @@ async def test_bank_connection(request: Request, data: BankConnectionRequest):
         status_log = "SUCCÈS" if result.get('success', False) else "ÉCHEC"
         logger.info(f"{status_log} pour {data.email} ({data.bank_id}) - {execution_time:.2f}s")
         
+        # Construire les détails de la réponse
+        response_details = {
+            'bank_id': data.bank_id,
+            'execution_time': round(execution_time, 2)
+        }
+        
+        # Ajouter l'URL si disponible dans les détails du résultat
+        if 'details' in result and isinstance(result['details'], dict):
+            if 'url' in result['details']:
+                response_details['url'] = result['details']['url']
+        
         # Retourner la réponse au format attendu par le frontend
         return BankConnectionResponse(
             success=result.get('success', False),
             message=result.get('message', 'Connexion échouée'),
-            details={
-                'bank_id': data.bank_id,
-                'url': result.get('details', {}).get('url', 'unknown'),
-                'execution_time': round(execution_time, 2)
-            }
+            details=response_details
         )
     
     except Exception as e:
