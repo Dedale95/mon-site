@@ -881,32 +881,22 @@
 
                 // Si la validation réussit (vérifier le "status" envoyé par AWS)
                 if (data.status === "success") {
-                    // Sauvegarder dans Firestore : users/{uid}/connections/{bankId}
                     if (currentUser) {
                         try {
-                            await db.collection('users')
-                                .doc(currentUser.uid)
-                                .collection('connections')
-                                .doc(bankId)
-                                .set({
-                                    email: email,
-                                    linkedAt: firebase.firestore.FieldValue.serverTimestamp()
-                                });
-
-                            // Mettre à jour le statut local
-                            userConnections[bankId] = {
+                            // Tentative de sauvegarde dans Firebase
+                            await db.collection('user_connections').add({
+                                userId: currentUser.uid,
+                                bankName: bank.name, // ex: "Crédit Agricole"
                                 email: email,
-                                connected: true,
-                                connectedAt: new Date().toISOString()
-                            };
-
-                            // Afficher le succès
-                            statusDiv.className = 'connection-status show success';
-                            statusDiv.innerHTML = `✅ ${data.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
-                        } catch (saveError) {
-                            console.error('Erreur sauvegarde Firestore:', saveError);
-                            statusDiv.className = 'connection-status show success';
-                            statusDiv.innerHTML = `✅ ${data.message || 'Connexion réussie !'}<br><small style="color: #dc2626;">⚠️ Attention: La validation a réussi, mais la sauvegarde a échoué.</small>`;
+                                status: 'connected',
+                                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            alert("✅ Succès : Banque liée et enregistrée !");
+                            location.reload(); // Recharge pour voir la banque apparaître
+                        } catch (firebaseError) {
+                            console.error("Erreur Firebase:", firebaseError);
+                            alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
                         }
                     } else {
                         statusDiv.className = 'connection-status show error';
