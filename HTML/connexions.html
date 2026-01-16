@@ -843,9 +843,9 @@
 
                 // Appeler l'API backend AWS pour tester la connexion
                 console.log('🌐 API_BASE_URL:', API_BASE_URL);
-                const apiUrl = `${API_BASE_URL}/test-bank-connection`;
+                const apiUrl = `${API_BASE_URL}/validate`;
                 console.log('🔗 Appel API:', apiUrl);
-                console.log('📦 Données envoyées:', { bank_id: bankId, email: email, password: '***' });
+                console.log('📦 Données envoyées:', { url: bankId, email: email, password: '***' });
                 
                 let response;
                 try {
@@ -863,7 +863,7 @@
                             'X-API-Key': API_KEY
                         },
                         body: JSON.stringify({
-                            bank_id: bankId,
+                            url: bankId,
                             email: email,
                             password: password
                         }),
