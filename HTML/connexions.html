@@ -513,13 +513,13 @@
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
             color: white;
         }
 
         .btn-danger:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
         }
 
         .connection-status {
@@ -921,10 +921,17 @@
                                 connectedAt: new Date().toISOString()
                             };
                             
-                            // Rafraîchir l'affichage pour voir la banque basculer en "connecté" (vert)
-                            renderBanks();
+                            // ✅ AU LIEU DE alert() : On utilise la div de statut existante
+                            statusDiv.className = 'connection-status show success';
+                            statusDiv.innerHTML = `✅ <strong>Succès !</strong> Votre compte ${bank.name} est maintenant lié.`;
                             
-                            alert("✅ Succès : Banque liée et enregistrée !");
+                            // On cache le bouton pour éviter les doubles clics
+                            btn.style.display = 'none';
+
+                            // Petite pause de 2 secondes pour laisser l'utilisateur lire le message de succès
+                            setTimeout(() => {
+                                location.reload(); 
+                            }, 2000);
                         } catch (firebaseError) {
                             console.error("Erreur Firebase:", firebaseError);
                             alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
