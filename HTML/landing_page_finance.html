@@ -1248,8 +1248,59 @@
             }
         }
 
+        // Charger le nombre d'offres actualisées quotidiennement
+        async function loadTotalJobsCount() {
+            const totalJobsCountEl = document.getElementById('totalJobsCount');
+            if (!totalJobsCountEl) return;
+
+            try {
+                // Essayer plusieurs chemins possibles pour le fichier JSON
+                const possiblePaths = [
+                    'scraped_jobs_live.json',
+                    './scraped_jobs_live.json',
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs.json',
+                    './scraped_jobs.json',
+                    'HTML/scraped_jobs.json',
+                    './HTML/scraped_jobs.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json'
+                ];
+
+                let data = null;
+                for (const path of possiblePaths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            data = await response.json();
+                            break;
+                        }
+                    } catch (e) {
+                        continue; // Essayer le chemin suivant
+                    }
+                }
+
+                if (data && Array.isArray(data)) {
+                    // Formater le nombre avec des espaces pour la lisibilité (ex: 2301 → 2 301)
+                    const count = data.length.toLocaleString('fr-FR');
+                    totalJobsCountEl.innerHTML = count;
+                } else {
+                    // Si pas de données, afficher un message par défaut
+                    totalJobsCountEl.innerHTML = '2 000+';
+                }
+            } catch (error) {
+                console.error('Erreur chargement nombre d\'offres:', error);
+                // Afficher un nombre par défaut en cas d'erreur
+                totalJobsCountEl.innerHTML = '2 000+';
+            }
+        }
+
         // Initialiser l'authentification quand le DOM est prêt
         document.addEventListener('DOMContentLoaded', function() {
+            // Charger le nombre d'offres
+            loadTotalJobsCount();
+            
             // Initialiser Firebase et vérifier l'authentification
             initAuth();
             
