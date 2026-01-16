@@ -818,7 +818,12 @@
         }
 
         // Tester la connexion à un site carrière
-        async function testConnection(bankId, email, password) {
+        async function testConnection(bankId, email, password, event) {
+            // Empêcher le rechargement de la page
+            if (event) {
+                event.preventDefault();
+            }
+
             const bank = banks.find(b => b.id === bankId);
             const statusDiv = document.getElementById(`status-${bankId}`);
             const btn = document.getElementById(`btn-${bankId}`);
@@ -841,6 +846,7 @@
                 }
 
                 // Appeler l'API backend AWS Selenium
+                console.log("🚀 Envoi de la requête à l'API...");
                 const response = await fetch('https://api.taleos.co/validate', {
                     method: 'POST',
                     headers: {
@@ -885,11 +891,6 @@
                             // Afficher le succès
                             statusDiv.className = 'connection-status show success';
                             statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
-
-                            // Re-render pour mettre à jour le badge
-                            setTimeout(() => {
-                                renderBanks();
-                            }, 2000);
                         } catch (saveError) {
                             console.error('Erreur sauvegarde Firestore:', saveError);
                             statusDiv.className = 'connection-status show success';
@@ -1232,7 +1233,7 @@
                                     <p style="color: #666; margin-bottom: 20px;">
                                         Connectez votre compte <strong>${bank.name}</strong> pour postuler automatiquement aux offres.
                                     </p>
-                                    <form onsubmit="event.preventDefault(); testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value); return false;">
+                                    <form onsubmit="testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value, event); return false;">
                                         <div class="form-group">
                                             <label for="email-${bank.id}">📧 Email</label>
                                             <input type="email" id="email-${bank.id}" placeholder="votre.email@exemple.com" required>
