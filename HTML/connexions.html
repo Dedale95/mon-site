@@ -842,68 +842,28 @@
                 }
 
                 // Appeler l'API backend AWS pour tester la connexion
-                console.log('🌐 API_BASE_URL:', API_BASE_URL);
                 const apiUrl = `${API_BASE_URL}/validate`;
-                console.log('🔗 Appel API:', apiUrl);
-                console.log('📦 Données envoyées:', { url: bankId, email: email, password: '***' });
                 
-                let response;
-                try {
-                    // Timeout de 60 secondes pour le test de connexion
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => {
-                        console.error('❌ Timeout après 60 secondes');
-                        controller.abort();
-                    }, 60000);
-                    
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-API-Key': API_KEY
-                        },
-                        body: JSON.stringify({
-                            url: bankId,
-                            email: email,
-                            password: password
-                        }),
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    console.log('📥 Réponse reçue:', response.status, response.statusText);
-                } catch (fetchError) {
-                    console.error('❌ ERREUR FETCH:', fetchError);
-                    throw new Error(`Erreur réseau: ${fetchError.message}`);
-                }
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify({
+                        url: bankId,
+                        email: email,
+                        password: password
+                    })
+                });
 
-                // Vérifier si la réponse est ok
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `Erreur HTTP: ${response.status}`);
+                    console.error("Détails erreur serveur:", errorData);
+                    throw new Error('Erreur de réponse serveur');
                 }
 
-                const resultText = await response.text();
-                console.log('📥 RÉPONSE BRUTE DU BACKEND (texte):', resultText);
-                
-                let result;
-                try {
-                    result = JSON.parse(resultText);
-                } catch (e) {
-                    console.error('❌ ERREUR PARSING JSON:', e);
-                    console.error('❌ Texte reçu:', resultText);
-                    throw new Error('Réponse invalide du serveur');
-                }
-                
-                console.log('📥 Résultat PARSÉ du backend:', JSON.stringify(result, null, 2));
-                console.log('✅ Success value:', result.success);
-                console.log('✅ Success type:', typeof result.success);
-                console.log('✅ Success === true:', result.success === true);
-                console.log('✅ Success === false:', result.success === false);
-                console.log('✅ result.success == true:', result.success == true);
-                console.log('✅ result.success == false:', result.success == false);
-                console.log('✅ !result.success:', !result.success);
-                console.log('✅ Boolean(result.success):', Boolean(result.success));
+                const result = await response.json();
 
                 // Vérification STRICTE : success doit être explicitement true
                 // ALERTE VISUELLE si on entre dans le bloc success avec false
