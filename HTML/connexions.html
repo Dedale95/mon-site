@@ -819,39 +819,36 @@
 
         // Tester la connexion à un site carrière
         async function testConnection(bankId, email, password) {
-            console.log('🚀 testConnection appelée avec:', { bankId, email: email.substring(0, 10) + '...', password: '***' });
-            
             const bank = banks.find(b => b.id === bankId);
             const statusDiv = document.getElementById(`status-${bankId}`);
             const btn = document.getElementById(`btn-${bankId}`);
 
-            console.log('📋 Éléments trouvés:', { bank: !!bank, statusDiv: !!statusDiv, btn: !!btn });
+            if (!bank || !statusDiv || !btn) {
+                console.error('Éléments manquants pour la banque:', bankId);
+                return;
+            }
 
-            // Afficher le statut de test
-            statusDiv.className = 'connection-status show info';
-            statusDiv.innerHTML = '⏳ Test de la connexion en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
+            // Désactiver le bouton et afficher le message de progression
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Test en cours...';
+            btn.innerHTML = '<span class="spinner"></span> Validation en cours...';
+            statusDiv.className = 'connection-status show info';
+            statusDiv.innerHTML = '⏳ Validation Selenium en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
 
             try {
                 // Validation basique
-                console.log('✅ Validation des données...');
                 if (!email || !password || !email.includes('@')) {
-                    console.error('❌ Validation échouée:', { email: !!email, password: !!password, hasAt: email.includes('@') });
                     throw new Error('Email ou mot de passe invalide');
                 }
 
-                // Appeler l'API backend AWS pour tester la connexion
-                const apiUrl = `${API_BASE_URL}/validate`;
-                
-                const response = await fetch(apiUrl, {
+                // Appeler l'API backend AWS Selenium
+                const response = await fetch('http://51.44.11.78/validate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': API_KEY
+                        'X-API-Key': 'Thibault_Secure_987654321_Validator'
                     },
                     body: JSON.stringify({
-                        url: bankId,
+                        url: bank.url,
                         email: email,
                         password: password
                     })
@@ -859,89 +856,61 @@
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    console.error("Détails erreur serveur:", errorData);
-                    throw new Error('Erreur de réponse serveur');
+                    throw new Error(errorData.message || 'Erreur de réponse serveur');
                 }
 
                 const result = await response.json();
 
-                // Vérification STRICTE : success doit être explicitement true
-                // ALERTE VISUELLE si on entre dans le bloc success avec false
+                // Si la validation réussit
                 if (result.success === true) {
-                    console.log('✅✅✅ ENTREE DANS LE BLOC SUCCESS - SUCCESS EST TRUE');
-                    // Connexion réussie - sauvegarder les credentials (cryptés)
-                    try {
-                        await saveConnection(bankId, email, password);
-                        
-                        statusDiv.className = 'connection-status show success';
-                        statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
-                        
-                        // Mettre à jour le statut
-                        userConnections[bankId] = {
-                            email: email,
-                            connected: true,
-                            connectedAt: new Date().toISOString()
-                        };
-                        
-                        // Re-render pour mettre à jour le badge
-                        setTimeout(() => {
-                            renderBanks();
-                        }, 2000);
-                    } catch (saveError) {
-                        // Erreur lors de la sauvegarde dans Firestore
-                        console.error('Erreur sauvegarde Firestore:', saveError);
-                        statusDiv.className = 'connection-status show success';
-                        statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie !`}<br><small style="color: #dc2626;">⚠️ Attention: La connexion a été testée avec succès, mais la sauvegarde a échoué. Vérifiez les règles Firestore pour career_connections.</small>`;
+                    // Sauvegarder dans Firestore : users/{uid}/connections/{bankId}
+                    if (currentUser) {
+                        try {
+                            await db.collection('users')
+                                .doc(currentUser.uid)
+                                .collection('connections')
+                                .doc(bankId)
+                                .set({
+                                    email: email,
+                                    linkedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                });
+
+                            // Mettre à jour le statut local
+                            userConnections[bankId] = {
+                                email: email,
+                                connected: true,
+                                connectedAt: new Date().toISOString()
+                            };
+
+                            // Afficher le succès
+                            statusDiv.className = 'connection-status show success';
+                            statusDiv.innerHTML = `✅ ${result.message || `Connexion réussie ! Votre compte ${bank.name} est maintenant lié.`}`;
+
+                            // Re-render pour mettre à jour le badge
+                            setTimeout(() => {
+                                renderBanks();
+                            }, 2000);
+                        } catch (saveError) {
+                            console.error('Erreur sauvegarde Firestore:', saveError);
+                            statusDiv.className = 'connection-status show success';
+                            statusDiv.innerHTML = `✅ ${result.message || 'Connexion réussie !'}<br><small style="color: #dc2626;">⚠️ Attention: La validation a réussi, mais la sauvegarde a échoué.</small>`;
+                        }
+                    } else {
+                        statusDiv.className = 'connection-status show error';
+                        statusDiv.innerHTML = '❌ Vous devez être connecté pour enregistrer la connexion.';
                     }
                 } else {
-                    // Connexion échouée - TOUJOURS afficher l'erreur
-                    console.error('❌❌❌❌❌ BACKEND A RETOURNÉ SUCCESS=FALSE ❌❌❌❌❌');
-                    console.error('❌ Success value reçu:', result.success);
-                    console.error('❌ Success type:', typeof result.success);
-                    console.error('❌ Success === false:', result.success === false);
-                    console.error('❌ Success == false:', result.success == false);
-                    console.error('❌ Message du backend:', result.message);
-                    console.error('❌ Détails du backend:', result.details);
-                    console.error('❌ Résultat complet:', JSON.stringify(result, null, 2));
-                    
-                    // ALERTE VISUELLE
-                    alert('ERREUR DÉTECTÉE: Le backend a retourné success=false. Vérifiez la console.');
-                    
-                    // S'ASSURER que userConnections n'est PAS mis à jour
-                    if (userConnections[bankId]) {
-                        console.log('⚠️ Suppression de userConnections[' + bankId + '] car connexion échouée');
-                        delete userConnections[bankId];
-                    }
-                    
-                    // FORCER l'affichage de l'erreur
-                    if (statusDiv) {
-                        statusDiv.className = 'connection-status show error';
-                        statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
-                        console.log('✅ Message d\'erreur affiché dans statusDiv');
-                        
-                        // Forcer le re-render pour mettre à jour l'affichage
-                        setTimeout(() => {
-                            renderBanks();
-                            console.log('✅ Re-render effectué après erreur');
-                        }, 500);
-                    } else {
-                        console.error('❌ statusDiv est null !');
-                    }
+                    // Validation échouée
+                    statusDiv.className = 'connection-status show error';
+                    statusDiv.innerHTML = `❌ ${result.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
                     
                     // Réactiver le bouton
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = '🔗 Lier mon compte';
-                        console.log('✅ Bouton réactivé');
-                    }
-                    
-                    // NE PAS continuer - sortir de la fonction
-                    return;
+                    btn.disabled = false;
+                    btn.innerHTML = '🔗 Lier mon compte';
                 }
 
             } catch (error) {
-                console.error('❌ ERREUR dans testConnection:', error);
-                console.error('❌ Stack trace:', error.stack);
+                console.error('Erreur dans testConnection:', error);
                 statusDiv.className = 'connection-status show error';
                 
                 let errorMessage = error.message || 'Une erreur est survenue';
@@ -954,20 +923,14 @@
                 } else if (error.message.includes('timeout')) {
                     errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
                 } else if (error.message.includes('permissions') || error.message.includes('Permission')) {
-                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité pour career_connections.';
+                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité.';
                 }
                 
                 statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
-            } finally {
-                // Ne réactiver le bouton que si on n'est pas dans le cas success
-                // (le bouton est déjà réactivé dans le cas d'erreur)
-                if (btn && !btn.disabled) {
-                    // Le bouton est déjà réactivé, ne rien faire
-                } else if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '🔗 Lier mon compte';
-                }
-                console.log('✅ testConnection terminée');
+                
+                // Réactiver le bouton
+                btn.disabled = false;
+                btn.innerHTML = '🔗 Lier mon compte';
             }
         }
 
