@@ -2356,9 +2356,22 @@
                     });
                 };
                 
+                // Stocker les informations du timer AVANT de démarrer le timer
+                pendingApplications[jobId] = {
+                    timerId: null, // Sera défini après
+                    startTime: Date.now(),
+                    remainingSeconds: remainingSeconds,
+                    job: job,
+                    userId: userId
+                };
+                
                 // Démarrer le timer
                 const timerInterval = setInterval(() => {
                     remainingSeconds--;
+                    // Synchroniser avec pendingApplications pour que updateJobCardButtons puisse l'utiliser
+                    if (pendingApplications[jobId]) {
+                        pendingApplications[jobId].remainingSeconds = remainingSeconds;
+                    }
                     
                     if (remainingSeconds > 0) {
                         // Mettre à jour l'affichage du timer
@@ -2408,14 +2421,8 @@
                     }
                 }, 1000); // Mise à jour toutes les secondes
                 
-                // Stocker les informations du timer
-                pendingApplications[jobId] = {
-                    timerId: timerInterval,
-                    startTime: Date.now(),
-                    remainingSeconds: remainingSeconds,
-                    job: job,
-                    userId: userId
-                };
+                // Mettre à jour l'ID du timer dans pendingApplications
+                pendingApplications[jobId].timerId = timerInterval;
                 
                 // Afficher le timer initial
                 updateTimer();
