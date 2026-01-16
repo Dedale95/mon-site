@@ -513,13 +513,13 @@
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
             color: white;
         }
 
         .btn-danger:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
         }
 
         .connection-status {
@@ -928,10 +928,17 @@
                             // On cache le bouton pour éviter les doubles clics
                             btn.style.display = 'none';
 
-                            // Petite pause de 2 secondes pour laisser l'utilisateur lire le message de succès
+                            // Rafraîchir l'affichage de manière élégante sans recharger la page
                             setTimeout(() => {
-                                location.reload(); 
-                            }, 2000);
+                                // Mettre à jour l'UI de manière fluide
+                                renderBanks();
+                                
+                                // Réouvrir le module pour montrer l'état connecté
+                                const bankModule = document.getElementById(`bank-${bankId}`);
+                                if (bankModule) {
+                                    bankModule.classList.add('expanded');
+                                }
+                            }, 1000);
                         } catch (firebaseError) {
                             console.error("Erreur Firebase:", firebaseError);
                             alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
@@ -1115,15 +1122,16 @@
             try {
                 console.log(`🗑️ Suppression de la connexion ${bankId} pour l'utilisateur ${currentUser.uid}`);
 
-                // Récupérer le document actuel pour vérifier qu'il existe
-                const docRef = db.collection('profiles').doc(currentUser.uid)
+                // Trouver et supprimer le document correspondant à bankId dans la sous-collection
+                // (car on utilise .add() qui crée des documents avec des IDs auto-générés)
+                const snapshot = await db.collection('profiles')
+                    .doc(currentUser.uid)
                     .collection('career_connections')
-                    .doc('connections');
+                    .where('bankId', '==', bankId)
+                    .get();
 
-                const doc = await docRef.get();
-
-                if (!doc.exists) {
-                    console.warn('⚠️ Document connections n\'existe pas');
+                if (snapshot.empty) {
+                    console.warn(`⚠️ Aucun document trouvé pour bankId: ${bankId}`);
                     // Si le document n'existe pas, on considère que c'est déjà supprimé
                     delete userConnections[bankId];
                     if (statusDiv) {
@@ -1136,30 +1144,11 @@
                     return;
                 }
 
-                // Récupérer les données actuelles
-                const currentData = doc.data();
+                // Supprimer tous les documents trouvés (normalement il n'y en a qu'un)
+                const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
+                await Promise.all(deletePromises);
 
-                // Vérifier si le champ existe
-                if (!currentData || !currentData[bankId]) {
-                    console.warn(`⚠️ Le champ ${bankId} n'existe pas dans le document`);
-                    // Considérer comme déjà supprimé
-                    delete userConnections[bankId];
-                    if (statusDiv) {
-                        statusDiv.className = 'connection-status show success';
-                        statusDiv.innerHTML = '✅ Compte délié avec succès';
-                    }
-                    setTimeout(() => {
-                        renderBanks();
-                    }, 1500);
-                    return;
-                }
-
-                // Supprimer le champ spécifique
-                await docRef.update({
-                    [bankId]: firebase.firestore.FieldValue.delete()
-                });
-
-                console.log(`✅ Connexion ${bankId} supprimée avec succès`);
+                console.log(`✅ Connexion ${bankId} supprimée avec succès (${snapshot.docs.length} document(s) supprimé(s))`);
 
                 // Mettre à jour l'objet local
                 delete userConnections[bankId];
@@ -1169,7 +1158,7 @@
                     statusDiv.innerHTML = '✅ Compte délié avec succès';
                 }
 
-                // Réafficher la liste
+                // Réafficher la liste de manière élégante
                 setTimeout(() => {
                     renderBanks();
                 }, 1500);
