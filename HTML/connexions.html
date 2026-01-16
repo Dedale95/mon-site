@@ -406,7 +406,7 @@
         }
 
         .modal-header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 24px 30px;
             color: white;
         }
@@ -467,13 +467,13 @@
         }
 
         .modal-btn-confirm {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
 
         .modal-btn-confirm:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
         .form-actions {
@@ -1074,7 +1074,7 @@
 
             // Afficher la modale de confirmation
             showConfirmModal(
-                `Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nCette action est irréversible et vous devrez reconnecter votre compte pour postuler aux offres.`,
+                `Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nVous devrez reconnecter votre compte pour postuler aux offres. Vous pourrez le faire à tout moment.`,
                 () => {
                     // L'utilisateur a confirmé, procéder à la suppression
                     performDisconnect(bankId, event);
