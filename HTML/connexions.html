@@ -657,12 +657,9 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Configuration de l'API backend (Render.com)
-        // URL de votre backend déployé sur Render
-        // Vous obtiendrez cette URL après le déploiement
-        const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:5000/api'  // En développement local
-            : 'https://mon-site-f1e1.onrender.com/api';  // En production
+        // Configuration de l'API backend (AWS)
+        const API_BASE_URL = 'http://51.44.11.78';
+        const API_KEY = 'Thibault_Secure_987654321_Validator';
         
         // Configuration des banques
         const banks = [
@@ -844,41 +841,26 @@
                     throw new Error('Email ou mot de passe invalide');
                 }
 
-                // Appeler l'API backend pour tester la connexion
+                // Appeler l'API backend AWS pour tester la connexion
                 console.log('🌐 API_BASE_URL:', API_BASE_URL);
                 const apiUrl = `${API_BASE_URL}/test-bank-connection`;
                 console.log('🔗 Appel API:', apiUrl);
                 console.log('📦 Données envoyées:', { bank_id: bankId, email: email, password: '***' });
                 
-                // Log avant le fetch
-                console.log('⏳ Début du fetch vers:', apiUrl);
-                console.log('⏳ Timestamp:', new Date().toISOString());
-                
-                // Réveiller le backend Render (cold start) en appelant d'abord /health
-                try {
-                    console.log('🔔 Réveil du backend Render...');
-                    const healthUrl = API_BASE_URL.replace('/api', '/health');
-                    await fetch(healthUrl, { method: 'GET', signal: AbortSignal.timeout(10000) }).catch(() => {
-                        console.log('⚠️ Health check échoué, continuation quand même...');
-                    });
-                    console.log('✅ Backend réveillé (ou déjà actif)');
-                } catch (e) {
-                    console.log('⚠️ Erreur réveil backend, continuation:', e.message);
-                }
-                
                 let response;
                 try {
-                    // Timeout de 90 secondes pour le cold start Render + test de connexion
+                    // Timeout de 60 secondes pour le test de connexion
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => {
-                        console.error('❌ Timeout après 90 secondes');
+                        console.error('❌ Timeout après 60 secondes');
                         controller.abort();
-                    }, 90000);
+                    }, 60000);
                     
                     response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-API-Key': API_KEY
                         },
                         body: JSON.stringify({
                             bank_id: bankId,
@@ -890,12 +872,8 @@
                     
                     clearTimeout(timeoutId);
                     console.log('📥 Réponse reçue:', response.status, response.statusText);
-                    console.log('📥 Headers de la réponse:', Object.fromEntries(response.headers.entries()));
                 } catch (fetchError) {
                     console.error('❌ ERREUR FETCH:', fetchError);
-                    console.error('❌ Type d\'erreur:', fetchError.name);
-                    console.error('❌ Message:', fetchError.message);
-                    console.error('❌ Stack:', fetchError.stack);
                     throw new Error(`Erreur réseau: ${fetchError.message}`);
                 }
 
