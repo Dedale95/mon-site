@@ -2113,6 +2113,10 @@
         
         // Variable globale pour stocker les candidatures de l'utilisateur (Set de jobIds)
         let userApplications = new Set();
+        
+        // Variable globale pour stocker les candidatures en attente avec leurs timers
+        // Structure: { jobId: { timerId: number, startTime: number, remainingSeconds: number, job: object, userId: string } }
+        let pendingApplications = {};
 
         // Fonction pour afficher un toast notification
         function showToast(title, message, type = 'success', duration = 4000) {
@@ -2306,39 +2310,123 @@
                     return;
                 }
 
-                // Créer la candidature avec toutes les informations de l'offre
-                const applicationData = {
-                    jobId: jobId,
-                    jobTitle: cleanJobTitle(job.job_title),
-                    jobUrl: job.job_url,
-                    companyName: job.company_name || 'Non spécifié',
-                    location: job.location || 'Non spécifié',
-                    contractType: job.contract_type || 'Non spécifié',
-                    experienceLevel: job.experience_level || 'Non spécifié',
-                    jobFamily: job.job_family || 'Non spécifié',
-                    publicationDate: job.publication_date || 'Non spécifié',
-                    appliedDate: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'En cours'
-                };
+                // Vérifier si une candidature est déjà en attente
+                if (pendingApplications[jobId]) {
+                    showToast('En attente', 'Cette candidature est déjà en cours d\'envoi.', 'info');
+                    return;
+                }
 
-                // Sauvegarder dans Firestore
-                await applicationsRef.add(applicationData);
-                
-                console.log('✅ Candidature enregistrée dans Firestore:', applicationData);
-                
-                // Ajouter à la liste locale
+                // Ajouter à la liste locale pour afficher "Candidature en cours"
                 userApplications.add(jobId);
                 
-                // Message de confirmation avec toast
-                showToast(
-                    'Candidature envoyée !',
-                    cleanJobTitle(job.job_title).substring(0, 50) + '...',
-                    'success',
-                    3000 // 3 secondes seulement pour ne pas encombrer
-                );
+                // Démarrer le timer de 5 minutes (300 secondes)
+                const TIMER_DURATION = 5 * 60; // 5 minutes en secondes
+                let remainingSeconds = TIMER_DURATION;
                 
-                // Mettre à jour uniquement cette carte (beaucoup plus rapide)
+                // Fonction pour formater le temps restant (MM:SS)
+                const formatTime = (seconds) => {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                };
+                
+                // Mettre à jour le bouton immédiatement
                 updateJobCardButtons(jobId);
+                
+                // Fonction pour mettre à jour le timer dans le bouton
+                const updateTimer = () => {
+                    const cards = document.querySelectorAll('.job-card');
+                    cards.forEach(card => {
+                        const cardJobId = card.querySelector('.job-id')?.textContent;
+                        if (cardJobId === jobId) {
+                            const actionsDiv = card.querySelector('.job-actions');
+                            if (actionsDiv) {
+                                const job = filteredJobs.find(j => j.job_id === jobId);
+                                if (job) {
+                                    const jobTitle = cleanJobTitle(job.job_title);
+                                    const timeLeft = formatTime(remainingSeconds);
+                                    actionsDiv.innerHTML = `
+                                        <button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeLeft})</button>
+                                        <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>
+                                        <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
+                                    `;
+                                }
+                            }
+                        }
+                    });
+                };
+                
+                // Démarrer le timer
+                const timerInterval = setInterval(() => {
+                    remainingSeconds--;
+                    
+                    if (remainingSeconds > 0) {
+                        // Mettre à jour l'affichage du timer
+                        updateTimer();
+                    } else {
+                        // Timer terminé - sauvegarder dans Firestore
+                        clearInterval(timerInterval);
+                        delete pendingApplications[jobId];
+                        
+                        // Créer la candidature avec toutes les informations de l'offre
+                        const applicationData = {
+                            jobId: jobId,
+                            jobTitle: cleanJobTitle(job.job_title),
+                            jobUrl: job.job_url,
+                            companyName: job.company_name || 'Non spécifié',
+                            location: job.location || 'Non spécifié',
+                            contractType: job.contract_type || 'Non spécifié',
+                            experienceLevel: job.experience_level || 'Non spécifié',
+                            jobFamily: job.job_family || 'Non spécifié',
+                            publicationDate: job.publication_date || 'Non spécifié',
+                            appliedDate: firebase.firestore.FieldValue.serverTimestamp(),
+                            status: 'En cours'
+                        };
+
+                        // Sauvegarder dans Firestore (simulation de l'envoi au backend)
+                        applicationsRef.add(applicationData).then(() => {
+                            console.log('✅ Candidature envoyée au backend (Firestore):', applicationData);
+                            
+                            // Message de confirmation avec toast
+                            showToast(
+                                'Candidature envoyée !',
+                                cleanJobTitle(job.job_title).substring(0, 50) + '...',
+                                'success',
+                                3000
+                            );
+                            
+                            // Mettre à jour l'affichage (retirer le timer)
+                            updateJobCardButtons(jobId);
+                        }).catch(error => {
+                            console.error('❌ Erreur lors de l\'envoi au backend:', error);
+                            showToast('Erreur', 'Erreur lors de l\'envoi. Réessayez.', 'error');
+                            
+                            // Retirer de la liste locale en cas d'erreur
+                            userApplications.delete(jobId);
+                            updateJobCardButtons(jobId);
+                        });
+                    }
+                }, 1000); // Mise à jour toutes les secondes
+                
+                // Stocker les informations du timer
+                pendingApplications[jobId] = {
+                    timerId: timerInterval,
+                    startTime: Date.now(),
+                    remainingSeconds: remainingSeconds,
+                    job: job,
+                    userId: userId
+                };
+                
+                // Afficher le timer initial
+                updateTimer();
+                
+                // Message informatif
+                showToast(
+                    'Candidature en attente',
+                    'Vous avez 5 minutes pour annuler avant l\'envoi.',
+                    'info',
+                    4000
+                );
                 
             } catch (error) {
                 console.error('❌ Erreur lors de la candidature:', error);
@@ -2349,6 +2437,13 @@
                     btn.disabled = false;
                     btn.textContent = '📝 Candidater';
                 }
+                
+                // Nettoyer si nécessaire
+                if (pendingApplications[jobId]) {
+                    clearInterval(pendingApplications[jobId].timerId);
+                    delete pendingApplications[jobId];
+                    userApplications.delete(jobId);
+                }
             }
         }
 
@@ -2356,6 +2451,24 @@
         function cancelApplication(jobId, jobTitle, buttonElement) {
             const btn = buttonElement || event.target;
             
+            // Vérifier si la candidature est en attente (timer actif)
+            if (pendingApplications[jobId]) {
+                // Annuler le timer
+                clearInterval(pendingApplications[jobId].timerId);
+                delete pendingApplications[jobId];
+                
+                // Retirer de la liste locale
+                userApplications.delete(jobId);
+                
+                // Mettre à jour l'affichage
+                updateJobCardButtons(jobId);
+                
+                // Message de confirmation
+                showToast('Annulé', 'Candidature annulée avant l\'envoi.', 'info', 2000);
+                return;
+            }
+            
+            // Si la candidature est déjà enregistrée dans Firestore, procéder à la suppression
             // Afficher toast de confirmation (non-bloquant)
             showConfirmToast(
                 'Annuler votre candidature ?',
@@ -2438,12 +2551,32 @@
                         const job = filteredJobs.find(j => j.job_id === jobId);
                         if (job) {
                             const jobTitle = cleanJobTitle(job.job_title);
+                            // Vérifier si une candidature est en attente (avec timer)
+                            const isPending = pendingApplications[jobId];
+                            let buttonHTML;
+                            
+                            if (isApplied && isPending) {
+                                // Candidature en attente avec timer
+                                const remaining = pendingApplications[jobId].remainingSeconds || 0;
+                                const formatTime = (seconds) => {
+                                    const mins = Math.floor(seconds / 60);
+                                    const secs = seconds % 60;
+                                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                };
+                                const timeLeft = formatTime(remaining);
+                                buttonHTML = `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeLeft})</button>
+                                             <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
+                            } else if (isApplied && !isPending) {
+                                // Candidature déjà envoyée
+                                buttonHTML = `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>
+                                             <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
+                            } else {
+                                // Pas encore candidaté
+                                buttonHTML = `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
+                            }
+                            
                             actionsDiv.innerHTML = `
-                                ${isApplied 
-                                    ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                                       <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
-                                    : `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
-                                }
+                                ${buttonHTML}
                                 <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
                             `;
                         }
