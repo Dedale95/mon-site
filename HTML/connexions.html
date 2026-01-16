@@ -881,16 +881,21 @@
 
                 // Si la validation réussit (vérifier le "status" envoyé par AWS)
                 if (data.status === "success") {
-                    if (currentUser) {
+                    // RÉCUPÉRER l'ID de l'utilisateur actuel
+                    const uid = firebase.auth().currentUser.uid;
+                    
+                    if (uid) {
                         try {
-                            // Tentative de sauvegarde dans Firebase
-                            await db.collection('user_connections').add({
-                                userId: currentUser.uid,
-                                bankName: bank.name, // ex: "Crédit Agricole"
-                                email: email,
-                                status: 'connected',
-                                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-                            });
+                            // ÉCRIRE au bon endroit pour valider les règles
+                            await db.collection('profiles')
+                                    .doc(uid)                       // <--- C'est le {userId} de ta règle ligne 6
+                                    .collection('career_connections') // <--- C'est la sous-collection de la ligne 18
+                                    .add({
+                                        bankName: bank.name,
+                                        email: email,
+                                        status: 'connected',
+                                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
                             
                             alert("✅ Succès : Banque liée et enregistrée !");
                             location.reload(); // Recharge pour voir la banque apparaître
