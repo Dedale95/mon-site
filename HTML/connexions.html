@@ -786,12 +786,27 @@
             if (!currentUser) return;
 
             try {
-                const docRef = db.collection('profiles').doc(currentUser.uid).collection('career_connections').doc('connections');
-                const doc = await docRef.get();
+                // Charger tous les documents de la sous-collection career_connections
+                const snapshot = await db.collection('profiles')
+                    .doc(currentUser.uid)
+                    .collection('career_connections')
+                    .where('status', '==', 'connected')
+                    .get();
 
-                if (doc.exists) {
-                    userConnections = doc.data();
-                }
+                // Réinitialiser userConnections
+                userConnections = {};
+
+                // Parcourir les documents et les indexer par bankId
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.bankId) {
+                        userConnections[data.bankId] = {
+                            email: data.email,
+                            connected: true,
+                            connectedAt: data.timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString()
+                        };
+                    }
+                });
             } catch (error) {
                 console.error('Erreur chargement connexions:', error);
             }
@@ -892,13 +907,24 @@
                                     .collection('career_connections') // <--- C'est la sous-collection de la ligne 18
                                     .add({
                                         bankName: bank.name,
+                                        bankId: bankId, // Ajouter bankId pour faciliter la recherche
                                         email: email,
+                                        password: encryptData(password), // ✅ Ajout du mot de passe crypté
                                         status: 'connected',
                                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                                     });
                             
+                            // Mettre à jour l'état local
+                            userConnections[bankId] = {
+                                email: email,
+                                connected: true,
+                                connectedAt: new Date().toISOString()
+                            };
+                            
+                            // Rafraîchir l'affichage pour voir la banque basculer en "connecté" (vert)
+                            renderBanks();
+                            
                             alert("✅ Succès : Banque liée et enregistrée !");
-                            location.reload(); // Recharge pour voir la banque apparaître
                         } catch (firebaseError) {
                             console.error("Erreur Firebase:", firebaseError);
                             alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
