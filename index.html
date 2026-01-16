@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="refresh" content="0; url=HTML/landing_page_finance.html">
+    <link rel="canonical" href="HTML/landing_page_finance.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taleos - Automatisez vos candidatures en finance</title>
-    <script>
+    <script type="text/javascript">
         // Redirection immédiate vers la page de présentation
-        window.location.replace('HTML/landing_page_finance.html');
+        (function() {
+            var target = 'HTML/landing_page_finance.html';
+            // Utiliser replace pour éviter de garder dans l'historique
+            window.location.replace(target);
+            // Fallback au cas où replace ne fonctionne pas
+            setTimeout(function() {
+                window.location.href = target;
+            }, 100);
+        })();
     </script>
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=HTML/landing_page_finance.html">
+    </noscript>
 </head>
 <body>
-    <p>Redirection en cours... Si vous n'êtes pas redirigé automatiquement, <a href="HTML/landing_page_finance.html">cliquez ici</a>.</p>
+    <p>Redirection en cours vers la page de présentation... Si vous n'êtes pas redirigé automatiquement, <a href="HTML/landing_page_finance.html">cliquez ici</a>.</p>
 </body>
 </html>
