@@ -2293,7 +2293,13 @@
                     if (data.jobId) {
                         userApplications.add(data.jobId);
                         // Stocker le statut : 'envoyée' ou 'En cours' (ou autre)
-                        const status = data.status || 'En cours';
+                        // Pour les anciennes candidatures sans statut ou avec 'En cours', 
+                        // on considère qu'elles sont envoyées (compatibilité avec ancien format)
+                        let status = data.status || 'envoyée';
+                        // Si le statut est 'En cours' mais pas de timer actif, considérer comme envoyée
+                        if (status === 'En cours' && !pendingApplications[data.jobId]) {
+                            status = 'envoyée';
+                        }
                         applicationStatuses.set(data.jobId, status);
                     }
                 });
@@ -2609,7 +2615,8 @@
                         const isApplied = userApplications.has(jobId);
                         const isPending = pendingApplications[jobId];
                         const status = applicationStatuses.get(jobId);
-                        const isSubmitted = status === 'envoyée';
+                        // Considérer comme envoyée si statut 'envoyée' OU si candidature existe sans timer
+                        const isSubmitted = status === 'envoyée' || (isApplied && !isPending);
                         const job = filteredJobs.find(j => j.job_id === jobId);
                         if (job) {
                             const jobTitle = cleanJobTitle(job.job_title);
@@ -2627,11 +2634,11 @@
                                     <button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
                                     <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>
                                 `;
-                            } else if (isSubmitted) {
-                                // Candidature déjà envoyée
+                            } else if (isSubmitted || (isApplied && !isPending)) {
+                                // Candidature déjà envoyée (ou ancienne candidature sans timer)
                                 buttonHTML = `<button class="job-apply-btn applied sent" disabled>✅ Candidature envoyée</button>`;
                             } else if (isApplied) {
-                                // Candidature en cours (statut non envoyée)
+                                // Candidature en cours avec statut explicite "En cours"
                                 buttonHTML = `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
                             } else {
                                 // Pas encore candidaté
@@ -2788,8 +2795,8 @@
                     // Candidature en attente avec timer (jaune)
                     cardClass += ' application-pending';
                     badgeHTML = '<div class="job-card-badge">⏳ En attente</div>';
-                } else if (isSubmitted) {
-                    // Candidature envoyée (vert)
+                } else if (isSubmitted || (hasApplied && !isPending)) {
+                    // Candidature envoyée (vert) - inclut les anciennes candidatures sans timer
                     cardClass += ' application-submitted';
                     badgeHTML = '<div class="job-card-badge">✓ Candidature envoyée</div>';
                 } else if (hasApplied) {
@@ -2835,9 +2842,11 @@
                             const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                             return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
                                     <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
-                        } else if (isSubmitted) {
+                        } else if (isSubmitted || (hasApplied && !isPending)) {
+                            // Candidature envoyée (ou ancienne candidature sans timer)
                             return `<button class="job-apply-btn applied sent" disabled>✅ Candidature envoyée</button>`;
                         } else if (hasApplied) {
+                            // Candidature en cours avec statut explicite "En cours"
                             return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
                         } else {
                             return `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
