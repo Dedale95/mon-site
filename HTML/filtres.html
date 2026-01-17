@@ -941,11 +941,7 @@
                     <div class="accordion-content ${isExpanded ? 'expanded' : ''}">
                         <div class="accordion-body">
                             ${renderFilters(accordionId, accordion.filters)}
-                            ${isExpanded ? (() => {
-                                // Initialiser les filtres après le rendu HTML
-                                setTimeout(() => updateFiltersDisplay(accordionId, accordion.filters), 0);
-                                return renderResults(accordionId, filteredJobs);
-                            })() : ''}
+                            ${isExpanded ? renderResults(accordionId, filteredJobs) : ''}
                         </div>
                     </div>
                 </div>
