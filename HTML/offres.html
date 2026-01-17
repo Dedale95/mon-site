@@ -820,6 +820,17 @@
             transform: none;
         }
 
+        /* Style pour candidature envoyée - vert subtil harmonisé avec la vignette */
+        .job-apply-btn.applied.sent {
+            background: #34c759;
+            border-color: #34c759;
+        }
+
+        .job-apply-btn.applied.sent:hover {
+            background: #30b853;
+            border-color: #30b853;
+        }
+
         .job-cancel-btn {
             background: white;
             color: #ef4444;
@@ -2618,7 +2629,7 @@
                                 `;
                             } else if (isSubmitted) {
                                 // Candidature déjà envoyée
-                                buttonHTML = `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                                buttonHTML = `<button class="job-apply-btn applied sent" disabled>✅ Candidature envoyée</button>`;
                             } else if (isApplied) {
                                 // Candidature en cours (statut non envoyée)
                                 buttonHTML = `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
@@ -2825,7 +2836,7 @@
                             return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
                                     <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
                         } else if (isSubmitted) {
-                            return `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                            return `<button class="job-apply-btn applied sent" disabled>✅ Candidature envoyée</button>`;
                         } else if (hasApplied) {
                             return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
                         } else {
