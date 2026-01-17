@@ -914,6 +914,13 @@
             emptyState.style.display = 'none';
             container.innerHTML = accordions.map((accordion, index) => renderAccordion(accordion, index)).join('');
             
+            // Initialiser les filtres après le rendu HTML (compteurs + filtrage dynamique)
+            setTimeout(() => {
+                accordions.forEach((accordion) => {
+                    const accordionId = accordion.id || 'temp_' + accordions.indexOf(accordion);
+                    updateFiltersDisplay(accordionId, accordion.filters);
+                });
+            }, 0);
         }
 
         function renderAccordion(accordion, index) {
