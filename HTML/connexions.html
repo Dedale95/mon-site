@@ -512,6 +512,10 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
+        // Configuration de l'API backend (AWS)
+        const API_BASE_URL = 'https://api.taleos.co';
+        const API_KEY = 'Thibault_Secure_987654321_Validator';
+
         // Configuration des banques
         const banks = [
             {
@@ -625,12 +629,27 @@
             if (!currentUser) return;
 
             try {
-                const docRef = db.collection('profiles').doc(currentUser.uid).collection('career_connections').doc('connections');
-                const doc = await docRef.get();
-                
-                if (doc.exists) {
-                    userConnections = doc.data();
-                }
+                // Charger tous les documents de la sous-collection career_connections
+                const snapshot = await db.collection('profiles')
+                    .doc(currentUser.uid)
+                    .collection('career_connections')
+                    .where('status', '==', 'connected')
+                    .get();
+
+                // Réinitialiser userConnections
+                userConnections = {};
+
+                // Parcourir les documents et les indexer par bankId
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.bankId) {
+                        userConnections[data.bankId] = {
+                            email: data.email,
+                            connected: true,
+                            connectedAt: data.timestamp ? data.timestamp.toDate().toISOString() : new Date().toISOString()
+                        };
+                    }
+                });
             } catch (error) {
                 console.error('Erreur chargement connexions:', error);
             }
@@ -655,54 +674,138 @@
         }
 
         // Tester la connexion à un site carrière
-        async function testConnection(bankId, email, password) {
+        async function testConnection(bankId, email, password, event) {
+            // Empêcher le rechargement de la page
+            if (event) {
+                event.preventDefault();
+            }
+
             const bank = banks.find(b => b.id === bankId);
             const statusDiv = document.getElementById(`status-${bankId}`);
             const btn = document.getElementById(`btn-${bankId}`);
 
-            // Afficher le statut de test
-            statusDiv.className = 'connection-status show info';
-            statusDiv.innerHTML = '⏳ Test de la connexion en cours...';
+            if (!bank || !statusDiv || !btn) {
+                console.error('Éléments manquants pour la banque:', bankId);
+                return;
+            }
+
+            // Désactiver le bouton et afficher le message de progression
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span> Test en cours...';
+            btn.innerHTML = '<span class="spinner"></span> Validation en cours...';
+            statusDiv.className = 'connection-status show info';
+            statusDiv.innerHTML = '⏳ Validation Selenium en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
 
             try {
-                // Note: En raison des restrictions CORS, nous ne pouvons pas tester directement
-                // la connexion depuis le navigateur. Dans une vraie application, cela nécessiterait
-                // un backend proxy.
-                
-                // Simuler un délai de test
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Pour l'instant, on valide juste que les champs sont remplis
-                if (email && password && email.includes('@')) {
-                    // Sauvegarder les credentials (cryptés)
-                    await saveConnection(bankId, email, password);
-                    
-                    statusDiv.className = 'connection-status show success';
-                    statusDiv.innerHTML = `✅ Connexion réussie ! Votre compte ${bank.name} est maintenant lié.<br><small>Note: La validation complète sera effectuée lors de votre première candidature.</small>`;
-                    
-                    // Mettre à jour le statut
-                    userConnections[bankId] = {
-                        email: email,
-                        connected: true,
-                        connectedAt: new Date().toISOString()
-                    };
-                    
-                    // Re-render pour mettre à jour le badge
-                    setTimeout(() => {
-                        renderBanks();
-                    }, 2000);
-                    
-                } else {
+                // Validation basique
+                if (!email || !password || !email.includes('@')) {
                     throw new Error('Email ou mot de passe invalide');
                 }
 
+                // Appeler l'API backend AWS Selenium
+                console.log("🚀 Envoi de la requête à l'API...");
+                const response = await fetch(`${API_BASE_URL}/validate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify({
+                        url: bank.url,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Erreur de réponse serveur');
+                }
+
+                const data = await response.json();
+
+                // Si la validation réussit (vérifier le "status" envoyé par AWS)
+                if (data.status === "success") {
+                    // RÉCUPÉRER l'ID de l'utilisateur actuel
+                    const uid = firebase.auth().currentUser.uid;
+                    
+                    if (uid) {
+                        try {
+                            // ÉCRIRE au bon endroit pour valider les règles
+                            await db.collection('profiles')
+                                    .doc(uid)
+                                    .collection('career_connections')
+                                    .add({
+                                        bankName: bank.name,
+                                        bankId: bankId,
+                                        email: email,
+                                        password: encryptData(password),
+                                        status: 'connected',
+                                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                            
+                            // Mettre à jour l'état local
+                            userConnections[bankId] = {
+                                email: email,
+                                connected: true,
+                                connectedAt: new Date().toISOString()
+                            };
+                            
+                            // ✅ Utiliser la div de statut existante
+                            statusDiv.className = 'connection-status show success';
+                            statusDiv.innerHTML = `✅ <strong>Succès !</strong> Votre compte ${bank.name} est maintenant lié.`;
+                            
+                            // On cache le bouton pour éviter les doubles clics
+                            btn.style.display = 'none';
+
+                            // Rafraîchir l'affichage de manière élégante sans recharger la page
+                            setTimeout(() => {
+                                // Mettre à jour l'UI de manière fluide
+                                renderBanks();
+                                
+                                // Réouvrir le module pour montrer l'état connecté
+                                const bankModule = document.getElementById(`bank-${bankId}`);
+                                if (bankModule) {
+                                    bankModule.classList.add('expanded');
+                                }
+                            }, 1000);
+                        } catch (firebaseError) {
+                            console.error("Erreur Firebase:", firebaseError);
+                            alert("⚠️ Connexion validée, mais erreur d'enregistrement Firebase.");
+                        }
+                    } else {
+                        statusDiv.className = 'connection-status show error';
+                        statusDiv.innerHTML = '❌ Vous devez être connecté pour enregistrer la connexion.';
+                    }
+                } else {
+                    // Validation échouée
+                    statusDiv.className = 'connection-status show error';
+                    statusDiv.innerHTML = `❌ ${data.message || 'La connexion a échoué'}<br><small style="color: #dc2626;">Vérifiez vos identifiants et réessayez.</small>`;
+
+                    // Réactiver le bouton
+                    btn.disabled = false;
+                    btn.innerHTML = '🔗 Lier mon compte';
+                }
+
             } catch (error) {
-                console.error('Erreur test connexion:', error);
+                console.error('Erreur dans testConnection:', error);
                 statusDiv.className = 'connection-status show error';
-                statusDiv.innerHTML = `❌ Échec de la connexion : ${error.message}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
-            } finally {
+
+                let errorMessage = error.message || 'Une erreur est survenue';
+
+                // Messages d'erreur plus spécifiques
+                if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Impossible de contacter le serveur. Vérifiez votre connexion internet.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'Erreur CORS. Vérifiez la configuration du backend.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Le test a pris trop de temps. Vérifiez votre connexion internet.';
+                } else if (error.message.includes('permissions') || error.message.includes('Permission')) {
+                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles de sécurité.';
+                }
+
+                statusDiv.innerHTML = `❌ Échec de la connexion : ${errorMessage}<br><small>Vérifiez vos identifiants et réessayez.</small>`;
+
+                // Réactiver le bouton
                 btn.disabled = false;
                 btn.innerHTML = '🔗 Lier mon compte';
             }
@@ -730,40 +833,112 @@
         }
 
         // Supprimer une connexion
-        async function disconnectBank(bankId) {
-            if (!currentUser) return;
-            
-            if (!confirm('Êtes-vous sûr de vouloir délier ce compte ?')) {
+        async function disconnectBank(bankId, event) {
+            if (!currentUser) {
+                console.error('❌ Pas d\'utilisateur connecté');
                 return;
             }
 
-            const btn = document.getElementById(`btn-disconnect-${bankId}`) || document.querySelector(`[onclick*="disconnectBank('${bankId}')"]`);
+            // Récupérer le nom de la banque
+            const bank = banks.find(b => b.id === bankId);
+            const bankName = bank ? bank.name : 'ce compte';
+
+            // Afficher la confirmation
+            if (!confirm(`Êtes-vous sûr de vouloir délier votre compte ${bankName} ?\n\nVous devrez reconnecter votre compte pour postuler aux offres. Vous pourrez le faire à tout moment.`)) {
+                return;
+            }
+
+            // Récupérer le bouton correctement
+            const btn = event ? event.target : document.getElementById(`btn-disconnect-${bankId}`);
             if (btn) {
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner"></span> Suppression...';
             }
 
-            try {
-                await db.collection('profiles').doc(currentUser.uid)
-                    .collection('career_connections')
-                    .doc('connections')
-                    .update({
-                        [bankId]: firebase.firestore.FieldValue.delete()
-                    });
+            // Récupérer ou créer le statusDiv
+            let statusDiv = document.getElementById(`status-${bankId}`);
+            if (!statusDiv) {
+                const bankContent = document.querySelector(`#bank-${bankId} .bank-content`);
+                if (bankContent) {
+                    statusDiv = document.createElement('div');
+                    statusDiv.id = `status-${bankId}`;
+                    statusDiv.className = 'connection-status';
+                    const disconnectBtn = document.getElementById(`btn-disconnect-${bankId}`);
+                    if (disconnectBtn && disconnectBtn.parentElement) {
+                        disconnectBtn.parentElement.insertBefore(statusDiv, disconnectBtn);
+                    } else {
+                        bankContent.appendChild(statusDiv);
+                    }
+                }
+            }
 
-                delete userConnections[bankId];
-                
-                const statusDiv = document.getElementById(`status-${bankId}`);
+            if (statusDiv) {
                 statusDiv.className = 'connection-status show info';
-                statusDiv.innerHTML = '✅ Compte délié avec succès';
+                statusDiv.innerHTML = '⏳ Suppression en cours...';
+            }
 
+            try {
+                console.log(`🗑️ Suppression de la connexion ${bankId} pour l'utilisateur ${currentUser.uid}`);
+
+                // Trouver et supprimer le document correspondant à bankId dans la sous-collection
+                const snapshot = await db.collection('profiles')
+                    .doc(currentUser.uid)
+                    .collection('career_connections')
+                    .where('bankId', '==', bankId)
+                    .get();
+
+                if (snapshot.empty) {
+                    console.warn(`⚠️ Aucun document trouvé pour bankId: ${bankId}`);
+                    delete userConnections[bankId];
+                    if (statusDiv) {
+                        statusDiv.className = 'connection-status show success';
+                        statusDiv.innerHTML = '✅ Compte délié avec succès';
+                    }
+                    setTimeout(() => {
+                        renderBanks();
+                    }, 1500);
+                    return;
+                }
+
+                // Supprimer tous les documents trouvés (normalement il n'y en a qu'un)
+                const deletePromises = snapshot.docs.map(doc => doc.ref.delete());
+                await Promise.all(deletePromises);
+
+                console.log(`✅ Connexion ${bankId} supprimée avec succès (${snapshot.docs.length} document(s) supprimé(s))`);
+
+                // Mettre à jour l'objet local
+                delete userConnections[bankId];
+
+                if (statusDiv) {
+                    statusDiv.className = 'connection-status show success';
+                    statusDiv.innerHTML = '✅ Compte délié avec succès';
+                }
+
+                // Réafficher la liste de manière élégante
                 setTimeout(() => {
                     renderBanks();
                 }, 1500);
 
             } catch (error) {
-                console.error('Erreur suppression connexion:', error);
-                alert('Erreur lors de la suppression');
+                console.error('❌ Erreur suppression connexion:', error);
+                
+                let errorMessage = 'Erreur lors de la suppression';
+                if (error.code === 'permission-denied') {
+                    errorMessage = 'Erreur de permissions Firestore. Vérifiez les règles pour career_connections dans Firebase Console.';
+                } else if (error.code === 'not-found') {
+                    errorMessage = 'La connexion n\'existe pas ou a déjà été supprimée.';
+                } else if (error.message) {
+                    errorMessage = `Erreur: ${error.message}`;
+                }
+
+                if (statusDiv) {
+                    statusDiv.className = 'connection-status show error';
+                    statusDiv.innerHTML = `❌ ${errorMessage}`;
+                } else {
+                    alert(errorMessage);
+                }
+
+                // Réactiver le bouton en cas d'erreur
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = '✕ Délier ce compte';
@@ -804,13 +979,13 @@
                                         <p style="color: #065f46; font-size: 0.9rem;">Email: ${connectedEmail}</p>
                                     </div>
                                     <div class="form-actions">
-                                        <button class="btn btn-danger" onclick="disconnectBank('${bank.id}')">✕ Délier ce compte</button>
+                                        <button class="btn btn-danger" id="btn-disconnect-${bank.id}" onclick="disconnectBank('${bank.id}', event)">✕ Délier ce compte</button>
                                     </div>
                                 ` : `
                                     <p style="color: #666; margin-bottom: 20px;">
                                         Connectez votre compte <strong>${bank.name}</strong> pour postuler automatiquement aux offres.
                                     </p>
-                                    <form onsubmit="event.preventDefault(); testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value);">
+                                    <form onsubmit="testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value, event); return false;">
                                         <div class="form-group">
                                             <label for="email-${bank.id}">📧 Email</label>
                                             <input type="email" id="email-${bank.id}" placeholder="votre.email@exemple.com" required>
