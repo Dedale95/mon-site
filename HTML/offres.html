@@ -2114,6 +2114,8 @@
         
         // Variable globale pour stocker les candidatures de l'utilisateur (Set de jobIds)
         let userApplications = new Set();
+        // Map pour stocker les statuts des candidatures (jobId -> status)
+        let applicationStatuses = new Map();
 
         // Fonction pour afficher un toast notification
         function showToast(title, message, type = 'success', duration = 4000) {
@@ -2214,6 +2216,7 @@
             
             if (!currentUser) {
                 userApplications.clear();
+                applicationStatuses.clear();
                 return;
             }
             
@@ -2223,10 +2226,15 @@
                 const snapshot = await applicationsRef.get();
                 
                 userApplications.clear();
+                applicationStatuses.clear();
+                
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.jobId) {
                         userApplications.add(data.jobId);
+                        // Stocker le statut : 'envoyée' ou 'En cours' (ou autre)
+                        const status = data.status || 'En cours';
+                        applicationStatuses.set(data.jobId, status);
                     }
                 });
                 
@@ -2327,8 +2335,9 @@
                     5000
                 );
 
-                // Mettre à jour l'UI immédiatement
+                // Mettre à jour l'UI immédiatement (boutons + styles)
                 updateJobCardButtons(jobId);
+                updateJobCardStyles(jobId);
 
                 // Démarrer le timer
                 const intervalId = setInterval(() => {
@@ -2385,8 +2394,9 @@
                 // Retirer de pendingApplications
                 delete pendingApplications[jobId];
                 
-                // Ajouter à la liste locale
+                // Ajouter à la liste locale avec statut 'envoyée'
                 userApplications.add(jobId);
+                applicationStatuses.set(jobId, 'envoyée');
                 
                 // Message de confirmation
                 showToast(
@@ -2396,8 +2406,9 @@
                     3000
                 );
                 
-                // Mettre à jour l'UI
+                // Mettre à jour l'UI (boutons + classes CSS de la carte)
                 updateJobCardButtons(jobId);
+                updateJobCardStyles(jobId);
                 
             } catch (error) {
                 console.error('❌ Erreur lors de l\'envoi de la candidature:', error);
@@ -2459,9 +2470,11 @@
                         
                         // Retirer de la liste locale
                         userApplications.delete(jobId);
+                        applicationStatuses.delete(jobId);
                         
                         // Mettre à jour uniquement cette carte (sans notification)
                         updateJobCardButtons(jobId);
+                        updateJobCardStyles(jobId);
                         
                     } catch (error) {
                         console.error('❌ Erreur lors de l\'annulation:', error);
@@ -2481,6 +2494,50 @@
             );
         }
 
+        // Fonction pour mettre à jour les styles CSS de la carte (couleurs jaune/vert)
+        function updateJobCardStyles(jobId) {
+            const cards = document.querySelectorAll('.job-card');
+            cards.forEach(card => {
+                const cardJobId = card.querySelector('.job-id')?.textContent;
+                if (cardJobId === jobId) {
+                    const isPending = pendingApplications[jobId];
+                    const status = applicationStatuses.get(jobId);
+                    const isSubmitted = status === 'envoyée';
+                    
+                    // Retirer toutes les classes d'état
+                    card.classList.remove('application-pending', 'application-submitted');
+                    
+                    // Mettre à jour le badge
+                    let existingBadge = card.querySelector('.job-card-badge');
+                    
+                    if (isPending) {
+                        // Candidature en cours (jaune)
+                        card.classList.add('application-pending');
+                        if (!existingBadge) {
+                            existingBadge = document.createElement('div');
+                            existingBadge.className = 'job-card-badge';
+                            card.insertBefore(existingBadge, card.firstChild);
+                        }
+                        existingBadge.textContent = '⏳ En attente';
+                    } else if (isSubmitted) {
+                        // Candidature envoyée (vert)
+                        card.classList.add('application-submitted');
+                        if (!existingBadge) {
+                            existingBadge = document.createElement('div');
+                            existingBadge.className = 'job-card-badge';
+                            card.insertBefore(existingBadge, card.firstChild);
+                        }
+                        existingBadge.textContent = '✓ Candidature envoyée';
+                    } else {
+                        // Pas de candidature - retirer le badge
+                        if (existingBadge) {
+                            existingBadge.remove();
+                        }
+                    }
+                }
+            });
+        }
+
         // Fonction pour mettre à jour les boutons d'une carte spécifique (sans re-render complet)
         function updateJobCardButtons(jobId) {
             const cards = document.querySelectorAll('.job-card');
@@ -2491,6 +2548,8 @@
                     if (actionsDiv) {
                         const isApplied = userApplications.has(jobId);
                         const isPending = pendingApplications[jobId];
+                        const status = applicationStatuses.get(jobId);
+                        const isSubmitted = status === 'envoyée';
                         const job = filteredJobs.find(j => j.job_id === jobId);
                         if (job) {
                             const jobTitle = cleanJobTitle(job.job_title);
@@ -2508,9 +2567,12 @@
                                     <button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
                                     <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>
                                 `;
-                            } else if (isApplied) {
+                            } else if (isSubmitted) {
                                 // Candidature déjà envoyée
                                 buttonHTML = `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                            } else if (isApplied) {
+                                // Candidature en cours (statut non envoyée)
+                                buttonHTML = `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
                             } else {
                                 // Pas encore candidaté
                                 buttonHTML = `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
@@ -2654,18 +2716,26 @@
             function renderJobCard(job) {
                 // Déterminer l'état de la candidature
                 const hasApplied = userApplications.has(job.job_id);
-                const applicationStatus = hasApplied ? 'pending' : 'none'; // Pour l'instant, toutes sont pending
+                const isPending = pendingApplications[job.job_id];
+                const status = applicationStatuses.get(job.job_id);
+                const isSubmitted = status === 'envoyée';
                 
                 // Classes CSS selon l'état
                 let cardClass = 'job-card';
                 let badgeHTML = '';
                 
-                if (applicationStatus === 'pending') {
+                if (isPending) {
+                    // Candidature en attente avec timer (jaune)
                     cardClass += ' application-pending';
                     badgeHTML = '<div class="job-card-badge">⏳ En attente</div>';
-                } else if (applicationStatus === 'submitted') {
+                } else if (isSubmitted) {
+                    // Candidature envoyée (vert)
                     cardClass += ' application-submitted';
                     badgeHTML = '<div class="job-card-badge">✓ Candidature envoyée</div>';
+                } else if (hasApplied) {
+                    // Candidature en cours mais pas encore envoyée (jaune)
+                    cardClass += ' application-pending';
+                    badgeHTML = '<div class="job-card-badge">⏳ En attente</div>';
                 }
                 
                 return `
@@ -2691,6 +2761,9 @@
                 <div class="job-actions">
                     ${isAuthenticated ? (() => {
                         const isPending = pendingApplications[job.job_id];
+                        const status = applicationStatuses.get(job.job_id);
+                        const isSubmitted = status === 'envoyée';
+                        
                         if (isPending) {
                             const remainingSeconds = pendingApplications[job.job_id].remainingSeconds;
                             const minutes = Math.floor(remainingSeconds / 60);
@@ -2698,8 +2771,10 @@
                             const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                             return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
                                     <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
-                        } else if (hasApplied) {
+                        } else if (isSubmitted) {
                             return `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                        } else if (hasApplied) {
+                            return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>`;
                         } else {
                             return `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
                         }
