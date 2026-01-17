@@ -260,10 +260,18 @@
             padding: 40px 20px;
             text-align: center;
             margin-top: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        footer .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         footer p {
             opacity: 0.7;
+            margin: 0;
         }
 
         .footer-love {
@@ -273,7 +281,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            flex-wrap: wrap;
         }
 
         /* Responsive */
@@ -367,15 +374,6 @@
     </div>
 
 
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
-        <div class="footer-love">
-            <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
-            <span>•</span>
-            <span>🇫🇷 Fièrement Made in France</span>
-        </div>
-    </footer>
     </div>
 
     <script>
@@ -533,5 +531,16 @@
             checkAuthAndUpdateNav();
         }, 500);
     </script>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Taleos. Tous droits réservés.</p>
+            <div class="footer-love">
+                <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
+                <span>•</span>
+                <span>🇫🇷 Fièrement Made in France</span>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

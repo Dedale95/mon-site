@@ -772,28 +772,30 @@
         footer {
             background: #1a1a1a;
             color: white;
+            padding: 40px 20px;
             text-align: center;
-            padding: 30px 20px;
             margin-top: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        footer .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         footer p {
-            margin: 0 0 10px 0;
-            font-size: 0.9rem;
+            opacity: 0.7;
+            margin: 0;
         }
 
         .footer-love {
+            margin-top: 15px;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            font-size: 0.85rem;
-            color: #ccc;
-        }
-
-        .footer-love span {
-            display: inline-block;
+            gap: 8px;
         }
 
         @media (max-width: 768px) {
@@ -1571,16 +1573,6 @@
             </form>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
-        <div class="footer-love">
-            <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
-            <span>•</span>
-            <span>🇫🇷 Fièrement Made in France</span>
-        </div>
-    </footer>
 
     <script>
         // ============================================
@@ -2743,5 +2735,16 @@
         // La fonction onAuthStateChanged sera appelée automatiquement
         // et gérera le chargement du profil et la mise à jour de la navigation
     </script>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Taleos. Tous droits réservés.</p>
+            <div class="footer-love">
+                <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
+                <span>•</span>
+                <span>🇫🇷 Fièrement Made in France</span>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

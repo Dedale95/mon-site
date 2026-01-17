@@ -981,6 +981,18 @@
             padding: 40px 20px;
             text-align: center;
             margin-top: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        footer .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        footer p {
+            opacity: 0.7;
+            margin: 0;
         }
 
         .footer-love {
@@ -990,7 +1002,6 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            flex-wrap: wrap;
         }
 
         @media (max-width: 768px) {
@@ -1186,14 +1197,6 @@
     </div>
 
 
-    <footer>
-        <p>&copy; 2026 Taleos. Tous droits réservés.</p>
-        <div class="footer-love">
-            <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
-            <span>•</span>
-            <span>🇫🇷 Fièrement Made in France</span>
-        </div>
-    </footer>
     </div>
 
     <script>
@@ -2199,6 +2202,9 @@
             return toast;
         }
 
+        // Gérer les candidatures en attente avec timer
+        let pendingApplications = {};
+
         // Charger les candidatures de l'utilisateur depuis Firestore
         async function loadUserApplications() {
             if (!firebase.auth || !firebase.firestore) return;
@@ -2260,12 +2266,6 @@
             // Trouver le bouton si pas passé en paramètre
             const btn = buttonElement || event.target;
             
-            // Désactiver le bouton immédiatement pour éviter les double-clics
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = '⏳ Envoi...';
-            }
-
             try {
                 // Vérifier Firebase
                 if (!firebase.auth || !firebase.firestore) {
@@ -2299,10 +2299,67 @@
                 if (!existingApp.empty) {
                     showToast('Déjà candidaté', 'Vous avez déjà postulé à cette offre.', 'info', 3000);
                     userApplications.add(jobId);
-                    // Mettre à jour uniquement cette carte
                     updateJobCardButtons(jobId);
                     return;
                 }
+
+                // Vérifier si une candidature est déjà en attente
+                if (pendingApplications[jobId]) {
+                    showToast('Candidature en attente', 'Une candidature est déjà en cours pour cette offre.', 'info', 3000);
+                    return;
+                }
+
+                // Démarrer le timer de 5 minutes (300 secondes)
+                let remainingSeconds = 300; // 5 minutes
+                
+                // Stocker les données de la candidature pour plus tard
+                pendingApplications[jobId] = {
+                    job: job,
+                    remainingSeconds: remainingSeconds,
+                    intervalId: null
+                };
+
+                // Afficher toast de confirmation
+                showToast(
+                    'Candidature en attente',
+                    'Vous avez 5 minutes pour annuler avant l\'envoi.',
+                    'info',
+                    5000
+                );
+
+                // Mettre à jour l'UI immédiatement
+                updateJobCardButtons(jobId);
+
+                // Démarrer le timer
+                const intervalId = setInterval(() => {
+                    remainingSeconds--;
+                    pendingApplications[jobId].remainingSeconds = remainingSeconds;
+
+                    // Mettre à jour l'affichage du timer
+                    updateJobCardButtons(jobId);
+
+                    // Quand le timer arrive à 0, sauvegarder dans Firestore
+                    if (remainingSeconds <= 0) {
+                        clearInterval(intervalId);
+                        submitApplication(jobId, job);
+                    }
+                }, 1000);
+
+                pendingApplications[jobId].intervalId = intervalId;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la candidature:', error);
+                showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
+            }
+        }
+
+        // Soumettre la candidature après le timer
+        async function submitApplication(jobId, job) {
+            try {
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                const currentUser = auth.currentUser;
+                const userId = currentUser.uid;
 
                 // Créer la candidature avec toutes les informations de l'offre
                 const applicationData = {
@@ -2316,37 +2373,37 @@
                     jobFamily: job.job_family || 'Non spécifié',
                     publicationDate: job.publication_date || 'Non spécifié',
                     appliedDate: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'En cours'
+                    status: 'envoyée'
                 };
 
                 // Sauvegarder dans Firestore
+                const applicationsRef = db.collection('profiles').doc(userId).collection('job_applications');
                 await applicationsRef.add(applicationData);
                 
                 console.log('✅ Candidature enregistrée dans Firestore:', applicationData);
                 
+                // Retirer de pendingApplications
+                delete pendingApplications[jobId];
+                
                 // Ajouter à la liste locale
                 userApplications.add(jobId);
                 
-                // Message de confirmation avec toast
+                // Message de confirmation
                 showToast(
                     'Candidature envoyée !',
                     cleanJobTitle(job.job_title).substring(0, 50) + '...',
                     'success',
-                    3000 // 3 secondes seulement pour ne pas encombrer
+                    3000
                 );
                 
-                // Mettre à jour uniquement cette carte (beaucoup plus rapide)
+                // Mettre à jour l'UI
                 updateJobCardButtons(jobId);
                 
             } catch (error) {
-                console.error('❌ Erreur lors de la candidature:', error);
-                showToast('Erreur', 'Une erreur est survenue. Réessayez.', 'error');
-                
-                // Restaurer le bouton en cas d'erreur
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = '📝 Candidater';
-                }
+                console.error('❌ Erreur lors de l\'envoi de la candidature:', error);
+                showToast('Erreur', 'Une erreur est survenue lors de l\'envoi.', 'error');
+                delete pendingApplications[jobId];
+                updateJobCardButtons(jobId);
             }
         }
 
@@ -2433,15 +2490,34 @@
                     const actionsDiv = card.querySelector('.job-actions');
                     if (actionsDiv) {
                         const isApplied = userApplications.has(jobId);
+                        const isPending = pendingApplications[jobId];
                         const job = filteredJobs.find(j => j.job_id === jobId);
                         if (job) {
                             const jobTitle = cleanJobTitle(job.job_title);
+                            
+                            let buttonHTML = '';
+                            
+                            if (isPending) {
+                                // Candidature en attente avec timer
+                                const remainingSeconds = pendingApplications[jobId].remainingSeconds;
+                                const minutes = Math.floor(remainingSeconds / 60);
+                                const seconds = remainingSeconds % 60;
+                                const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                                
+                                buttonHTML = `
+                                    <button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
+                                    <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>
+                                `;
+                            } else if (isApplied) {
+                                // Candidature déjà envoyée
+                                buttonHTML = `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                            } else {
+                                // Pas encore candidaté
+                                buttonHTML = `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
+                            }
+                            
                             actionsDiv.innerHTML = `
-                                ${isApplied 
-                                    ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                                       <button class="job-cancel-btn" onclick="cancelApplication('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">✕ Annuler</button>` 
-                                    : `<button class="job-apply-btn" onclick="applyToJob('${jobId}', '${jobTitle.replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
-                                }
+                                ${buttonHTML}
                                 <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
                             `;
                         }
@@ -2613,14 +2689,21 @@
             <div class="job-footer">
                 <div class="job-date">Publiée le ${job.publication_date || 'date inconnue'}</div>
                 <div class="job-actions">
-                    ${isAuthenticated ? (
-                        hasApplied
-                            ? (applicationStatus === 'pending' 
-                                ? `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours</button>
-                                   <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`
-                                : `<button class="job-apply-btn applied" disabled>✓ Candidature envoyée</button>`)
-                            : `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`
-                    ) : ''}
+                    ${isAuthenticated ? (() => {
+                        const isPending = pendingApplications[job.job_id];
+                        if (isPending) {
+                            const remainingSeconds = pendingApplications[job.job_id].remainingSeconds;
+                            const minutes = Math.floor(remainingSeconds / 60);
+                            const seconds = remainingSeconds % 60;
+                            const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                            return `<button class="job-apply-btn applied" disabled>⏳ Candidature en cours (${timeStr})</button>
+                                    <button class="job-cancel-btn" onclick="cancelApplication('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">✕ Annuler</button>`;
+                        } else if (hasApplied) {
+                            return `<button class="job-apply-btn applied" disabled>✅ Candidature envoyée</button>`;
+                        } else {
+                            return `<button class="job-apply-btn" onclick="applyToJob('${job.job_id}', '${cleanJobTitle(job.job_title).replace(/'/g, "\\'")}', this)">📝 Candidater</button>`;
+                        }
+                    })() : ''}
                     <a href="${job.job_url}" target="_blank" class="job-link">Voir l'offre →</a>
                 </div>
             </div>
@@ -2937,6 +3020,16 @@
             checkAuthAndUpdateNav();
         }, 500);
     </script>
-</body>
 
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Taleos. Tous droits réservés.</p>
+            <div class="footer-love">
+                <span>Conçu avec ❤️ pour les futurs talents de la finance</span>
+                <span>•</span>
+                <span>🇫🇷 Fièrement Made in France</span>
+            </div>
+        </div>
+    </footer>
+</body>
 </html>
