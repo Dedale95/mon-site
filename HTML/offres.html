@@ -1718,7 +1718,7 @@
                     jobsContainer.innerHTML = '<div class="no-results"><h3>⚙️ Initialisation des filtres...</h3><p>Préparation de l\'interface...</p></div>';
                 }
 
-                initializeFilters();
+                await initializeFilters();
                 filteredJobs = [...allJobs];
                 
                 // Message avant le rendu
@@ -1740,9 +1740,9 @@
         }
 
 
-        function initializeFilters() {
-            // Restaurer les filtres depuis localStorage
-            const restoredFilters = restoreFilters();
+        async function initializeFilters() {
+            // Restaurer les filtres depuis Firestore (si connecté) ou localStorage
+            const restoredFilters = await restoreFilters();
             
             const sets = {
                 regions: new Set(), countries: new Set(), contracts: new Set(),
@@ -1934,8 +1934,8 @@
             });
         }
 
-        // Sauvegarder les filtres dans localStorage
-        function saveFilters() {
+        // Sauvegarder les filtres dans localStorage ET Firestore (si connecté)
+        async function saveFilters() {
             const filters = {
                 searchKeywords: Array.from(window.searchKeywords || []),
                 countries: getCheckedValues('countryFilter'),
@@ -1944,36 +1944,90 @@
                 experiences: getCheckedValues('experienceFilter'),
                 families: getCheckedValues('familyFilter'),
                 companies: getCheckedValues('companyFilter'),
-                educations: getCheckedValues('educationFilter')
+                educations: getCheckedValues('educationFilter'),
+                savedAt: new Date().toISOString()
             };
+            
+            // Sauvegarder dans localStorage (toujours)
             localStorage.setItem('offresFilters', JSON.stringify(filters));
-        }
-
-        // Restaurer les filtres depuis localStorage
-        function restoreFilters() {
-            try {
-                const savedFilters = localStorage.getItem('offresFilters');
-                if (!savedFilters) return null;
-                
-                const filters = JSON.parse(savedFilters);
-                
-                // Restaurer les mots-clés
-                if (filters.searchKeywords && Array.isArray(filters.searchKeywords)) {
-                    window.searchKeywords = new Set(filters.searchKeywords);
-                    if (window.renderSearchTags) {
-                        window.renderSearchTags();
+            
+            // Sauvegarder dans Firestore si l'utilisateur est connecté
+            if (firebase.auth && firebase.firestore) {
+                const auth = firebase.auth();
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    try {
+                        const db = firebase.firestore();
+                        await db.collection('profiles')
+                            .doc(currentUser.uid)
+                            .collection('user_preferences')
+                            .doc('offres_filters')
+                            .set(filters);
+                    } catch (error) {
+                        console.error('Erreur lors de la sauvegarde Firestore des filtres:', error);
+                        // Continuer même en cas d'erreur Firestore (localStorage suffit)
                     }
                 }
-                
-                // Retourner les filtres pour restaurer les checkboxes
-                return filters;
-            } catch (error) {
-                console.error('Erreur lors de la restauration des filtres:', error);
-                return null;
             }
         }
 
+        // Restaurer les filtres depuis Firestore (si connecté) ou localStorage
+        async function restoreFilters() {
+            let filters = null;
+            
+            // Priorité 1 : Firestore si l'utilisateur est connecté
+            if (firebase.auth && firebase.firestore) {
+                const auth = firebase.auth();
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    try {
+                        const db = firebase.firestore();
+                        const doc = await db.collection('profiles')
+                            .doc(currentUser.uid)
+                            .collection('user_preferences')
+                            .doc('offres_filters')
+                            .get();
+                        
+                        if (doc.exists) {
+                            filters = doc.data();
+                            console.log('✅ Filtres restaurés depuis Firestore');
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la restauration Firestore des filtres:', error);
+                    }
+                }
+            }
+            
+            // Priorité 2 : localStorage si Firestore n'a rien retourné
+            if (!filters) {
+                try {
+                    const savedFilters = localStorage.getItem('offresFilters');
+                    if (savedFilters) {
+                        filters = JSON.parse(savedFilters);
+                        console.log('✅ Filtres restaurés depuis localStorage');
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la restauration localStorage des filtres:', error);
+                }
+            }
+            
+            if (!filters) return null;
+            
+            // Restaurer les mots-clés
+            if (filters.searchKeywords && Array.isArray(filters.searchKeywords)) {
+                window.searchKeywords = new Set(filters.searchKeywords);
+                if (window.renderSearchTags) {
+                    window.renderSearchTags();
+                }
+            }
+            
+            // Retourner les filtres pour restaurer les checkboxes
+            return filters;
+        }
+
         async function applyFilters() {
+            // Sauvegarder automatiquement (ne pas attendre car c'est une opération secondaire)
+            saveFilters().catch(err => console.error('Erreur sauvegarde filtres:', err));
             const selectedCountries = getCheckedValues('countryFilter');
             const selectedRegions = getCheckedValues('regionFilter');
             const selectedContracts = getCheckedValues('contractFilter');
@@ -1982,8 +2036,7 @@
             const selectedCompanies = getCheckedValues('companyFilter');
             const selectedEducations = getCheckedValues('educationFilter');
             
-            // Sauvegarder les filtres après chaque modification
-            saveFilters();
+            // Sauvegarde automatique effectuée au début de applyFilters()
 
             // Filtrer les jobs selon les critères sélectionnés
             filteredJobs = allJobs.filter(job => {
@@ -2974,14 +3027,33 @@
             document.getElementById('countries').textContent = uniqueCountries.size;
         }
 
-        function resetFilters() {
+        async function resetFilters() {
             document.getElementById('searchInput').value = '';
             window.searchKeywords.clear();
             window.renderSearchTags();
             document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
-            // Supprimer les filtres sauvegardés
+            // Supprimer les filtres sauvegardés (localStorage ET Firestore)
             localStorage.removeItem('offresFilters');
-            applyFilters();
+            
+            // Supprimer aussi dans Firestore si connecté
+            if (firebase.auth && firebase.firestore) {
+                const auth = firebase.auth();
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    try {
+                        const db = firebase.firestore();
+                        await db.collection('profiles')
+                            .doc(currentUser.uid)
+                            .collection('user_preferences')
+                            .doc('offres_filters')
+                            .delete();
+                    } catch (error) {
+                        console.error('Erreur lors de la suppression Firestore des filtres:', error);
+                    }
+                }
+            }
+            
+            await applyFilters();
             updateActiveFiltersBadge();
         }
 
