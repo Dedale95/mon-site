@@ -895,9 +895,26 @@
 
                 accordions = [];
                 snapshot.forEach(doc => {
-                    accordions.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    accordions.push({ 
+                        id: doc.id, 
+                        name: data.name || `Recherche ${doc.id}`,
+                        filters: data.filters || {
+                            searchKeywords: [],
+                            countries: [],
+                            regions: [],
+                            contracts: [],
+                            experiences: [],
+                            families: [],
+                            companies: [],
+                            educations: []
+                        },
+                        order: data.order !== undefined ? data.order : 0,
+                        expanded: data.expanded !== undefined ? data.expanded : false
+                    });
                 });
 
+                console.log(`✅ ${accordions.length} accordéon(s) chargé(s) depuis Firestore`);
                 renderAccordions();
             } catch (error) {
                 console.error('Erreur lors du chargement des accordéons:', error);
@@ -905,25 +922,45 @@
         }
 
         async function saveAccordion(accordion) {
-            if (!currentUserId) return;
+            if (!currentUserId) {
+                console.warn('⚠️ Impossible de sauvegarder: utilisateur non connecté');
+                return;
+            }
 
             try {
                 const db = firebase.firestore();
-                if (accordion.id) {
+                
+                // Si l'ID est temporaire (commence par temp_) ou n'existe pas, créer un nouveau document
+                const isTemporaryId = accordion.id && accordion.id.startsWith('temp_');
+                
+                if (accordion.id && !isTemporaryId) {
+                    // ID réel : mettre à jour le document existant
                     await db.collection('profiles')
                         .doc(currentUserId)
                         .collection('advanced_searches')
                         .doc(accordion.id)
                         .update(accordion);
+                    console.log('✅ Accordéon mis à jour:', accordion.id);
                 } else {
+                    // Pas d'ID ou ID temporaire : créer un nouveau document
+                    // Exclure l'ID temporaire des données à sauvegarder
+                    const { id: tempId, ...dataToSave } = accordion;
                     const docRef = await db.collection('profiles')
                         .doc(currentUserId)
                         .collection('advanced_searches')
-                        .add(accordion);
+                        .add(dataToSave);
+                    
+                    // Mettre à jour l'ID dans l'objet accordéon
                     accordion.id = docRef.id;
+                    console.log('✅ Nouvel accordéon créé avec ID:', docRef.id);
                 }
             } catch (error) {
-                console.error('Erreur lors de la sauvegarde:', error);
+                console.error('❌ Erreur lors de la sauvegarde:', error);
+                // Afficher l'erreur à l'utilisateur si possible
+                if (error.code === 'permission-denied') {
+                    console.error('⚠️ Erreur de permissions Firestore. Vérifiez les règles de sécurité.');
+                }
+                throw error; // Re-lancer pour permettre la gestion d'erreur en amont
             }
         }
 
@@ -983,7 +1020,12 @@
             };
 
             accordions.push(newAccordion);
+            // Rendre immédiatement l'accordéon avant sauvegarde
+            renderAccordions();
+            
+            // Sauvegarder et mettre à jour l'ID
             saveAccordion(newAccordion).then(() => {
+                // Re-rendre avec le vrai ID après sauvegarde
                 renderAccordions();
                 // Scroll vers le nouvel accordéon
                 setTimeout(() => {
@@ -992,6 +1034,14 @@
                         lastAccordion[lastAccordion.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                 }, 100);
+            }).catch(error => {
+                console.error('Erreur lors de la création de l\'accordéon:', error);
+                // Retirer l'accordéon de la liste si la sauvegarde échoue
+                const index = accordions.indexOf(newAccordion);
+                if (index > -1) {
+                    accordions.splice(index, 1);
+                    renderAccordions();
+                }
             });
         }
 
