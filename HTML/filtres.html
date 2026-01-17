@@ -924,7 +924,8 @@
         async function saveAccordion(accordion) {
             if (!currentUserId) {
                 console.warn('⚠️ Impossible de sauvegarder: utilisateur non connecté');
-                return;
+                // Retourner une Promise résolue pour ne pas casser la chaîne Promise
+                return Promise.resolve();
             }
 
             try {
@@ -1019,29 +1020,35 @@
                 expanded: true
             };
 
+            // Vérifier si l'utilisateur est connecté avant de créer l'accordéon
+            if (!currentUserId) {
+                console.warn('⚠️ Impossible de créer un accordéon: utilisateur non connecté');
+                alert('Veuillez vous connecter pour créer une recherche avancée.');
+                return;
+            }
+            
             accordions.push(newAccordion);
             // Rendre immédiatement l'accordéon avant sauvegarde
             renderAccordions();
             
             // Sauvegarder et mettre à jour l'ID
             saveAccordion(newAccordion).then(() => {
-                // Re-rendre avec le vrai ID après sauvegarde
-                renderAccordions();
+                // Re-rendre avec le vrai ID après sauvegarde (seulement si l'ID a changé)
+                if (newAccordion.id !== tempId) {
+                    renderAccordions();
+                }
                 // Scroll vers le nouvel accordéon
                 setTimeout(() => {
-                    const lastAccordion = document.querySelectorAll('.search-accordion');
-                    if (lastAccordion.length > 0) {
-                        lastAccordion[lastAccordion.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    const accordionEl = document.querySelector(`[data-accordion-id="${newAccordion.id}"]`);
+                    if (accordionEl) {
+                        accordionEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                     }
                 }, 100);
             }).catch(error => {
                 console.error('Erreur lors de la création de l\'accordéon:', error);
-                // Retirer l'accordéon de la liste si la sauvegarde échoue
-                const index = accordions.indexOf(newAccordion);
-                if (index > -1) {
-                    accordions.splice(index, 1);
-                    renderAccordions();
-                }
+                // Ne pas retirer l'accordéon en cas d'erreur, juste afficher un message
+                // L'accordéon reste visible mais non sauvegardé
+                alert('Erreur lors de la sauvegarde. L\'accordéon sera perdu si vous rechargez la page.');
             });
         }
 
