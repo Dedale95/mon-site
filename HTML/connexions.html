@@ -934,9 +934,14 @@
             statusDiv.innerHTML = '⏳ Validation de vos identifiants en cours...<br><small>Veuillez patienter, cela peut prendre quelques secondes.</small>';
 
             try {
-                // Validation basique
-                if (!email || !password || !email.includes('@')) {
-                    throw new Error('Email ou mot de passe invalide');
+                // Validation basique (adaptée selon la banque)
+                const isSocieteGenerale = bankId === 'societe_generale';
+                if (!email || !password) {
+                    throw new Error(isSocieteGenerale ? 'Identifiant ou mot de passe invalide' : 'Email ou mot de passe invalide');
+                }
+                // Pour les autres banques, vérifier que c'est bien un email
+                if (!isSocieteGenerale && !email.includes('@')) {
+                    throw new Error('Veuillez entrer une adresse email valide (format: nom@domaine.com)');
                 }
 
                 // Appeler l'API backend AWS Selenium
@@ -1232,7 +1237,9 @@
                                 ${isConnected ? `
                                     <div style="padding: 20px; background: #d1fae5; border-radius: 8px; margin-bottom: 20px;">
                                         <p style="color: #065f46; font-weight: 600; margin-bottom: 5px;">✓ Compte lié</p>
-                                        <p style="color: #065f46; font-size: 0.9rem;">Email: ${connectedEmail}</p>
+                                        <p style="color: #065f46; font-size: 0.9rem;">
+                                            ${bank.id === 'societe_generale' ? 'Identifiant' : 'Email'}: ${connectedEmail}
+                                        </p>
                                     </div>
                                     <div class="connection-status" id="status-${bank.id}"></div>
                                     <div class="form-actions">
@@ -1241,11 +1248,17 @@
                                 ` : `
                                     <p style="color: #666; margin-bottom: 20px;">
                                         Connectez votre compte <strong>${bank.name}</strong> pour postuler automatiquement aux offres.
+                                        ${bank.id === 'societe_generale' ? '<br><small style="color: #f59e0b; font-weight: 500;">ℹ️ Société Générale utilise un identifiant (sans @) plutôt qu\'un email.</small>' : ''}
                                     </p>
-                                    <form onsubmit="testConnection('${bank.id}', document.getElementById('email-${bank.id}').value, document.getElementById('password-${bank.id}').value, event); return false;">
+                                    <form onsubmit="testConnection('${bank.id}', document.getElementById('${bank.id === 'societe_generale' ? 'identifier' : 'email'}-${bank.id}').value, document.getElementById('password-${bank.id}').value, event); return false;">
                                         <div class="form-group">
-                                            <label for="email-${bank.id}">📧 Email</label>
-                                            <input type="email" id="email-${bank.id}" placeholder="votre.email@exemple.com" required>
+                                            <label for="${bank.id === 'societe_generale' ? 'identifier' : 'email'}-${bank.id}">
+                                                ${bank.id === 'societe_generale' ? '👤 Identifiant' : '📧 Email'}
+                                            </label>
+                                            <input type="${bank.id === 'societe_generale' ? 'text' : 'email'}" 
+                                                   id="${bank.id === 'societe_generale' ? 'identifier' : 'email'}-${bank.id}" 
+                                                   placeholder="${bank.id === 'societe_generale' ? 'Votre identifiant (sans @)' : 'votre.email@exemple.com'}" 
+                                                   required>
                                         </div>
                                         <div class="form-group">
                                             <label for="password-${bank.id}">🔒 Mot de passe</label>
