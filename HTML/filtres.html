@@ -730,6 +730,7 @@
         let accordions = [];
         let currentUserId = null;
         let accordionCounter = 0;
+        let isCreatingAccordion = false; // Flag pour éviter les rechargements pendant la création
 
         // Mapping ville -> région (depuis offres.html)
         const cityToRegion = {
@@ -884,6 +885,12 @@
 
         async function loadAccordions() {
             if (!currentUserId) return;
+            
+            // Ne pas recharger si on est en train de créer un accordéon (pour éviter qu'il disparaisse)
+            if (isCreatingAccordion) {
+                console.log('⏸️ Rechargement des accordéons différé: création en cours');
+                return;
+            }
 
             try {
                 const db = firebase.firestore();
@@ -1027,29 +1034,43 @@
                 return;
             }
             
+            // Marquer qu'on est en train de créer un accordéon
+            isCreatingAccordion = true;
+            
             accordions.push(newAccordion);
             // Rendre immédiatement l'accordéon avant sauvegarde
             renderAccordions();
             
-            // Sauvegarder et mettre à jour l'ID
-            saveAccordion(newAccordion).then(() => {
-                // Re-rendre avec le vrai ID après sauvegarde (seulement si l'ID a changé)
-                if (newAccordion.id !== tempId) {
-                    renderAccordions();
-                }
-                // Scroll vers le nouvel accordéon
-                setTimeout(() => {
-                    const accordionEl = document.querySelector(`[data-accordion-id="${newAccordion.id}"]`);
-                    if (accordionEl) {
-                        accordionEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Sauvegarder et mettre à jour l'ID (attendre que ce soit fait avant de continuer)
+            (async () => {
+                try {
+                    await saveAccordion(newAccordion);
+                    // Re-rendre avec le vrai ID après sauvegarde (seulement si l'ID a changé)
+                    if (newAccordion.id !== tempId) {
+                        renderAccordions();
                     }
-                }, 100);
-            }).catch(error => {
-                console.error('Erreur lors de la création de l\'accordéon:', error);
-                // Ne pas retirer l'accordéon en cas d'erreur, juste afficher un message
-                // L'accordéon reste visible mais non sauvegardé
-                alert('Erreur lors de la sauvegarde. L\'accordéon sera perdu si vous rechargez la page.');
-            });
+                    // Scroll vers le nouvel accordéon
+                    setTimeout(() => {
+                        const accordionEl = document.querySelector(`[data-accordion-id="${newAccordion.id}"]`);
+                        if (accordionEl) {
+                            accordionEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        } else {
+                            // Fallback: utiliser le dernier accordéon si le sélecteur ne fonctionne pas
+                            const lastAccordion = document.querySelectorAll('.search-accordion');
+                            if (lastAccordion.length > 0) {
+                                lastAccordion[lastAccordion.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        }
+                    }, 150);
+                } catch (error) {
+                    console.error('❌ Erreur lors de la création de l\'accordéon:', error);
+                    // Ne pas retirer l'accordéon en cas d'erreur (il restera visible mais non sauvegardé)
+                    // Juste afficher un message dans la console
+                } finally {
+                    // Réactiver le chargement des accordéons après la création
+                    isCreatingAccordion = false;
+                }
+            })();
         }
 
         function renderAccordions() {
