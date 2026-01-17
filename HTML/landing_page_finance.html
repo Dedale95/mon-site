@@ -1248,10 +1248,51 @@
             }
         }
 
+        // Charger le nombre total d'offres
+        async function loadTotalJobsCount() {
+            const totalJobsCountEl = document.getElementById('totalJobsCount');
+            if (!totalJobsCountEl) return;
+
+            const paths = [
+                'HTML/scraped_jobs_live.json',
+                './HTML/scraped_jobs_live.json',
+                'scraped_jobs_live.json',
+                './scraped_jobs_live.json',
+                // Fallback GitHub (si déployé sur GitHub Pages)
+                'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json',
+                'https://raw.githubusercontent.com/Dedale95/mon-site/main/scraped_jobs_live.json'
+            ];
+
+            for (const path of paths) {
+                try {
+                    const response = await fetch(path);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const count = Array.isArray(data) ? data.length : 0;
+                        if (count > 0) {
+                            // Formater le nombre avec des espaces pour les milliers
+                            const formattedCount = count.toLocaleString('fr-FR').replace(/,/g, ' ');
+                            totalJobsCountEl.innerHTML = formattedCount;
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    // Continuer avec le chemin suivant
+                    continue;
+                }
+            }
+
+            // Si aucun fichier n'a pu être chargé, afficher un nombre par défaut
+            totalJobsCountEl.innerHTML = '2 000+';
+        }
+
         // Initialiser l'authentification quand le DOM est prêt
         document.addEventListener('DOMContentLoaded', function() {
             // Initialiser Firebase et vérifier l'authentification
             initAuth();
+            
+            // Charger le nombre d'offres
+            loadTotalJobsCount();
             
             // Mettre en surbrillance la page actuelle
             highlightCurrentPage();
@@ -1272,6 +1313,7 @@
         // Si le DOM est déjà chargé, initialiser immédiatement
         if (document.readyState !== 'loading') {
             initAuth();
+            loadTotalJobsCount();
             highlightCurrentPage();
             setTimeout(() => {
                 checkAuthAndUpdateNav();
