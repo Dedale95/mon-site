@@ -2566,9 +2566,11 @@
             cards.forEach(card => {
                 const cardJobId = card.querySelector('.job-id')?.textContent;
                 if (cardJobId === jobId) {
+                    const isApplied = userApplications.has(jobId);
                     const isPending = pendingApplications[jobId];
                     const status = applicationStatuses.get(jobId);
-                    const isSubmitted = status === 'envoyée';
+                    // Considérer comme envoyée si statut 'envoyée' OU si candidature existe sans timer
+                    const isSubmitted = status === 'envoyée' || (isApplied && !isPending);
                     
                     // Retirer toutes les classes d'état
                     card.classList.remove('application-pending', 'application-submitted');
