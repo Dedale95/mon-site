@@ -2979,6 +2979,8 @@
             window.searchKeywords.clear();
             window.renderSearchTags();
             document.querySelectorAll('.filter-checkbox-container input[type="checkbox"]').forEach(cb => cb.checked = false);
+            // Supprimer les filtres sauvegardés
+            localStorage.removeItem('offresFilters');
             applyFilters();
             updateActiveFiltersBadge();
         }
