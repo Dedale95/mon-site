@@ -331,7 +331,7 @@
         }
 
         .accordion-body {
-            padding: 24px;
+            padding: 35px;
         }
 
         /* Filtres (réutilisés depuis offres.html) */
@@ -341,15 +341,32 @@
 
         .filter-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-bottom: 24px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Première ligne : Recherche, Pays, Région */
+        .filter-row:first-of-type {
+            grid-template-columns: 1.8fr 1.1fr 1.4fr;
+        }
+
+        /* Deuxième ligne : Contrat, Expérience, Famille */
+        .filter-row:nth-of-type(2) {
+            grid-template-columns: 0.9fr 1.5fr 1.6fr;
+        }
+
+        /* Troisième ligne : Entreprise, Éducation */
+        .filter-row:nth-of-type(3) {
+            grid-template-columns: 1fr 1fr;
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+        }
+
+        .filter-group > label {
+            margin-bottom: 10px;
         }
 
         .filter-group label {
@@ -400,22 +417,41 @@
         }
 
         .filter-checkbox-container {
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
             padding: 12px;
             background: #f9fafb;
         }
 
+        .filter-checkbox-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .filter-checkbox-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .filter-checkbox-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+
         .filter-checkbox-container label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 0;
+            display: block;
+            padding: 2px 8px;
+            margin-bottom: 0px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: normal;
-            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .filter-checkbox-container label:hover {
+            background: rgba(102, 126, 234, 0.08);
         }
 
         .filter-checkbox-container label.disabled {
@@ -424,7 +460,17 @@
         }
 
         .filter-checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: #667eea;
             cursor: pointer;
+        }
+
+        .filter-checkbox-container label.disabled:hover {
+            background: transparent;
+        }
+
+        .filter-checkbox-container input[type="checkbox"]:disabled {
+            cursor: not-allowed;
         }
 
         /* Résultats de l'accordéon */
@@ -983,7 +1029,17 @@
                 checkbox.checked = isChecked;
                 checkbox.disabled = isDisabled;
                 checkbox.onchange = () => {
-                    const filterType = filterId.replace('Filter-', '').replace(/Filter$/, '');
+                    // Mapping des IDs de filtres vers les types utilisés dans updateFilter
+                    const filterTypeMap = {
+                        'countryFilter': 'countries',
+                        'regionFilter': 'regions',
+                        'contractFilter': 'contracts',
+                        'experienceFilter': 'experiences',
+                        'familyFilter': 'families',
+                        'companyFilter': 'companies',
+                        'educationFilter': 'educations'
+                    };
+                    const filterType = filterTypeMap[filterId] || filterId.replace('Filter', '').toLowerCase() + 's';
                     updateFilter(accordionId, filterType, value, checkbox.checked);
                 };
 
