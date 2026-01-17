@@ -948,7 +948,7 @@
                         'X-API-Key': API_KEY
                     },
                     body: JSON.stringify({
-                        url: bank.url,
+                        bank_name: bank.id,  // Format: "credit_agricole" ou "societe_generale"
                         email: email,
                         password: password
                     })
