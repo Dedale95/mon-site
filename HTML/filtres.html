@@ -7,6 +7,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         * {
@@ -32,7 +33,7 @@
             flex: 1;
         }
 
-        /* Navigation harmonisée */
+        /* Navigation */
         nav {
             background: white;
             padding: 20px 40px;
@@ -91,10 +92,6 @@
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
-            display: inline-block;
-            box-sizing: border-box;
-            min-width: fit-content;
-            position: relative;
         }
 
         .nav-link:hover {
@@ -106,13 +103,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white !important;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            /* Même padding pour éviter décalage */
-            padding: 8px 16px;
-        }
-
-        .nav-link-primary:hover {
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            /* Pas de transform pour éviter décalage */
         }
 
         .logout-btn {
@@ -122,11 +112,9 @@
             border: 1px solid #e5e7eb;
             cursor: pointer;
             font-weight: 500;
-            font-size: 0.95rem;
             padding: 8px 16px;
             border-radius: 8px;
             transition: all 0.3s;
-            font-family: inherit;
         }
 
         .logout-btn:hover {
@@ -135,123 +123,396 @@
             border-color: #d1d5db;
         }
 
-        /* Container principal */
         .container {
             max-width: 1400px;
             margin: 30px auto;
             padding: 0 20px;
         }
 
-        /* Coming Soon Section */
-        .coming-soon {
-            background: white;
-            border-radius: 20px;
-            padding: 80px 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .coming-soon::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .coming-soon-icon {
-            font-size: 5rem;
+        /* Header avec bouton d'ajout */
+        .advanced-search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
-            animation: float 3s ease-in-out infinite;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .coming-soon h2 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
+        .advanced-search-header h1 {
+            font-size: 2rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .coming-soon p {
-            font-size: 1.2rem;
-            color: #666;
-            line-height: 1.8;
-            max-width: 600px;
-            margin: 0 auto 40px;
-        }
-
-        .feature-preview {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-top: 50px;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .feature-item {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            padding: 30px;
-            border-radius: 15px;
-            border: 2px solid rgba(102, 126, 234, 0.1);
+        .btn-add-accordion {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
             transition: all 0.3s;
         }
 
-        .feature-item:hover {
-            transform: translateY(-5px);
-            border-color: rgba(102, 126, 234, 0.3);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.15);
+        .btn-add-accordion:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
-        .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
+        /* Container des accordéons */
+        .accordions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .feature-title {
+        /* Accordéon individuel */
+        .search-accordion {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .search-accordion:hover {
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Header de l'accordéon */
+        .accordion-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .accordion-header:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .accordion-header.expanded {
+            border-bottom-color: #e5e7eb;
+        }
+
+        .accordion-header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .accordion-drag-handle {
+            cursor: move;
+            color: #999;
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .accordion-drag-handle:hover {
+            color: #667eea;
+        }
+
+        .accordion-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .accordion-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .accordion-title {
             font-size: 1.2rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 10px;
+            flex: 1;
+            min-width: 0;
         }
 
-        .feature-desc {
-            color: #666;
-            font-size: 0.95rem;
-            line-height: 1.6;
+        .accordion-title-input {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 6px 12px;
+            width: 100%;
+            max-width: 400px;
         }
 
-        .cta-button {
-            display: inline-block;
-            padding: 16px 40px;
+        .accordion-count {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            text-decoration: none;
-            border-radius: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
             font-weight: 600;
-            font-size: 1.1rem;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            white-space: nowrap;
+        }
+
+        .accordion-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .accordion-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
             transition: all 0.3s;
-            margin-top: 20px;
+            background: transparent;
+            color: #666;
         }
 
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        .accordion-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
         }
 
+        .accordion-btn-danger {
+            color: #ef4444;
+        }
+
+        .accordion-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .accordion-toggle-icon {
+            transition: transform 0.3s;
+            color: #666;
+            font-size: 1.5rem;
+        }
+
+        .accordion-header.expanded .accordion-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Contenu de l'accordéon */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .accordion-content.expanded {
+            max-height: 5000px;
+        }
+
+        .accordion-body {
+            padding: 24px;
+        }
+
+        /* Filtres (réutilisés depuis offres.html) */
+        .filters-section {
+            margin-bottom: 24px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .search-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .search-wrapper input {
+            padding: 12px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-wrapper input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .search-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .filter-checkbox-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f9fafb;
+        }
+
+        .filter-checkbox-container label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 0.9rem;
+        }
+
+        .filter-checkbox-container label.disabled {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .filter-checkbox-container input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        /* Résultats de l'accordéon */
+        .accordion-results {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .accordion-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .accordion-results-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .job-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .job-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            border-color: #667eea;
+        }
+
+        .job-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .job-company {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .job-tag {
+            padding: 4px 10px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
 
         /* Footer */
         footer {
@@ -283,41 +544,21 @@
             gap: 8px;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            nav {
-                padding: 15px 20px;
-            }
-
             .nav-container {
                 flex-direction: column;
                 gap: 15px;
             }
 
-            .nav-links {
-                flex-direction: column;
-                width: 100%;
-                gap: 10px;
+            .accordion-header {
+                padding: 16px;
             }
 
-            .nav-link {
-                width: 100%;
-                text-align: center;
+            .accordion-title {
+                font-size: 1rem;
             }
 
-            .coming-soon {
-                padding: 60px 20px;
-            }
-
-            .coming-soon h2 {
-                font-size: 2rem;
-            }
-
-            .coming-soon p {
-                font-size: 1.1rem;
-            }
-
-            .feature-preview {
+            .filter-row {
                 grid-template-columns: 1fr;
             }
         }
@@ -345,192 +586,23 @@
     </nav>
 
     <div class="main-content">
-    <div class="container">
-        <div class="coming-soon">
-            <div class="coming-soon-icon">🚀</div>
-            <h2>Bientôt disponible</h2>
-            <p>Notre système de recherche avancée est en cours de développement. Cette fonctionnalité vous permettra de créer des filtres personnalisés ultra-puissants pour trouver exactement les opportunités que vous recherchez.</p>
-
-            <div class="feature-preview">
-                <div class="feature-item">
-                    <div class="feature-icon">🎯</div>
-                    <div class="feature-title">Filtres intelligents</div>
-                    <div class="feature-desc">Combinaisons complexes de critères pour une recherche ultra-précise</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">💾</div>
-                    <div class="feature-title">Sauvegardes</div>
-                    <div class="feature-desc">Enregistrez vos recherches favorites et réutilisez-les instantanément</div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🔔</div>
-                    <div class="feature-title">Alertes automatiques</div>
-                    <div class="feature-desc">Recevez des notifications dès qu'une offre correspond à vos critères</div>
-                </div>
+        <div class="container">
+            <div class="advanced-search-header">
+                <h1>🔍 Recherche avancée</h1>
+                <button class="btn-add-accordion" onclick="createNewAccordion()">+ Nouvelle recherche</button>
             </div>
 
-            <a href="offres.html" class="cta-button">📋 Voir toutes les offres</a>
+            <div class="accordions-container" id="accordionsContainer">
+                <!-- Les accordéons seront générés dynamiquement ici -->
+            </div>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">🎯</div>
+                <h3>Créez votre première recherche</h3>
+                <p>Cliquez sur "Nouvelle recherche" pour commencer</p>
+            </div>
         </div>
     </div>
-
-
-    </div>
-
-    <script>
-
-        // Mettre en surbrillance uniquement la page actuelle
-        function highlightCurrentPage() {
-            let currentPage = window.location.pathname.split('/').pop();
-            if (!currentPage || currentPage === '') {
-                currentPage = window.location.href.split('/').pop();
-            }
-            
-            const navLinks = document.querySelectorAll('.nav-link:not(#logoutBtn)');
-            
-            navLinks.forEach(link => {
-                link.classList.remove('nav-link-primary');
-                const linkHref = link.getAttribute('href');
-                const linkText = link.textContent.trim();
-
-                // Ignorer les liens spéciaux (avec ou sans emojis)
-                if (linkText.includes('Mon Profil') || linkText.includes('Déconnexion') || linkText.includes('Inscription / Connexion')) {
-                    return;
-                }
-
-                if (linkHref) {
-                    const linkPage = linkHref.split('/').pop();
-                    if (linkPage === currentPage) {
-                        link.classList.add('nav-link-primary');
-                    }
-                }
-            });
-        }
-
-        // Vérifier l'authentification et mettre à jour la navigation
-        function checkAuthAndUpdateNav() {
-            const profileLink = document.getElementById('profileLink');
-            const authLink = document.getElementById('authLink');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const applicationsLink = document.getElementById('applicationsLink');
-            const connexionsLink = document.getElementById('connexionsLink');
-
-            // Vérifier à la fois localStorage et Firebase auth
-            const token = localStorage.getItem('authToken');
-            let isAuthenticated = !!token;
-            
-            // Si Firebase est disponible, vérifier aussi l'état Firebase
-            if (typeof firebase !== 'undefined' && firebase.auth) {
-                try {
-                    const auth = firebase.auth();
-                    const currentUser = auth.currentUser;
-                    if (currentUser) {
-                        isAuthenticated = true;
-                    } else if (!token) {
-                        isAuthenticated = false;
-                    }
-                } catch (e) {
-                    // Firebase non disponible, utiliser seulement localStorage
-                }
-            }
-            
-            if (isAuthenticated) {
-                if (profileLink) {
-                    profileLink.style.display = 'block';
-                    profileLink.classList.remove('nav-link-primary');
-                }
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'block';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
-                if (authLink) authLink.style.display = 'none';
-                if (applicationsLink) applicationsLink.style.display = 'block';
-                if (connexionsLink) connexionsLink.style.display = 'block';
-            } else {
-                if (profileLink) {
-                    profileLink.style.display = 'none';
-                    profileLink.classList.remove('nav-link-primary');
-                }
-                if (logoutBtn) {
-                    logoutBtn.style.display = 'none';
-                    logoutBtn.classList.remove('nav-link-primary');
-                }
-                if (authLink) {
-                    authLink.style.display = 'block';
-                    authLink.classList.remove('nav-link-primary');
-                }
-                if (applicationsLink) applicationsLink.style.display = 'none';
-                if (connexionsLink) connexionsLink.style.display = 'none';
-            }
-            
-            setTimeout(() => highlightCurrentPage(), 50);
-        }
-        
-        // Écouter les changements d'état Firebase si disponible
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            try {
-                const auth = firebase.auth();
-                auth.onAuthStateChanged((user) => {
-                    checkAuthAndUpdateNav();
-                });
-            } catch (e) {
-                // Firebase non disponible
-            }
-        }
-
-        // Initialiser Firebase (si pas déjà initialisé)
-        if (typeof firebase !== 'undefined') {
-            try {
-                if (!firebase.apps || firebase.apps.length === 0) {
-                    const firebaseConfig = {
-                        apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
-                        authDomain: "project-taleos.firebaseapp.com",
-                        projectId: "project-taleos",
-                        storageBucket: "project-taleos.firebasestorage.app",
-                        messagingSenderId: "974062127016",
-                        appId: "1:974062127016:web:b6cffae44f1bae56f03f9d",
-                        measurementId: "G-4PZJ4QXMJ0"
-                    };
-                    firebase.initializeApp(firebaseConfig);
-                    console.log('✅ Firebase initialisé');
-                }
-            } catch (e) {
-                console.log('ℹ️ Firebase déjà initialisé ou erreur:', e.message);
-            }
-        }
-
-        // Fonction de déconnexion avec Firebase
-        async function handleLogout() {
-            try {
-                // Vérifier si Firebase est disponible
-                if (typeof firebase !== 'undefined' && firebase.auth) {
-                    const auth = firebase.auth();
-                    await auth.signOut();
-                }
-                // Nettoyer localStorage (mais garder le profil pour la reconnexion)
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userEmail');
-                // Rediriger vers la page de connexion
-                window.location.href = 'auth.html';
-            } catch (error) {
-                console.error('Erreur lors de la déconnexion:', error);
-                // Déconnexion de toute façon même en cas d'erreur
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userEmail');
-                window.location.href = 'auth.html';
-            }
-        }
-
-        highlightCurrentPage();
-        checkAuthAndUpdateNav();
-        setTimeout(() => {
-            highlightCurrentPage();
-            checkAuthAndUpdateNav();
-        }, 100);
-        setTimeout(() => {
-            highlightCurrentPage();
-            checkAuthAndUpdateNav();
-        }, 500);
-    </script>
 
     <footer>
         <div class="container">
@@ -542,5 +614,659 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGeNfIevsaNjfbKTYWMaURhJWdfzWMjmc",
+            authDomain: "project-taleos.firebaseapp.com",
+            projectId: "project-taleos",
+            storageBucket: "project-taleos.firebasestorage.app",
+            messagingSenderId: "974062127016",
+            appId: "1:974062127016:web:b6cffae44f1bae56f03f9d",
+            measurementId: "G-4PZJ4QXMJ0"
+        };
+
+        if (!firebase.apps || firebase.apps.length === 0) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        // Variables globales
+        let allJobs = [];
+        let accordions = [];
+        let currentUserId = null;
+        let accordionCounter = 0;
+
+        // Mapping ville -> région (depuis offres.html)
+        const cityToRegion = {
+            "paris": "Île-de-France", "montrouge": "Île-de-France", "villejuif": "Île-de-France",
+            "massy": "Île-de-France", "guyancourt": "Île-de-France", "la défense": "Île-de-France",
+            "lyon": "Auvergne-Rhône-Alpes", "grenoble": "Auvergne-Rhône-Alpes",
+            "toulouse": "Occitanie", "montpellier": "Occitanie",
+            "marseille": "Provence-Alpes-Côte d'Azur", "nice": "Provence-Alpes-Côte d'Azur",
+            "nantes": "Pays de la Loire",
+            "lille": "Hauts-de-France",
+            "strasbourg": "Grand Est",
+            "bordeaux": "Nouvelle-Aquitaine",
+            "rennes": "Bretagne",
+            "londres": "Londres", "london": "Londres",
+            "new york": "New York",
+            "singapour": "Singapour"
+        };
+
+        function getCityRegion(city, country) {
+            if (!city) return country === "France" ? "Autres régions françaises" : country;
+            const normalizedCity = city.toLowerCase();
+            if (cityToRegion[normalizedCity]) return cityToRegion[normalizedCity];
+            if (country === "France") return "Autres régions françaises";
+            return city;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadJobs();
+            await checkAuthAndInit();
+            initNav();
+        });
+
+        async function loadJobs() {
+            try {
+                const paths = [
+                    'HTML/scraped_jobs_live.json',
+                    './HTML/scraped_jobs_live.json',
+                    'scraped_jobs_live.json',
+                    'https://raw.githubusercontent.com/Dedale95/mon-site/main/HTML/scraped_jobs_live.json'
+                ];
+
+                for (const path of paths) {
+                    try {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (Array.isArray(data) && data.length > 0) {
+                                // Normaliser les jobs (simplifié par rapport à offres.html)
+                                allJobs = data.map(job => {
+                                    if (job.location && job.location.includes(' - ')) {
+                                        const parts = job.location.split(' - ');
+                                        const country = parts[1]?.trim() || '';
+                                        job.cleanCountries = country ? [country] : [];
+                                        job.cleanRegions = [];
+                                        if (parts[0]) {
+                                            const cities = parts[0].split(/[\/,]/).map(c => c.trim()).filter(c => c);
+                                            cities.forEach(city => {
+                                                const region = getCityRegion(city, country);
+                                                if (region && !job.cleanRegions.includes(region)) {
+                                                    job.cleanRegions.push(region);
+                                                }
+                                            });
+                                        }
+                                        if (job.cleanRegions.length === 0 && country) {
+                                            job.cleanRegions.push(getCityRegion('', country));
+                                        }
+                                    } else {
+                                        job.cleanCountries = [];
+                                        job.cleanRegions = [];
+                                    }
+                                    return job;
+                                });
+                                console.log(`✅ ${allJobs.length} offres chargées`);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                console.error('❌ Impossible de charger les offres');
+            } catch (error) {
+                console.error('Erreur lors du chargement des offres:', error);
+            }
+        }
+
+        async function checkAuthAndInit() {
+            const auth = firebase.auth();
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    await loadAccordions();
+                } else {
+                    currentUserId = null;
+                    accordions = [];
+                    renderAccordions();
+                }
+            });
+        }
+
+        async function loadAccordions() {
+            if (!currentUserId) return;
+
+            try {
+                const db = firebase.firestore();
+                const snapshot = await db.collection('profiles')
+                    .doc(currentUserId)
+                    .collection('advanced_searches')
+                    .orderBy('order', 'asc')
+                    .get();
+
+                accordions = [];
+                snapshot.forEach(doc => {
+                    accordions.push({ id: doc.id, ...doc.data() });
+                });
+
+                renderAccordions();
+            } catch (error) {
+                console.error('Erreur lors du chargement des accordéons:', error);
+            }
+        }
+
+        async function saveAccordion(accordion) {
+            if (!currentUserId) return;
+
+            try {
+                const db = firebase.firestore();
+                if (accordion.id) {
+                    await db.collection('profiles')
+                        .doc(currentUserId)
+                        .collection('advanced_searches')
+                        .doc(accordion.id)
+                        .update(accordion);
+                } else {
+                    const docRef = await db.collection('profiles')
+                        .doc(currentUserId)
+                        .collection('advanced_searches')
+                        .add(accordion);
+                    accordion.id = docRef.id;
+                }
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde:', error);
+            }
+        }
+
+        async function deleteAccordion(accordionId) {
+            if (!currentUserId) return;
+
+            try {
+                const db = firebase.firestore();
+                await db.collection('profiles')
+                    .doc(currentUserId)
+                    .collection('advanced_searches')
+                    .doc(accordionId)
+                    .delete();
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+            }
+        }
+
+        async function reorderAccordions() {
+            if (!currentUserId) return;
+
+            try {
+                const db = firebase.firestore();
+                const batch = db.batch();
+                accordions.forEach((accordion, index) => {
+                    const ref = db.collection('profiles')
+                        .doc(currentUserId)
+                        .collection('advanced_searches')
+                        .doc(accordion.id);
+                    batch.update(ref, { order: index });
+                });
+                await batch.commit();
+            } catch (error) {
+                console.error('Erreur lors du réordonnancement:', error);
+            }
+        }
+
+        function createNewAccordion() {
+            // Générer un ID temporaire unique
+            const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            const newAccordion = {
+                id: tempId,
+                name: `Recherche ${accordions.length + 1}`,
+                filters: {
+                    searchKeywords: [],
+                    countries: [],
+                    regions: [],
+                    contracts: [],
+                    experiences: [],
+                    families: [],
+                    companies: [],
+                    educations: []
+                },
+                order: accordions.length,
+                expanded: true
+            };
+
+            accordions.push(newAccordion);
+            saveAccordion(newAccordion).then(() => {
+                renderAccordions();
+                // Scroll vers le nouvel accordéon
+                setTimeout(() => {
+                    const lastAccordion = document.querySelectorAll('.search-accordion');
+                    if (lastAccordion.length > 0) {
+                        lastAccordion[lastAccordion.length - 1].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 100);
+            });
+        }
+
+        function renderAccordions() {
+            const container = document.getElementById('accordionsContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (accordions.length === 0) {
+                container.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            container.innerHTML = accordions.map((accordion, index) => renderAccordion(accordion, index)).join('');
+            
+        }
+
+        function renderAccordion(accordion, index) {
+            const filteredJobs = applyFiltersToJobs(accordion.filters);
+            const isExpanded = accordion.expanded !== false;
+            const accordionId = accordion.id || 'temp_' + index;
+
+            return `
+                <div class="search-accordion" data-accordion-id="${accordionId}">
+                    <div class="accordion-header ${isExpanded ? 'expanded' : ''}" onclick="toggleAccordion('${accordionId}')">
+                        <div class="accordion-header-left">
+                            <span class="accordion-drag-handle" title="Déplacer">⋮⋮</span>
+                            <div class="accordion-icon">${index + 1}</div>
+                            <div class="accordion-title-group">
+                                <span class="accordion-title" id="title-${accordionId}">${accordion.name}</span>
+                            </div>
+                            <div class="accordion-count">${filteredJobs.length} offres</div>
+                        </div>
+                        <div class="accordion-actions">
+                            <button class="accordion-btn" onclick="event.stopPropagation(); renameAccordion('${accordionId}')" title="Renommer">✏️</button>
+                            <button class="accordion-btn accordion-btn-danger" onclick="event.stopPropagation(); deleteAccordionPrompt('${accordionId}')" title="Supprimer">🗑️</button>
+                            <span class="accordion-toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="accordion-content ${isExpanded ? 'expanded' : ''}">
+                        <div class="accordion-body">
+                            ${renderFilters(accordionId, accordion.filters)}
+                            ${isExpanded ? renderResults(accordionId, filteredJobs) : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFilters(accordionId, filters) {
+            // Récupérer toutes les valeurs uniques pour chaque filtre
+            const allCountries = [...new Set(allJobs.flatMap(j => j.cleanCountries || []))].sort();
+            const allRegions = [...new Set(allJobs.flatMap(j => j.cleanRegions || []))].sort();
+            const allContracts = [...new Set(allJobs.map(j => j.contract_type).filter(Boolean))].sort();
+            const allExperiences = [...new Set(allJobs.map(j => j.experience_level).filter(Boolean))].sort();
+            const allFamilies = [...new Set(allJobs.map(j => j.job_family).filter(Boolean))].sort();
+            const allCompanies = [...new Set(allJobs.map(j => j.company_name).filter(Boolean))].sort();
+            const allEducations = [...new Set(allJobs.map(j => j.education_level).filter(Boolean))].sort();
+
+            return `
+                <div class="filters-section">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>🔍 Mots-clés</label>
+                            <div class="search-wrapper">
+                                <input type="text" id="search-${accordionId}" placeholder="Tapez un mot-clé et appuyez sur Entrée..." onkeydown="if(event.key==='Enter') addSearchKeyword('${accordionId}', this.value)">
+                                <div class="search-tags" id="tags-${accordionId}">
+                                    ${(filters.searchKeywords || []).map(kw => `
+                                        <div class="search-tag">
+                                            <span>${kw}</span>
+                                            <span class="search-tag-remove" onclick="removeSearchKeyword('${accordionId}', '${kw}')">✕</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>🌍 Pays</label>
+                            <div class="filter-checkbox-container" id="countryFilter-${accordionId}">
+                                ${allCountries.map(c => `
+                                    <label>
+                                        <input type="checkbox" value="${c}" ${(filters.countries || []).includes(c) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'countries', '${c}', this.checked)">
+                                        <span>${c}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>🗺️ Région</label>
+                            <div class="filter-checkbox-container" id="regionFilter-${accordionId}">
+                                ${allRegions.map(r => `
+                                    <label>
+                                        <input type="checkbox" value="${r}" ${(filters.regions || []).includes(r) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'regions', '${r}', this.checked)">
+                                        <span>${r}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>📄 Type de contrat</label>
+                            <div class="filter-checkbox-container" id="contractFilter-${accordionId}">
+                                ${allContracts.map(c => `
+                                    <label>
+                                        <input type="checkbox" value="${c}" ${(filters.contracts || []).includes(c) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'contracts', '${c}', this.checked)">
+                                        <span>${c}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>💼 Expérience</label>
+                            <div class="filter-checkbox-container" id="experienceFilter-${accordionId}">
+                                ${allExperiences.map(e => `
+                                    <label>
+                                        <input type="checkbox" value="${e}" ${(filters.experiences || []).includes(e) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'experiences', '${e}', this.checked)">
+                                        <span>${e}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>🎯 Famille de métier</label>
+                            <div class="filter-checkbox-container" id="familyFilter-${accordionId}">
+                                ${allFamilies.map(f => `
+                                    <label>
+                                        <input type="checkbox" value="${f}" ${(filters.families || []).includes(f) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'families', '${f}', this.checked)">
+                                        <span>${f}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label>🏢 Entreprise</label>
+                            <div class="filter-checkbox-container" id="companyFilter-${accordionId}">
+                                ${allCompanies.map(c => `
+                                    <label>
+                                        <input type="checkbox" value="${c}" ${(filters.companies || []).includes(c) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'companies', '${c}', this.checked)">
+                                        <span>${c}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>🎓 Niveau d'étude</label>
+                            <div class="filter-checkbox-container" id="educationFilter-${accordionId}">
+                                ${allEducations.map(e => `
+                                    <label>
+                                        <input type="checkbox" value="${e}" ${(filters.educations || []).includes(e) ? 'checked' : ''} 
+                                               onchange="updateFilter('${accordionId}', 'educations', '${e}', this.checked)">
+                                        <span>${e}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResults(accordionId, jobs) {
+            if (jobs.length === 0) {
+                return '<div class="no-results">Aucune offre ne correspond aux filtres sélectionnés.</div>';
+            }
+
+            return `
+                <div class="accordion-results">
+                    <div class="accordion-results-header">
+                        <div class="accordion-results-title">Résultats (${jobs.length} offres)</div>
+                    </div>
+                    <div class="jobs-grid">
+                        ${jobs.slice(0, 50).map(job => `
+                            <div class="job-card" onclick="window.open('${job.job_url}', '_blank')">
+                                <div class="job-title">${job.job_title || 'Sans titre'}</div>
+                                ${job.company_name ? `<div class="job-company">${job.company_name}</div>` : ''}
+                                ${job.location ? `<div class="job-tags"><span class="job-tag">📍 ${job.location}</span></div>` : ''}
+                                ${job.contract_type ? `<div class="job-tags"><span class="job-tag">📄 ${job.contract_type}</span></div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${jobs.length > 50 ? `<div style="text-align: center; margin-top: 20px; color: #666;">... et ${jobs.length - 50} autres offres</div>` : ''}
+                </div>
+            `;
+        }
+
+        function applyFiltersToJobs(filters) {
+            if (!filters) return allJobs;
+
+            return allJobs.filter(job => {
+                // Mots-clés
+                if (filters.searchKeywords && filters.searchKeywords.length > 0) {
+                    const titleMatch = filters.searchKeywords.every(kw => 
+                        (job.job_title || '').toLowerCase().includes(kw.toLowerCase())
+                    );
+                    const descMatch = filters.searchKeywords.every(kw =>
+                        (job.job_description || '').toLowerCase().includes(kw.toLowerCase())
+                    );
+                    if (!titleMatch && !descMatch) return false;
+                }
+
+                // Pays
+                if (filters.countries && filters.countries.length > 0) {
+                    if (!job.cleanCountries || !job.cleanCountries.some(c => filters.countries.includes(c))) {
+                        return false;
+                    }
+                }
+
+                // Régions
+                if (filters.regions && filters.regions.length > 0) {
+                    if (!job.cleanRegions || !job.cleanRegions.some(r => filters.regions.includes(r))) {
+                        return false;
+                    }
+                }
+
+                // Contrats
+                if (filters.contracts && filters.contracts.length > 0) {
+                    if (!filters.contracts.includes(job.contract_type)) return false;
+                }
+
+                // Expériences
+                if (filters.experiences && filters.experiences.length > 0) {
+                    if (!filters.experiences.includes(job.experience_level)) return false;
+                }
+
+                // Familles
+                if (filters.families && filters.families.length > 0) {
+                    if (!filters.families.includes(job.job_family)) return false;
+                }
+
+                // Entreprises
+                if (filters.companies && filters.companies.length > 0) {
+                    if (!filters.companies.includes(job.company_name)) return false;
+                }
+
+                // Éducations
+                if (filters.educations && filters.educations.length > 0) {
+                    if (!filters.educations.includes(job.education_level)) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function toggleAccordion(accordionId) {
+            const accordion = accordions.find(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            if (!accordion) {
+                // Fallback : chercher par index si l'ID ne correspond pas
+                const index = parseInt(accordionId.replace('temp_', ''));
+                if (!isNaN(index) && accordions[index]) {
+                    accordion = accordions[index];
+                }
+            }
+            
+            if (accordion) {
+                accordion.expanded = !accordion.expanded;
+                saveAccordion(accordion);
+                renderAccordions();
+            }
+        }
+
+        function renameAccordion(accordionId) {
+            const accordion = accordions.find(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            if (!accordion) {
+                const index = parseInt(accordionId.replace('temp_', ''));
+                if (!isNaN(index) && accordions[index]) {
+                    accordion = accordions[index];
+                }
+            }
+            
+            if (!accordion) return;
+
+            const newName = prompt('Nouveau nom de la recherche:', accordion.name);
+            if (newName && newName.trim()) {
+                accordion.name = newName.trim();
+                saveAccordion(accordion);
+                renderAccordions();
+            }
+        }
+
+        function deleteAccordionPrompt(accordionId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette recherche ?')) return;
+
+            const index = accordions.findIndex(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            if (index === -1) {
+                // Fallback
+                const fallbackIndex = parseInt(accordionId.replace('temp_', ''));
+                if (!isNaN(fallbackIndex) && accordions[fallbackIndex]) {
+                    index = fallbackIndex;
+                }
+            }
+            
+            if (index === -1) return;
+
+            const accordion = accordions[index];
+            if (accordion.id && !accordion.id.startsWith('temp_')) {
+                deleteAccordion(accordion.id);
+            }
+            accordions.splice(index, 1);
+            
+            // Réorganiser l'ordre
+            accordions.forEach((a, i) => { a.order = i; });
+            reorderAccordions();
+            renderAccordions();
+        }
+
+        function addSearchKeyword(accordionId, keyword) {
+            const keywordLower = keyword.trim().toLowerCase();
+            if (!keywordLower) return;
+
+            const accordion = accordions.find(a => a.id === accordionId);
+            if (!accordion) return;
+
+            if (!accordion.filters) accordion.filters = {};
+            if (!accordion.filters.searchKeywords) accordion.filters.searchKeywords = [];
+
+            if (!accordion.filters.searchKeywords.includes(keywordLower)) {
+                accordion.filters.searchKeywords.push(keywordLower);
+                saveAccordion(accordion);
+                renderAccordions();
+            }
+        }
+
+        function removeSearchKeyword(accordionId, keyword) {
+            const accordion = accordions.find(a => a.id === accordionId);
+            if (!accordion || !accordion.filters || !accordion.filters.searchKeywords) return;
+
+            accordion.filters.searchKeywords = accordion.filters.searchKeywords.filter(k => k !== keyword);
+            saveAccordion(accordion);
+            renderAccordions();
+        }
+
+        function updateFilter(accordionId, filterType, value, checked) {
+            const accordion = accordions.find(a => a.id === accordionId);
+            if (!accordion) return;
+
+            if (!accordion.filters) accordion.filters = {};
+            if (!accordion.filters[filterType]) accordion.filters[filterType] = [];
+
+            if (checked) {
+                if (!accordion.filters[filterType].includes(value)) {
+                    accordion.filters[filterType].push(value);
+                }
+            } else {
+                accordion.filters[filterType] = accordion.filters[filterType].filter(v => v !== value);
+            }
+
+            saveAccordion(accordion);
+            // Mettre à jour uniquement le compteur et les résultats de cet accordéon
+            updateAccordionDisplay(accordionId);
+        }
+
+        function updateAccordionDisplay(accordionId) {
+            const accordion = accordions.find(a => a.id === accordionId);
+            if (!accordion) return;
+
+            const filteredJobs = applyFiltersToJobs(accordion.filters);
+            
+            // Mettre à jour le compteur
+            const countEl = document.querySelector(`[data-accordion-id="${accordionId}"] .accordion-count`);
+            if (countEl) {
+                countEl.textContent = `${filteredJobs.length} offres`;
+            }
+
+            // Mettre à jour les résultats si l'accordéon est ouvert
+            const contentEl = document.querySelector(`[data-accordion-id="${accordionId}"] .accordion-content`);
+            if (contentEl && contentEl.classList.contains('expanded')) {
+                const resultsEl = contentEl.querySelector('.accordion-results');
+                if (resultsEl) {
+                    resultsEl.outerHTML = renderResults(accordionId, filteredJobs);
+                } else {
+                    // Insérer les résultats si ils n'existent pas encore
+                    const bodyEl = contentEl.querySelector('.accordion-body');
+                    if (bodyEl) {
+                        bodyEl.insertAdjacentHTML('beforeend', renderResults(accordionId, filteredJobs));
+                    }
+                }
+            }
+        }
+
+
+        function initNav() {
+            const auth = firebase.auth();
+            auth.onAuthStateChanged((user) => {
+                const profileLink = document.getElementById('profileLink');
+                const authLink = document.getElementById('authLink');
+                const logoutBtn = document.getElementById('logoutBtn');
+                const applicationsLink = document.getElementById('applicationsLink');
+                const connexionsLink = document.getElementById('connexionsLink');
+
+                if (user) {
+                    if (profileLink) profileLink.style.display = 'block';
+                    if (authLink) authLink.style.display = 'none';
+                    if (logoutBtn) logoutBtn.style.display = 'block';
+                    if (applicationsLink) applicationsLink.style.display = 'block';
+                    if (connexionsLink) connexionsLink.style.display = 'block';
+                } else {
+                    if (profileLink) profileLink.style.display = 'none';
+                    if (authLink) authLink.style.display = 'block';
+                    if (logoutBtn) logoutBtn.style.display = 'none';
+                    if (applicationsLink) applicationsLink.style.display = 'none';
+                    if (connexionsLink) connexionsLink.style.display = 'none';
+                }
+            });
+        }
+
+        function handleLogout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'auth.html';
+            });
+        }
+    </script>
 </body>
 </html>
