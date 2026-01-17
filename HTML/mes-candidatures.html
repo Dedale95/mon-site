@@ -308,6 +308,18 @@
             border-left-color: #10b981;
         }
 
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            object-fit: contain;
+            background: white;
+            padding: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -819,6 +831,42 @@
         let currentFilter = 'all';
         let charts = {};
 
+        // Fonction pour obtenir le chemin du logo d'une compagnie
+        function getCompanyLogo(companyName) {
+            if (!companyName) return null;
+            
+            // Normaliser le nom de la compagnie (minuscules, sans accents, sans espaces multiples)
+            const normalized = companyName
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+                .trim()
+                .replace(/\s+/g, '_'); // Remplacer les espaces par des underscores
+            
+            // Mapping des noms de compagnies aux fichiers logos disponibles
+            const logoMap = {
+                'credit_agricole': 'images/logos/credit_agricole.png',
+                'societe_generale': 'images/logos/societe_generale.png',
+                'deloitte': 'images/logos/deloitte.png',
+                'amundi': 'images/logos/amundi.png',
+                'bforbank': 'images/logos/bforbank.png',
+                'b_for_bank': 'images/logos/bforbank.png',
+                'caceis': 'images/logos/caceis.png',
+                'indosuez': 'images/logos/indosuez.png',
+                'lcl': 'images/logos/lcl.png',
+                'uptevia': 'images/logos/uptevia.png'
+            };
+            
+            // Rechercher le logo dans le mapping
+            for (const [key, logoPath] of Object.entries(logoMap)) {
+                if (normalized.includes(key) || normalized === key) {
+                    return logoPath;
+                }
+            }
+            
+            return null;
+        }
+
         // Status mapping
         const STATUS_CONFIG = {
             'pending': { label: 'En attente', icon: '⏳', color: '#3b82f6' },
@@ -1291,7 +1339,13 @@
                 return `
                     <div class="application-card status-${app.status}">
                         <div class="app-header">
-                            <div class="app-title">${app.jobTitle || 'Sans titre'}</div>
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                ${(() => {
+                                    const logoPath = getCompanyLogo(app.companyName);
+                                    return logoPath ? `<img src="${logoPath}" alt="${app.companyName || ''}" class="company-logo" onerror="this.style.display='none'">` : '';
+                                })()}
+                                <div class="app-title">${app.jobTitle || 'Sans titre'}</div>
+                            </div>
                             <div class="app-status-badge status-${app.status}">
                                 ${statusConfig.icon} ${statusConfig.label}
                             </div>
