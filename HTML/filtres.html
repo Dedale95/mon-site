@@ -913,7 +913,7 @@
                         <div class="filter-group">
                             <label>🔍 Mots-clés</label>
                             <div class="search-wrapper">
-                                <input type="text" id="search-${accordionId}" placeholder="Tapez un mot-clé et appuyez sur Entrée..." onkeydown="if(event.key==='Enter') addSearchKeyword('${accordionId}', this.value)">
+                                <input type="text" id="search-${accordionId}" placeholder="Tapez un mot-clé et appuyez sur Entrée..." onkeydown="if(event.key==='Enter') { addSearchKeyword('${accordionId}', this.value); this.value=''; event.preventDefault(); }">
                                 <div class="search-tags" id="tags-${accordionId}">
                                     ${(filters.searchKeywords || []).map(kw => `
                                         <div class="search-tag">
@@ -1101,7 +1101,7 @@
         }
 
         function toggleAccordion(accordionId) {
-            const accordion = accordions.find(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            let accordion = accordions.find(a => a.id === accordionId);
             if (!accordion) {
                 // Fallback : chercher par index si l'ID ne correspond pas
                 const index = parseInt(accordionId.replace('temp_', ''));
@@ -1118,7 +1118,7 @@
         }
 
         function renameAccordion(accordionId) {
-            const accordion = accordions.find(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            let accordion = accordions.find(a => a.id === accordionId);
             if (!accordion) {
                 const index = parseInt(accordionId.replace('temp_', ''));
                 if (!isNaN(index) && accordions[index]) {
@@ -1139,7 +1139,7 @@
         function deleteAccordionPrompt(accordionId) {
             if (!confirm('Êtes-vous sûr de vouloir supprimer cette recherche ?')) return;
 
-            const index = accordions.findIndex(a => a.id === accordionId || a.id === 'temp_' + accordions.indexOf(a));
+            let index = accordions.findIndex(a => a.id === accordionId);
             if (index === -1) {
                 // Fallback
                 const fallbackIndex = parseInt(accordionId.replace('temp_', ''));
