@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Redirection Taleos</title>
+  <script>
+    (function() {
+      var oldBase = "/mon-site/";
+      var newBase = "/Taleos-Public/";
+      var path = window.location.pathname || "/";
+      var rest = path.indexOf(oldBase) === 0 ? path.slice(oldBase.length) : "";
+      var target = window.location.origin + newBase + rest + window.location.search + window.location.hash;
+      window.location.replace(target);
+    })();
+  </script>
+</head>
+<body></body>
+</html>
